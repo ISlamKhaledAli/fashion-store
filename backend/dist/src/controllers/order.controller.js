@@ -1,14 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.cancelOrder = exports.createOrder = exports.getOrderById = exports.getOrders = void 0;
-const server_1 = require("../server");
+const prisma_1 = require("../lib/prisma");
 const apiResponse_1 = require("../utils/apiResponse");
 const order_validator_1 = require("../validators/order.validator");
 const stripe_1 = require("../services/stripe");
 const AppError_1 = require("../utils/AppError");
 const getOrders = async (req, res, next) => {
     try {
-        const orders = await server_1.prisma.order.findMany({
+        const orders = await prisma_1.prisma.order.findMany({
             where: { userId: req.user?.id },
             include: { items: { include: { product: true } } },
             orderBy: { createdAt: "desc" },
@@ -22,7 +22,7 @@ const getOrders = async (req, res, next) => {
 exports.getOrders = getOrders;
 const getOrderById = async (req, res, next) => {
     try {
-        const order = await server_1.prisma.order.findUnique({
+        const order = await prisma_1.prisma.order.findUnique({
             where: { id: String(req.params.id) },
             include: {
                 items: { include: { product: true, variant: true } },
@@ -44,7 +44,7 @@ const createOrder = async (req, res, next) => {
         const userId = req.user?.id;
         const { addressId, notes } = order_validator_1.createOrderSchema.parse(req.body);
         // 1. Get cart items and validate
-        const cart = await server_1.prisma.cart.findUnique({
+        const cart = await prisma_1.prisma.cart.findUnique({
             where: { userId },
             include: {
                 items: {
@@ -66,7 +66,7 @@ const createOrder = async (req, res, next) => {
         const tax = subtotal * 0.1;
         const total = subtotal + shipping + tax;
         // 3. Execute Checkout Transaction
-        const order = await server_1.prisma.$transaction(async (tx) => {
+        const order = await prisma_1.prisma.$transaction(async (tx) => {
             // Step 1: Verify stock for ALL items
             for (const item of cart.items) {
                 // Fetch fresh variant data to ensure stock is accurate at start of transaction
@@ -131,14 +131,14 @@ exports.createOrder = createOrder;
 const cancelOrder = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const order = await server_1.prisma.order.findUnique({ where: { id: String(id) } });
+        const order = await prisma_1.prisma.order.findUnique({ where: { id: String(id) } });
         if (!order || order.userId !== req.user?.id) {
             throw new AppError_1.NotFoundError("Order not found");
         }
         if (order.status !== "PENDING") {
             throw new AppError_1.ValidationError("Only pending orders can be cancelled");
         }
-        await server_1.prisma.order.update({
+        await prisma_1.prisma.order.update({
             where: { id: String(id) },
             data: { status: "CANCELLED" },
         });

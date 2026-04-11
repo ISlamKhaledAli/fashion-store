@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { prisma } from "../server";
+import { prisma } from "../lib/prisma";
 import { sendResponse } from "../utils/apiResponse";
 import { addressSchema } from "../validators/address.validator";
 import { NotFoundError } from "../utils/AppError";

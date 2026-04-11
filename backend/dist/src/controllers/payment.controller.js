@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.stripeWebhook = void 0;
-const server_1 = require("../server");
+const prisma_1 = require("../lib/prisma");
 const stripe_1 = require("../services/stripe");
 const logger_1 = __importDefault(require("../utils/logger"));
 const AppError_1 = require("../utils/AppError");
@@ -24,7 +24,7 @@ const stripeWebhook = async (req, res, next) => {
             const paymentIntent = event.data.object;
             const orderId = paymentIntent.metadata.orderId;
             if (orderId) {
-                await server_1.prisma.order.update({
+                await prisma_1.prisma.order.update({
                     where: { id: orderId },
                     data: {
                         paymentStatus: "PAID",
@@ -39,7 +39,7 @@ const stripeWebhook = async (req, res, next) => {
             const failedIntent = event.data.object;
             const failedOrderId = failedIntent.metadata.orderId;
             if (failedOrderId) {
-                await server_1.prisma.order.update({
+                await prisma_1.prisma.order.update({
                     where: { id: failedOrderId },
                     data: { paymentStatus: "FAILED" },
                 });

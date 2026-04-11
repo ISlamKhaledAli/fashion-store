@@ -1,13 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteCategory = exports.updateCategory = exports.createCategory = exports.getCategories = void 0;
-const server_1 = require("../server");
+const prisma_1 = require("../lib/prisma");
 const apiResponse_1 = require("../utils/apiResponse");
 const common_validator_1 = require("../validators/common.validator");
 const AppError_1 = require("../utils/AppError");
 const getCategories = async (req, res, next) => {
     try {
-        const categories = await server_1.prisma.category.findMany({
+        const categories = await prisma_1.prisma.category.findMany({
             where: { parentId: null },
             include: { children: true },
         });
@@ -21,7 +21,7 @@ exports.getCategories = getCategories;
 const createCategory = async (req, res, next) => {
     try {
         const validatedData = common_validator_1.categorySchema.parse(req.body);
-        const category = await server_1.prisma.category.create({ data: validatedData });
+        const category = await prisma_1.prisma.category.create({ data: validatedData });
         return (0, apiResponse_1.sendResponse)({ res, status: 201, success: true, data: category });
     }
     catch (error) {
@@ -33,7 +33,7 @@ const updateCategory = async (req, res, next) => {
     try {
         const { id } = req.params;
         const validatedData = common_validator_1.categorySchema.partial().parse(req.body);
-        const category = await server_1.prisma.category.update({
+        const category = await prisma_1.prisma.category.update({
             where: { id: String(id) },
             data: validatedData,
         });
@@ -50,7 +50,7 @@ exports.updateCategory = updateCategory;
 const deleteCategory = async (req, res, next) => {
     try {
         const { id } = req.params;
-        await server_1.prisma.category.delete({ where: { id: String(id) } });
+        await prisma_1.prisma.category.delete({ where: { id: String(id) } });
         return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, message: "Category deleted" });
     }
     catch (error) {

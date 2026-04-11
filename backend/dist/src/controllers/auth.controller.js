@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getMe = exports.logout = exports.refresh = exports.login = exports.register = void 0;
-const server_1 = require("../server");
+const prisma_1 = require("../lib/prisma");
 const bcrypt_1 = require("../utils/bcrypt");
 const jwt_1 = require("../utils/jwt");
 const apiResponse_1 = require("../utils/apiResponse");
@@ -10,14 +10,14 @@ const AppError_1 = require("../utils/AppError");
 const register = async (req, res, next) => {
     try {
         const validatedData = auth_validator_1.registerSchema.parse(req.body);
-        const existingUser = await server_1.prisma.user.findUnique({
+        const existingUser = await prisma_1.prisma.user.findUnique({
             where: { email: validatedData.email },
         });
         if (existingUser) {
             throw new AppError_1.ConflictError("User already exists with this email");
         }
         const hashedPassword = await (0, bcrypt_1.hashPassword)(validatedData.password);
-        const user = await server_1.prisma.user.create({
+        const user = await prisma_1.prisma.user.create({
             data: {
                 ...validatedData,
                 password: hashedPassword,
@@ -50,7 +50,7 @@ exports.register = register;
 const login = async (req, res, next) => {
     try {
         const validatedData = auth_validator_1.loginSchema.parse(req.body);
-        const user = await server_1.prisma.user.findUnique({
+        const user = await prisma_1.prisma.user.findUnique({
             where: { email: validatedData.email },
         });
         if (!user || !(await (0, bcrypt_1.comparePassword)(validatedData.password, user.password))) {
@@ -90,7 +90,7 @@ const refresh = async (req, res, next) => {
         catch (err) {
             throw new AppError_1.AuthError("Invalid or expired refresh token");
         }
-        const user = await server_1.prisma.user.findUnique({ where: { id: decoded.id } });
+        const user = await prisma_1.prisma.user.findUnique({ where: { id: decoded.id } });
         if (!user) {
             throw new AppError_1.NotFoundError("User not found");
         }
@@ -118,7 +118,7 @@ const logout = async (req, res, next) => {
 exports.logout = logout;
 const getMe = async (req, res, next) => {
     try {
-        const user = await server_1.prisma.user.findUnique({
+        const user = await prisma_1.prisma.user.findUnique({
             where: { id: req.user?.id },
             select: { id: true, name: true, email: true, role: true, avatar: true },
         });

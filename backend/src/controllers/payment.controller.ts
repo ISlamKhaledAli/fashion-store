@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { prisma } from "../server";
+import { prisma } from "../lib/prisma";
 import { verifyStripeWebhook } from "../services/stripe";
 import logger from "../utils/logger";
 import { ValidationError } from "../utils/AppError";

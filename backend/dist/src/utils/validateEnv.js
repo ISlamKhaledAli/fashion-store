@@ -5,6 +5,8 @@ const zod_1 = require("zod");
 const envSchema = zod_1.z.object({
     DATABASE_URL: zod_1.z.string().url(),
     DIRECT_URL: zod_1.z.string().url().optional(),
+    DATABASE_URL_TEST: zod_1.z.string().url().optional(),
+    DIRECT_URL_TEST: zod_1.z.string().url().optional(),
     JWT_SECRET: zod_1.z.string().min(1, "JWT_SECRET is required"),
     JWT_REFRESH_SECRET: zod_1.z.string().min(1, "JWT_REFRESH_SECRET is required"),
     STRIPE_SECRET_KEY: zod_1.z.string().startsWith("sk_", "STRIPE_SECRET_KEY must start with sk_"),
@@ -22,13 +24,17 @@ const envSchema = zod_1.z.object({
     EMAIL_USER: zod_1.z.string().optional(),
     EMAIL_PASS: zod_1.z.string().optional(),
 });
-const validateEnv = () => {
+const loadEnv = () => {
     const parsed = envSchema.safeParse(process.env);
     if (!parsed.success) {
         console.error("❌ Invalid environment variables:", parsed.error.format());
         process.exit(1);
     }
-    exports.env = parsed.data;
+    return parsed.data;
+};
+exports.env = loadEnv();
+const validateEnv = () => {
+    exports.env = loadEnv();
     return exports.env;
 };
 exports.validateEnv = validateEnv;

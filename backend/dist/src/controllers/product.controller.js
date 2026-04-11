@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteProduct = exports.updateProduct = exports.createProduct = exports.getProductBySlug = exports.getProducts = void 0;
-const server_1 = require("../server");
+const prisma_1 = require("../lib/prisma");
 const apiResponse_1 = require("../utils/apiResponse");
 const pagination_1 = require("../utils/pagination");
 const product_validator_1 = require("../validators/product.validator");
@@ -42,7 +42,7 @@ const getProducts = async (req, res, next) => {
             orderBy.createdAt = "desc";
         }
         const [products, total] = await Promise.all([
-            server_1.prisma.product.findMany({
+            prisma_1.prisma.product.findMany({
                 where,
                 take,
                 skip,
@@ -53,7 +53,7 @@ const getProducts = async (req, res, next) => {
                     images: { where: { isMain: true } },
                 },
             }),
-            server_1.prisma.product.count({ where }),
+            prisma_1.prisma.product.count({ where }),
         ]);
         const pagination = (0, pagination_1.calculatePagination)(total, currentPage, take);
         return (0, apiResponse_1.sendResponse)({
@@ -72,7 +72,7 @@ exports.getProducts = getProducts;
 const getProductBySlug = async (req, res, next) => {
     try {
         const { slug } = req.params;
-        const product = await server_1.prisma.product.findUnique({
+        const product = await prisma_1.prisma.product.findUnique({
             where: { slug: String(slug) },
             include: {
                 category: true,
@@ -107,7 +107,7 @@ const createProduct = async (req, res, next) => {
     try {
         const validatedData = product_validator_1.createProductSchema.parse(req.body);
         const { variants, ...productData } = validatedData;
-        const product = await server_1.prisma.product.create({
+        const product = await prisma_1.prisma.product.create({
             data: {
                 ...productData,
                 slug: productData.name.toLowerCase().replace(/ /g, "-") + "-" + Date.now(),
@@ -137,17 +137,17 @@ const updateProduct = async (req, res, next) => {
         const validatedData = product_validator_1.updateProductSchema.parse(req.body);
         const { variants, ...productData } = validatedData;
         // First check if product exists
-        const existing = await server_1.prisma.product.findUnique({ where: { id: String(id) } });
+        const existing = await prisma_1.prisma.product.findUnique({ where: { id: String(id) } });
         if (!existing)
             throw new AppError_1.NotFoundError("Product not found");
         // Handle variants separately if provided
         if (variants) {
-            await server_1.prisma.variant.deleteMany({ where: { productId: String(id) } });
-            await server_1.prisma.variant.createMany({
+            await prisma_1.prisma.variant.deleteMany({ where: { productId: String(id) } });
+            await prisma_1.prisma.variant.createMany({
                 data: variants.map(v => ({ ...v, productId: String(id) })),
             });
         }
-        const product = await server_1.prisma.product.update({
+        const product = await prisma_1.prisma.product.update({
             where: { id: String(id) },
             data: productData,
             include: { variants: true },
@@ -168,10 +168,10 @@ const deleteProduct = async (req, res, next) => {
     try {
         const { id } = req.params;
         // Check existence
-        const existing = await server_1.prisma.product.findUnique({ where: { id: String(id) } });
+        const existing = await prisma_1.prisma.product.findUnique({ where: { id: String(id) } });
         if (!existing)
             throw new AppError_1.NotFoundError("Product not found");
-        await server_1.prisma.product.update({
+        await prisma_1.prisma.product.update({
             where: { id: String(id) },
             data: { status: "ARCHIVED" },
         });

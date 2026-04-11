@@ -7,6 +7,10 @@
     "dev": "nodemon --exec ts-node --files src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "test:prepare": "node tests/scripts/prepare-test-db.js",
+    "test": "npm run test:prepare && jest --runInBand",
+    "test:watch": "npm run test:prepare && jest --runInBand --watch",
+    "test:coverage": "npm run test:prepare && jest --runInBand --coverage",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
@@ -43,9 +47,14 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
     "@types/node": "^25.6.0",
+    "@types/supertest": "^7.2.0",
+    "jest": "^30.3.0",
     "nodemon": "^3.1.14",
     "prisma": "^7.7.0",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.2"
   }

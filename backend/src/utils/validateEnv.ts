@@ -3,6 +3,8 @@ import { z } from "zod";
 const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   DIRECT_URL: z.string().url().optional(),
+  DATABASE_URL_TEST: z.string().url().optional(),
+  DIRECT_URL_TEST: z.string().url().optional(),
   JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
   JWT_REFRESH_SECRET: z.string().min(1, "JWT_REFRESH_SECRET is required"),
   STRIPE_SECRET_KEY: z.string().startsWith("sk_", "STRIPE_SECRET_KEY must start with sk_"),
@@ -23,9 +25,7 @@ const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>;
 
-export let env: Env;
-
-export const validateEnv = (): Env => {
+const loadEnv = (): Env => {
   const parsed = envSchema.safeParse(process.env);
 
   if (!parsed.success) {
@@ -33,6 +33,12 @@ export const validateEnv = (): Env => {
     process.exit(1);
   }
 
-  env = parsed.data;
+  return parsed.data;
+};
+
+export let env: Env = loadEnv();
+
+export const validateEnv = (): Env => {
+  env = loadEnv();
   return env;
 };
