@@ -49,7 +49,7 @@ export const BrandStory = () => {
             "We do not design objects. We define the silence between them."
           </blockquote>
           <div className="flex items-center gap-6">
-            <div className="h-[1px] w-12 bg-white/30"></div>
+            <div className="h-1px w-12 bg-white/30"></div>
             <p className="text-white/80 font-medium tracking-wide">
               Director's Cut 2024
             </p>

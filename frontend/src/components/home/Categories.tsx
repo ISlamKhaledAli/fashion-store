@@ -86,7 +86,7 @@ export const Categories = () => {
             >
               <Link
                 href={`/products?category=${category.slug}`}
-                className="group relative block aspect-[3/4] overflow-hidden bg-surface-container-high"
+                className="group relative block aspect-3/4 overflow-hidden bg-surface-container-high"
               >
                 <Image
                   src={category.image || ""}
@@ -94,7 +94,7 @@ export const Categories = () => {
                   fill
                   className="object-cover transition-transform duration-[0.6s] cinematic-ease group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 border-[1px] border-white/20" />
+                <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 border-1px border-white/20" />
                 <div className="absolute bottom-8 left-8 z-10">
                   <h3 className="text-white text-2xl font-medium tracking-tight">
                     {category.name}

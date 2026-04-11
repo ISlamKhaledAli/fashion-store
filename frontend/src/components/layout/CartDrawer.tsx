@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/store/cartStore";
 import { formatCurrency } from "@/lib/utils";
@@ -28,7 +27,7 @@ export const CartDrawer = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => toggleDrawer(false)}
-            className="fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-[60]"
+            className="fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-60"
           />
 
           {/* Drawer */}
@@ -37,7 +36,7 @@ export const CartDrawer = () => {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-full max-w-[480px] z-[70] bg-surface-container-lowest shadow-2xl flex flex-col"
+            className="fixed right-0 top-0 h-full w-full max-w-[480px] z-70 bg-surface-container-lowest shadow-2xl flex flex-col"
           >
             {/* Header */}
             <div className="flex justify-between items-center p-8 border-b border-outline-variant/10">
@@ -79,7 +78,7 @@ export const CartDrawer = () => {
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="flex gap-6 group"
                   >
-                    <div className="relative w-24 h-32 flex-shrink-0 bg-surface-container-low overflow-hidden rounded-sm">
+                    <div className="relative w-24 h-32 shrink-0 bg-surface-container-low overflow-hidden rounded-sm">
                       <Image
                         src={item.image}
                         alt={item.name}

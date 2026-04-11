@@ -60,7 +60,7 @@ export const Navbar = () => {
             >
               {link.name}
               <motion.span
-                className="absolute bottom-0 left-0 w-full h-[1px] bg-on-surface origin-left"
+                className="absolute bottom-0 left-0 w-full h-1px bg-on-surface origin-left"
                 initial={{ scaleX: 0 }}
                 whileHover={{ scaleX: 1 }}
                 transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] as const }}

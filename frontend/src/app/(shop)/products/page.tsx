@@ -157,7 +157,7 @@ function ProductsContent() {
           <AnimatePresence mode="popLayout">
             {isLoading ? (
               Array(6).fill(0).map((_, i) => (
-                <div key={i} className="aspect-[3/4] bg-surface-container-high animate-pulse" />
+                <div key={i} className="aspect-3/4 bg-surface-container-high animate-pulse" />
               ))
             ) : (
               products.map((product, index) => (

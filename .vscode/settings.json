@@ -1,0 +1,8 @@
+{
+  "css.customData": [],
+  "css.lint.unknownAtRules": "ignore",
+  "tailwindCSS.experimental.configFile": null,
+  "tailwindCSS.includeLanguages": {
+    "plaintext": "html"
+  }
+}

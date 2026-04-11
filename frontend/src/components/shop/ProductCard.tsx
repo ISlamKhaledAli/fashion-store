@@ -25,7 +25,7 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
     e.stopPropagation();
     
     // Simplification: pick first variant
-    const productVariant = product.variants[0];
+    const productVariant = product.variants?.[0];
     if (!productVariant) return;
     
     addItem({
@@ -77,7 +77,7 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
         style={{ animationDelay: `${delay}s` }}
       >
         <Link href={`/products/${product.slug}`} className="block">
-          <div className="relative overflow-hidden aspect-[3/4] bg-surface-container-low mb-6">
+          <div className="relative overflow-hidden aspect-3/4 bg-surface-container-low mb-6">
             {product.images[0] && (
               <Image
                 src={product.images.find(img => img.isMain)?.url || product.images[0].url}
@@ -132,7 +132,7 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
       className={cn("group", className)}
     >
       <Link href={`/products/${product.slug}`} className="block">
-        <div className="relative aspect-[4/5] bg-surface-container-low overflow-hidden mb-6 cinematic-ease duration-500 group-hover:-translate-y-2">
+        <div className="relative aspect-4/5 bg-surface-container-low overflow-hidden mb-6 cinematic-ease duration-500 group-hover:-translate-y-2">
           {product.images[0] && (
             <Image
               src={product.images.find(img => img.isMain)?.url || product.images[0].url}
@@ -154,7 +154,7 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
           <div>
             <h4 className="text-lg font-medium text-on-surface">{product.name}</h4>
             <p className="text-on-surface-variant text-sm mt-1">
-              {product.variants[0]?.color}
+              {product.variants?.[0]?.color || "Default"}
             </p>
           </div>
           <span className="text-lg font-bold tracking-tighter text-on-surface">

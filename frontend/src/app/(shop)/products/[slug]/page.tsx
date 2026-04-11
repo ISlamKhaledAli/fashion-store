@@ -66,7 +66,7 @@ export default function ProductDetailPage() {
       <section className="max-w-[1440px] mx-auto px-8 py-16 grid grid-cols-1 lg:grid-cols-12 gap-16">
         {/* Left: Image Gallery */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="aspect-[4/5] bg-surface-container-low overflow-hidden relative">
+          <div className="aspect-4/5 bg-surface-container-low overflow-hidden relative">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeImage}
