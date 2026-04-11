@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Force Tailwind v4 to use class-based dark mode only, disabling OS media queries */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* Colors - Derived from HTML Design System */
   --color-primary: #030304;
@@ -40,22 +43,23 @@
 }
 
 :root {
+  color-scheme: light;
   --background: #f9f9fb;
   --foreground: #1a1c1d;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #030304;
-    --foreground: #ffffff;
-  }
-}
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
   font-family: var(--font-inter);
   -webkit-font-smoothing: antialiased;
+}
+
+html {
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+  color-scheme: only light !important;
 }
 
 /* Material Symbols Support */
