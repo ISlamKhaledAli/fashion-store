@@ -88,7 +88,6 @@ const FALLBACK_PRODUCTS: Product[] = [
 
 export const FeaturedProducts = () => {
   const [products, setProducts] = useState<Product[]>(FALLBACK_PRODUCTS);
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchProducts = async () => {

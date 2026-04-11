@@ -42,8 +42,9 @@ export default function RegisterPage() {
         setAuth(user, accessToken, refreshToken);
         router.push("/");
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Registration failed. Please try again.");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? (err as { response?: { data?: { message?: string } } }).response?.data?.message : "Registration failed. Please try again.";
+      setError(errorMessage || "Registration failed. Please try again.");
     }
   };
 

@@ -1,204 +1,159 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
+import React, { useEffect, useState, use } from "react";
 import { productApi } from "@/lib/api";
-import { Product, Variant } from "@/types";
-import { formatCurrency, cn } from "@/lib/utils";
-import { Button } from "@/components/ui/Button";
-import { useCartStore } from "@/store/cartStore";
-import { FeaturedProducts } from "@/components/home/FeaturedProducts";
+import { Product } from "@/types";
+import { ProductGallery } from "@/components/shop/pdp/ProductGallery";
+import { ProductInfo } from "@/components/shop/pdp/ProductInfo";
+import { ProductStorytelling } from "@/components/shop/pdp/ProductStorytelling";
+import { ProductAccordions } from "@/components/shop/pdp/ProductAccordions";
+import { ProductReviews } from "@/components/shop/pdp/ProductReviews";
+import { ProductCard } from "@/components/shop/ProductCard";
+import Skeleton from "@/components/ui/Skeleton";
 
-export default function ProductDetailPage() {
-  const { slug } = useParams();
+interface PageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export default function ProductDetailPage({ params }: PageProps) {
+  const { slug } = use(params);
   const [product, setProduct] = useState<Product | null>(null);
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
-  const [activeImage, setActiveImage] = useState<string>("");
-  const [quantity, setQuantity] = useState(1);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { addItem, toggleDrawer } = useCartStore();
 
   useEffect(() => {
     const fetchProduct = async () => {
+      setIsLoading(true);
       try {
-        const response = await productApi.getBySlug(slug as string);
-        if (response.data.success) {
-          const p = response.data.data;
-          setProduct(p);
-          setSelectedVariant(p.variants[0]);
-          setActiveImage(p.images.find(img => img.isMain)?.url || p.images[0].url);
+        const res = await productApi.getBySlug(slug);
+        if (res.data.success) {
+          setProduct(res.data.data);
+          
+          // Fetch related products based on category
+          const relatedRes = await productApi.getAll({ 
+            category: res.data.data.categoryId,
+            limit: 4 
+          });
+          if (relatedRes.data.success) {
+            setRelatedProducts(relatedRes.data.data.filter(p => p.id !== res.data.data.id));
+          }
         }
       } catch (error) {
-        console.error("Failed to fetch product:", error);
+        console.error("Error fetching product:", error);
       } finally {
-        setIsLoading(false);
+        setTimeout(() => setIsLoading(false), 500); // 500ms delay for cinematic entry
       }
     };
+
     fetchProduct();
   }, [slug]);
 
-  const handleAddToCart = () => {
-    if (!product || !selectedVariant) return;
-    
-    addItem({
-      id: `${product.id}-${selectedVariant.id}`,
-      productId: product.id,
-      variantId: selectedVariant.id,
-      name: product.name,
-      image: activeImage,
-      price: product.price,
-      size: selectedVariant.size,
-      color: selectedVariant.color,
-      quantity,
-      stock: selectedVariant.stock,
-    });
-    toggleDrawer(true);
-  };
+  if (isLoading) {
+    return (
+      <div className="max-w-[1440px] mx-auto px-12 py-32 space-y-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+          <Skeleton className="lg:col-span-7 aspect-square" />
+          <div className="lg:col-span-5 space-y-8">
+            <Skeleton className="h-10 w-2/3" />
+            <Skeleton className="h-6 w-1/4" />
+            <Skeleton className="h-32" />
+            <Skeleton className="h-14" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  if (isLoading) return <div className="pt-40 text-center uppercase tracking-widest text-xs">Loading Artifact...</div>;
-  if (!product) return <div className="pt-40 text-center uppercase tracking-widest text-xs">Artifact Not Found</div>;
+  if (!product) {
+    return (
+      <div className="h-[60vh] flex items-center justify-center flex-col gap-4">
+        <h1 className="text-4xl font-medium tracking-tighter">Product not found</h1>
+        <p className="text-on-surface-variant">The piece you&apos;re looking for might have moved.</p>
+      </div>
+    );
+  }
+
+  const stories = [
+    {
+      icon: "eco",
+      title: "Virgin Wool Blend",
+      description: product.description || "Sourced from the finest Italian mills, maintaining natural lanolin for superior weather resistance and a soft hand-feel.",
+    },
+    {
+      icon: "architecture",
+      title: "Anatomical Tailoring",
+      description: "Developed over eighteen months, our proprietary fit pattern follows the natural curvature of the spine and shoulders.",
+    },
+    {
+      icon: "history",
+      title: "Heirloom Quality",
+      description: "Every seam is reinforced with silk-wrapped thread. Designed to be passed down through generations.",
+    },
+    {
+      icon: "ac_unit",
+      title: "Thermal Regulation",
+      description: "The dense weave provides natural insulation for temperatures as low as -10°C while remaining breathable.",
+    },
+  ];
 
   return (
-    <div className="pt-32 pb-32">
-      {/* Above the Fold */}
-      <section className="max-w-[1440px] mx-auto px-8 py-16 grid grid-cols-1 lg:grid-cols-12 gap-16">
-        {/* Left: Image Gallery */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="aspect-4/5 bg-surface-container-low overflow-hidden relative">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeImage}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] as const }}
-                className="w-full h-full"
-              >
-                <Image
-                  src={activeImage}
-                  alt={product.name}
-                  fill
-                  className="object-cover"
-                />
-              </motion.div>
-            </AnimatePresence>
-          </div>
-          <div className="grid grid-cols-5 gap-4">
-            {product.images.map((img) => (
-              <button
-                key={img.id}
-                onClick={() => setActiveImage(img.url)}
-                className={cn(
-                  "aspect-square bg-surface-container-low relative overflow-hidden cinematic-ease transition-all duration-500",
-                  activeImage === img.url ? "ring-1 ring-primary" : "opacity-60 hover:opacity-100"
-                )}
-              >
-                <Image src={img.url} alt="Thumbnail" fill className="object-cover" />
-              </button>
-            ))}
-          </div>
+    <div className="bg-surface min-h-screen">
+      {/* 1. PDP Header Section */}
+      <section className="max-w-[1440px] mx-auto px-12 py-16 grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24">
+        {/* Gallery Column */}
+        <div className="lg:col-span-7">
+          <ProductGallery images={product.images} />
         </div>
-
-        {/* Right: Sticky Info Panel */}
+        
+        {/* Info Column */}
         <div className="lg:col-span-5">
-          <div className="sticky top-32 space-y-12">
-            <div>
-              <p className="text-xs tracking-[0.2em] uppercase text-on-surface-variant mb-4 font-bold">
-                {product.category?.name} Artifact
-              </p>
-              <h1 className="text-4xl md:text-5xl font-medium tracking-tighter text-on-surface leading-tight">
-                {product.name}
-              </h1>
-              <p className="text-2xl font-bold tracking-tighter text-on-surface mt-6">
-                {formatCurrency(product.price)}
-              </p>
-            </div>
+          <ProductInfo product={product} />
+        </div>
+      </section>
 
-            <p className="text-on-surface-variant text-base leading-relaxed max-w-md">
-              {product.description}
-            </p>
+      {/* 2. Scroll Storytelling Section */}
+      <ProductStorytelling 
+        image={product.images.find(img => !img.isMain)?.url || product.images[0]?.url} 
+        stories={stories} 
+      />
 
-            {/* Selection */}
-            <div className="space-y-8">
+      {/* 3. Detailed Accordions */}
+      <ProductAccordions />
+
+      {/* 4. Complete the Look / You May Also Like */}
+      {relatedProducts.length > 0 && (
+        <section className="bg-surface-container-low py-32">
+          <div className="max-w-[1440px] mx-auto px-12">
+            <div className="flex justify-between items-end mb-16">
               <div className="space-y-4">
-                <p className="text-xs font-bold tracking-widest uppercase">Size</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {product.variants.map((v) => (
-                    <button
-                      key={v.id}
-                      onClick={() => setSelectedVariant(v)}
-                      disabled={v.stock === 0}
-                      className={cn(
-                        "py-4 text-xs font-bold uppercase transition-all cinematic-ease",
-                        selectedVariant?.id === v.id
-                          ? "bg-primary text-on-primary"
-                          : "border border-outline-variant/30 hover:border-primary text-on-surface-variant",
-                        v.stock === 0 && "opacity-20 cursor-not-allowed line-through"
-                      )}
-                    >
-                      {v.size}
-                    </button>
-                  ))}
-                </div>
+                <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant font-bold">Recommendations</p>
+                <h2 className="text-4xl font-medium tracking-tight">Complete the Look</h2>
               </div>
-
-              <div className="flex gap-4">
-                <div className="flex items-center border border-outline-variant/30 px-6 py-2">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>
-                    <span className="material-symbols-outlined text-sm">remove</span>
-                  </button>
-                  <span className="mx-8 text-sm font-bold">{quantity}</span>
-                  <button onClick={() => setQuantity(quantity + 1)}>
-                    <span className="material-symbols-outlined text-sm">add</span>
-                  </button>
-                </div>
-                <Button 
-                  onClick={handleAddToCart}
-                  className="flex-1"
-                >
-                  Add to Bag
-                </Button>
+              <div className="hidden md:flex gap-4">
+                <button className="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:bg-white transition-all active:scale-95">
+                  <span className="material-symbols-outlined">west</span>
+                </button>
+                <button className="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:bg-white transition-all active:scale-95">
+                  <span className="material-symbols-outlined">east</span>
+                </button>
               </div>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {relatedProducts.map((p, idx) => (
+                <ProductCard 
+                  key={p.id} 
+                  product={p} 
+                  variant="editorial" 
+                  delay={idx * 0.1}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* Storytelling Sections */}
-      <section className="mt-32 border-t border-outline-variant/10">
-        <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-2">
-          <div className="sticky top-0 h-[80vh] bg-surface-container-high overflow-hidden hidden lg:block">
-             <Image 
-                src={product.images[1]?.url || activeImage}
-                alt="Story"
-                fill
-                className="object-cover"
-             />
-          </div>
-          <div className="py-32 px-8 lg:px-24 space-y-64">
-             <div className="space-y-6">
-                <span className="material-symbols-outlined text-4xl text-primary">eco</span>
-                <h2 className="text-3xl font-medium tracking-tight">Sustainable Origin</h2>
-                <p className="text-on-surface-variant leading-relaxed text-lg">
-                  Every thread in this garment is traced back to ethical sources, 
-                  maintaining natural resilience and unmatched texture.
-                </p>
-             </div>
-             <div className="space-y-6">
-                <span className="material-symbols-outlined text-4xl text-primary">architecture</span>
-                <h2 className="text-3xl font-medium tracking-tight">Sculptural Fit</h2>
-                <p className="text-on-surface-variant leading-relaxed text-lg">
-                  Patterned with 3D anatomical accuracy to ensure movement is fluid 
-                  and the silhouette remain sharp in any posture.
-                </p>
-             </div>
-          </div>
-        </div>
-      </section>
-
-      <FeaturedProducts />
+      {/* 5. User Reviews Section */}
+      <ProductReviews />
     </div>
   );
 }

@@ -41,8 +41,9 @@ export default function LoginPage() {
         setAuth(user, accessToken, refreshToken);
         router.push("/");
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Invalid credentials. Please try again.");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? (err as { response?: { data?: { message?: string } } }).response?.data?.message : "Invalid credentials. Please try again.";
+      setError(errorMessage || "Invalid credentials. Please try again.");
     }
   };
 

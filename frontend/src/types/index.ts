@@ -115,5 +115,5 @@ export interface ApiResponse<T> {
   message?: string;
   data: T;
   pagination?: PaginationData;
-  errors?: any[];
+  errors?: unknown[];
 }

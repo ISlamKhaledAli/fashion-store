@@ -12,7 +12,7 @@ export const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const { toggleDrawer, getTotalItems } = useCartStore();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
 
   const height = useTransform(scrollY, [0, 80], ["70px", "56px"]);
   const backgroundColor = useTransform(
@@ -22,7 +22,13 @@ export const Navbar = () => {
   );
 
   useEffect(() => {
-    setIsMounted(true);
+    // Ensuring setIsMounted is set after initial render to avoid cascading render warning
+    // while still handling hydration logic correctly.
+    const timer = setTimeout(() => setIsMounted(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
     return scrollY.onChange((latest) => {
       setIsScrolled(latest > 80);
     });

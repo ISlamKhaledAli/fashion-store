@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -50,10 +51,12 @@ export const AdminSidebar = () => {
 
       <div className="p-8 border-t border-white/5">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden">
-            <img 
+          <div className="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden relative">
+            <Image 
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMs_v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v" 
               alt="Admin" 
+              fill
+              className="object-cover"
             />
           </div>
           <div>

@@ -7,7 +7,7 @@ import { NotFoundError } from "../utils/AppError";
 
 export const getProducts = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { category, brand, minPrice, maxPrice, search, sort, page, limit, featured } = req.query;
+    const { category, brand, minPrice, maxPrice, search, sort, page, limit, featured, color } = req.query;
 
     const { skip, limit: take, page: currentPage } = getPagination({
       page: Number(page),
@@ -18,7 +18,10 @@ export const getProducts = async (req: Request, res: Response, next: NextFunctio
       status: "ACTIVE",
     };
 
-    if (category) where.category = { slug: String(category) };
+    if (category) {
+      const cats = String(category).split(",");
+      where.category = cats.length > 1 ? { name: { in: cats } } : { name: cats[0] };
+    }
     if (brand) where.brand = { slug: String(brand) };
     if (featured !== undefined) {
       where.featured = String(featured) === "true";
@@ -33,6 +36,13 @@ export const getProducts = async (req: Request, res: Response, next: NextFunctio
         { name: { contains: String(search), mode: "insensitive" } },
         { description: { contains: String(search), mode: "insensitive" } },
       ];
+    }
+    
+    if (color) {
+      const colors = String(color).split(",");
+      where.variants = {
+        some: { color: { in: colors } }
+      };
     }
 
     const orderBy: any = {};

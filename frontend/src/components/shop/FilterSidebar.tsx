@@ -1,48 +1,74 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import React from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
-export const FilterSidebar = () => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [price, setPrice] = useState(750);
-  
-  // Dummy data for visual fidelity
-  const categories = ["All Products", "New Arrivals", "Clothing", "Accessories"];
-  const colors = ["bg-stone-950", "bg-stone-100", "bg-stone-400", "bg-[#D2B48C]"];
+export interface FilterState {
+  category: string[];
+  brand: string[];
+  size: string[];
+  color: string[];
+  minPrice: number;
+  maxPrice: number;
+  sort: string;
+}
 
-  const handleApply = () => {
-    // Basic implementation of filter application (in real app, this updates URL search params)
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('maxPrice', price.toString());
-    router.push(`/products?${params.toString()}`);
-  };
+export type FilterAction =
+  | { type: "toggle_category"; payload: string }
+  | { type: "toggle_brand"; payload: string }
+  | { type: "toggle_color"; payload: string }
+  | { type: "set_max_price"; payload: number }
+  | { type: "set_sort"; payload: string }
+  | { type: "reset" }
+  | { type: "sync_from_url"; payload: Partial<FilterState> };
 
-  return (
-    <aside className="sticky top-20 h-[calc(100vh-5rem)] w-64 flex-shrink-0 flex flex-col p-8 gap-6 bg-surface-container-lowest overflow-y-auto hidden lg:flex">
+
+interface FilterSidebarProps {
+  state: FilterState;
+  dispatch: React.Dispatch<FilterAction>;
+  isOpen?: boolean;
+  onClose?: () => void;
+  isMobile?: boolean;
+}
+
+export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: FilterSidebarProps) => {
+  const categories = ["Clothing", "Accessories", "New Arrivals"];
+  const colors = [
+    { name: "Black", class: "bg-stone-950" },
+    { name: "White", class: "bg-stone-100" },
+    { name: "Grey", class: "bg-stone-400" },
+    { name: "Tan", class: "bg-[#D2B48C]" },
+  ];
+
+  const content = (
+    <div className="space-y-8 flex flex-col h-full">
       <div className="space-y-1">
-        <h2 className="font-headline text-sm uppercase tracking-widest text-on-surface font-bold">
+        <h2 className="font-headline text-sm uppercase tracking-widest text-on-surface-stone-900 font-bold text-stone-50">
           FILTER
         </h2>
-        <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
+        <p className="text-[10px] uppercase tracking-widest text-stone-400">
           Refine Selection
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-8 flex-1">
         {/* Categories */}
         <section>
           <h3 className="text-[11px] font-bold uppercase tracking-widest mb-4">Categories</h3>
           <div className="flex flex-col gap-3">
-            {categories.map((cat, idx) => (
+            {categories.map((cat) => (
               <label key={cat} className="flex items-center gap-3 cursor-pointer group">
                 <input 
                   type="checkbox" 
-                  defaultChecked={idx === 0}
+                  checked={state.category.includes(cat)}
+                  onChange={() => dispatch({ type: "toggle_category", payload: cat })}
                   className="w-4 h-4 border-outline-variant text-primary focus:ring-primary rounded-sm bg-transparent"
                 />
-                <span className={`text-xs uppercase tracking-wider transition-colors ${idx === 0 ? "text-on-surface group-hover:text-on-surface-variant" : "text-on-surface-variant group-hover:text-on-surface"}`}>
+                <span className={cn(
+                  "text-xs uppercase tracking-wider transition-colors",
+                  state.category.includes(cat) ? "text-stone-900 dark:text-stone-50" : "text-stone-400 group-hover:text-stone-900"
+                )}>
                   {cat}
                 </span>
               </label>
@@ -56,56 +82,76 @@ export const FilterSidebar = () => {
           <input 
             type="range"
             min="0"
-            max="1000"
-            value={price}
-            onChange={(e) => setPrice(parseInt(e.target.value))}
+            max="2000"
+            value={state.maxPrice}
+            onChange={(e) => dispatch({ type: "set_max_price", payload: parseInt(e.target.value) })}
             className="w-full h-1 bg-surface-container-highest rounded-full appearance-none cursor-pointer accent-primary" 
           />
-          <div className="flex justify-between mt-2 text-[10px] text-on-surface-variant">
+          <div className="flex justify-between mt-2 text-[10px] text-stone-500">
             <span>$0</span>
-            <span>${price}+</span>
+            <span>${state.maxPrice}+</span>
           </div>
         </section>
 
-        {/* Color Swatches */}
+        {/* Colors */}
         <section>
           <h3 className="text-[11px] font-bold uppercase tracking-widest mb-4">Colors</h3>
-          <div className="flex flex-wrap gap-2">
-            {colors.map((color, idx) => (
+          <div className="flex flex-wrap gap-3">
+            {colors.map((color) => (
               <button 
-                key={idx}
-                className={`w-6 h-6 rounded-full ${color} ring-1 transition-transform hover:scale-110 ${color === "bg-stone-950" ? "ring-offset-2 ring-stone-950" : "ring-stone-200"}`}
+                key={color.name}
+                onClick={() => dispatch({ type: "toggle_color", payload: color.name })}
+                className={cn(
+                  "w-6 h-6 rounded-full ring-1 transition-all hover:scale-110",
+                  color.class,
+                  state.color.includes(color.name) ? "ring-offset-2 ring-primary" : "ring-stone-200"
+                )}
+                title={color.name}
               />
             ))}
-          </div>
-        </section>
-
-        {/* Rating */}
-        <section>
-          <h3 className="text-[11px] font-bold uppercase tracking-widest mb-4">Rating</h3>
-          <div className="flex flex-col gap-2">
-            <button className="flex gap-1 text-primary hover:opacity-70">
-              {[...Array(5)].map((_, i) => (
-                <span 
-                  key={i} 
-                  className="material-symbols-outlined text-xs" 
-                  style={{ fontVariationSettings: `'FILL' ${i < 4 ? 1 : 0}` }}
-                >
-                  star
-                </span>
-              ))}
-              <span className="text-[10px] ml-1">&amp; Up</span>
-            </button>
           </div>
         </section>
       </div>
 
       <button 
-        onClick={handleApply}
-        className="mt-auto py-4 bg-primary text-on-primary text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-primary/90 transition-all active:scale-95"
+        onClick={onClose}
+        className="py-4 bg-primary text-on-primary text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-primary/90 transition-all active:scale-95"
       >
-        Apply Filters
+        Show Results
       </button>
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-60"
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed inset-x-0 bottom-0 bg-surface z-70 rounded-t-3xl p-8 max-h-[85vh] overflow-y-auto"
+            >
+              {content}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    );
+  }
+
+  return (
+    <aside className="sticky top-20 h-[calc(100vh-5rem)] w-64 shrink-0 flex-col p-8 gap-6 bg-stone-50 dark:bg-stone-900 border-none hidden lg:flex">
+      {content}
     </aside>
   );
 };

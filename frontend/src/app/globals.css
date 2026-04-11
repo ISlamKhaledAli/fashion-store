@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 @import "tailwindcss";
 
 /* Force Tailwind v4 to use class-based dark mode only, disabling OS media queries */
@@ -6,10 +7,12 @@
 @theme {
   /* Colors - Derived from HTML Design System */
   --color-primary: #030304;
+  --color-on-primary: #ffffff;
   --color-primary-container: #1d1d1f;
   --color-on-primary-container: #868587;
   
   --color-secondary: #0058bc;
+  --color-on-secondary: #ffffff;
   --color-secondary-container: #0070eb;
   --color-on-secondary-container: #fefcff;
   

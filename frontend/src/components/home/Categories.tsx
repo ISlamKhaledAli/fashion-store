@@ -40,8 +40,7 @@ const FALLBACK_CATEGORIES = [
 ];
 
 export const Categories = () => {
-  const [categories, setCategories] = React.useState<any[]>(FALLBACK_CATEGORIES);
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [categories, setCategories] = React.useState<Category[]>(FALLBACK_CATEGORIES);
 
   React.useEffect(() => {
     const fetchCategories = async () => {

@@ -46,12 +46,12 @@ export const BrandStory = () => {
             The Manifesto
           </p>
           <blockquote className="text-4xl md:text-6xl font-medium text-white tracking-tighter leading-tight mb-16 italic">
-            "We do not design objects. We define the silence between them."
+            &quot;We do not design objects. We define the silence between them.&quot;
           </blockquote>
           <div className="flex items-center gap-6">
             <div className="h-1px w-12 bg-white/30"></div>
             <p className="text-white/80 font-medium tracking-wide">
-              Director's Cut 2024
+              Director&apos;s Cut 2024
             </p>
           </div>
         </motion.div>

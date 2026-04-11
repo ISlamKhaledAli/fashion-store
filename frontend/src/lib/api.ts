@@ -5,14 +5,12 @@ import {
   Category, 
   Order, 
   User, 
-  CartItem,
-  PaginationData 
 } from "@/types";
 
 export const authApi = {
-  login: (credentials: any) => 
+  login: (credentials: Record<string, unknown>) => 
     api.post<ApiResponse<{ user: User; accessToken: string; refreshToken: string }>>("/auth/login", credentials),
-  register: (data: any) => 
+  register: (data: Record<string, unknown>) => 
     api.post<ApiResponse<{ user: User; accessToken: string; refreshToken: string }>>("/auth/register", data),
   getMe: () => 
     api.get<ApiResponse<User>>("/auth/me"),
@@ -21,7 +19,7 @@ export const authApi = {
 };
 
 export const productApi = {
-  getAll: (params: any) => 
+  getAll: (params: Record<string, unknown>) => 
     api.get<ApiResponse<Product[]>>("/products", { params }),
   getBySlug: (slug: string) => 
     api.get<ApiResponse<Product>>(`/products/${slug}`),
@@ -35,36 +33,36 @@ export const categoryApi = {
 };
 
 export const cartApi = {
-  get: () => api.get<ApiResponse<any>>("/cart"),
+  get: () => api.get<ApiResponse<unknown>>("/cart"),
   addItem: (variantId: string, quantity: number) => 
-    api.post<ApiResponse<any>>("/cart", { variantId, quantity }),
+    api.post<ApiResponse<unknown>>("/cart", { variantId, quantity }),
   updateQuantity: (id: string, quantity: number) => 
-    api.put<ApiResponse<any>>(`/cart/${id}`, { quantity }),
+    api.put<ApiResponse<unknown>>(`/cart/${id}`, { quantity }),
   removeItem: (id: string) => 
-    api.delete<ApiResponse<any>>(`/cart/${id}`),
-  clear: () => api.delete<ApiResponse<any>>("/cart"),
+    api.delete<ApiResponse<unknown>>(`/cart/${id}`),
+  clear: () => api.delete<ApiResponse<unknown>>("/cart"),
 };
 
 export const orderApi = {
-  create: (data: any) => 
+  create: (data: Record<string, unknown>) => 
     api.post<ApiResponse<{ order: Order; clientSecret: string }>>("/orders", data),
-  getMine: (params: any) => 
+  getMine: (params: Record<string, unknown>) => 
     api.get<ApiResponse<Order[]>>("/orders/my-orders", { params }),
   getById: (id: string) => 
     api.get<ApiResponse<Order>>(`/orders/${id}`),
   cancel: (id: string) => 
-    api.put<ApiResponse<any>>(`/orders/${id}/cancel`),
+    api.put<ApiResponse<unknown>>(`/orders/${id}/cancel`),
 };
 
 export const adminApi = {
   getAnalytics: () => 
-    api.get<ApiResponse<any>>("/admin/analytics/overview"),
+    api.get<ApiResponse<unknown>>("/admin/analytics/overview"),
   getRevenue: () => 
-    api.get<ApiResponse<any>>("/admin/analytics/revenue"),
-  getOrders: (params: any) => 
+    api.get<ApiResponse<unknown>>("/admin/analytics/revenue"),
+  getOrders: (params: Record<string, unknown>) => 
     api.get<ApiResponse<Order[]>>("/admin/orders", { params }),
   updateOrderStatus: (id: string, status: string) => 
     api.put<ApiResponse<Order>>(`/admin/orders/${id}/status`, { status }),
   getCustomers: () => 
-    api.get<ApiResponse<any[]>>("/admin/customers"),
+    api.get<ApiResponse<unknown[]>>("/admin/customers"),
 };

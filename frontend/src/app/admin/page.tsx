@@ -1,10 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { 
-  LineChart, 
-  Line, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -13,7 +11,6 @@ import {
   AreaChart,
   Area 
 } from "recharts";
-import { adminApi } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 
@@ -28,7 +25,7 @@ const data = [
 ];
 
 export default function AdminDashboard() {
-  const [metrics, setMetrics] = useState({
+  const [metrics] = useState({
     totalRevenue: 124500,
     ordersToday: 84,
     newCustomers: 12,

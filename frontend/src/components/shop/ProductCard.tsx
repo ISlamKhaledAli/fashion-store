@@ -17,7 +17,6 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product, className, delay = 0, variant = "default" }: ProductCardProps) => {
   const { addItem, toggleDrawer } = useCartStore();
-  const [isHovered, setIsHovered] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -50,8 +49,7 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
   };
 
   const renderStars = (rating: number = 0, count: number = 0) => {
-    const fullStars = Math.floor(rating) || 5; // Defaulting to 5 for UI parity if 0 
-    // In a real app we'd use exact rating, but for visual parity with HTML we show a filled mockup if 0
+    const fullStars = Math.floor(rating) || 5; 
     return (
       <div className="flex items-center gap-1">
         {[...Array(5)].map((_, i) => (
@@ -64,7 +62,7 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
           </span>
         ))}
         <span className="text-[10px] text-on-surface-variant ml-1">
-          ({count || Math.floor(Math.random() * 50) + 10})
+          ({count})
         </span>
       </div>
     );

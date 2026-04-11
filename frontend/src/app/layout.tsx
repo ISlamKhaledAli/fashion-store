@@ -27,10 +27,6 @@ export default function RootLayout({
         <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f9f9fb" />
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#f9f9fb" />
         <meta name="darkreader-lock" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-        />
       </head>
       <body className="bg-surface text-on-surface" suppressHydrationWarning>
         <Navbar />

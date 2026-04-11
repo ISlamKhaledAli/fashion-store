@@ -1,185 +1,203 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { AnimatePresence } from "framer-motion";
+import React, { useReducer, useEffect, useState, Suspense, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/shop/ProductCard";
-import { FilterSidebar } from "@/components/shop/FilterSidebar";
-import { ProductGridHeader } from "@/components/shop/ProductGridHeader";
-import { productApi, categoryApi } from "@/lib/api";
-import { Product, Category } from "@/types";
-import { Button } from "@/components/ui/Button";
+import { FilterSidebar, FilterState } from "@/components/shop/FilterSidebar";
+import { ProductGrid } from "@/components/shop/ProductGrid";
+import { ActiveFilters } from "@/components/shop/ActiveFilters";
+import { ProductSkeleton } from "@/components/shop/ProductSkeleton";
+import { productApi } from "@/lib/api";
+import { Product } from "@/types";
 
-// Fallback products matching the HTML design exactly for the editorial list
-const FALLBACK_PRODUCTS: Product[] = [
-  {
-    id: "ep-1",
-    name: "Structured Wool Blazer",
-    slug: "structured-wool-blazer",
-    description: "Architectural wool blazer.",
-    price: 580,
-    featured: false,
-    categoryId: "1",
-    brandId: "1",
-    avgRating: 5,
-    reviewCount: 24,
-    createdAt: new Date().toISOString(),
-    images: [{ id: "i1", url: "https://lh3.googleusercontent.com/aida-public/AB6AXuBCJQky2aF_BKNWCteeuiSm8OIUvNBcMY89b0218nwMr5E1hSUPfQxV9XpMVh1HuoDdsIkc9Flv9KqJt51OncSAmtjzC2iljSglM-2q1ogtedaauly5LEgXGB3mEq9o3rebgDOc99kPObQF078DRFXJY7rtliah8g1--pD4-sC4Ze92yHuPCfbfjIEt8HehhGIOau3y4jQrdNoRVSHubRKOf2zykZt0MAa_5d_f6KDaDa3dH6DJJTNfvRSS5MnwtkFeV8bzbhqQx1Q", publicId: "p1", isMain: true }],
-    variants: [{ id: "v1", size: "M", color: "Black", stock: 10 }],
-    brand: { id: "1", name: "L'ARTISAN DU NORD", slug: "l-artisan-du-nord" }
-  },
-  {
-    id: "ep-2",
-    name: "Raw Edge Silk Scarf",
-    slug: "raw-edge-silk-scarf",
-    description: "Premium charcoal grey silk scarf.",
-    price: 225,
-    featured: false,
-    categoryId: "1",
-    brandId: "2",
-    avgRating: 4.5,
-    reviewCount: 18,
-    createdAt: new Date().toISOString(),
-    images: [{ id: "i2", url: "https://lh3.googleusercontent.com/aida-public/AB6AXuC_dUtT2ZFvFzwsxzx4uI_-GXrmU3LAb1EFZgbHDyLfjYJHZlnIzft8r44cjPheLBtiG0RsewrHM2kmWb6GOcciRg4pfYFHE4z9yuYGGv2AnBUlPKWeFBfk0OJUWvhOBtK3ieFIQC6-3Z9cMlq2fBZEU7cv6_OMtQWri-MHv4YtzKDcsdPc-t6Oq4exCkPBaas1e1uegvXjqUCuEK2xorIYstDyDaqvgBHdOWG4gcHmcuULvNkNL5usDirsPori_twgjNkPq7w6kIo", publicId: "p2", isMain: true }],
-    variants: [{ id: "v2", size: "OS", color: "Charcoal", stock: 5 }],
-    brand: { id: "2", name: "STUDIO NOIR", slug: "studio-noir" }
-  },
-  {
-    id: "ep-3",
-    name: "Calfskin Chelsea Boot",
-    slug: "calfskin-chelsea-boot",
-    description: "Black leather platform boots.",
-    price: 890,
-    featured: false,
-    categoryId: "1",
-    brandId: "3",
-    avgRating: 5,
-    reviewCount: 42,
-    createdAt: new Date().toISOString(),
-    images: [{ id: "i3", url: "https://lh3.googleusercontent.com/aida-public/AB6AXuAxZB-mLC06ibciSWUyYjT0lBr7uQiO5awDYg5MJIfdDPW3Vqo087_6JmAP7UuLLTUyXh_hoseXYp_tlVpaxdzpG7-StS8FjRBBd5AKR_Nga-ydiqCoCC6IMCwgAtigmNdi7DmoxFTlKEdJEdKO47y__nBWHmrr4LJ9W_WU7CjUbAPA63EFFah-DnBfhJrkbOOh0ewh0bQH3q6CUD0Tr8QpLmcq-Cyf-GdDmD12fmHLYU7xdcCEHrnAX5mLeSOVA3Sb_j69ErZcFro", publicId: "p3", isMain: true }],
-    variants: [{ id: "v3", size: "42", color: "Black", stock: 8 }],
-    brand: { id: "3", name: "OBJECTS OF DESIRE", slug: "objects-of-desire" }
-  },
-  {
-    id: "ep-4",
-    name: "Oversized Linen Shirt",
-    slug: "oversized-linen-shirt",
-    description: "Minimalist beige linen shirt.",
-    price: 340,
-    featured: false,
-    categoryId: "1",
-    brandId: "4",
-    avgRating: 4,
-    reviewCount: 12,
-    createdAt: new Date().toISOString(),
-    images: [{ id: "i4", url: "https://lh3.googleusercontent.com/aida-public/AB6AXuCEGJoHb5XGt7N4G7plcrpihMMfJwwzQ_6w9VqJsi2E8gfvGaNkGNMa9tOBLiUqv5wFJSkSolW6MYdLhN7V6cub-TFq7PyPQs9oqxDni7o74HBDt2QE8yXJlmKBDCatMQobu1YR25iA2-KV1NnGtb0b5XPdy9N3Sw3_32-bay4DZ0drb7zr1TOAkJH3rlJBh3lPNEoN9n1_dY6RiFlzoHCtU3UkWl0gJ6CbKDvGLPvNORpl1k0cl4PKv6uS01hdoYLAi1XM4MySIu8", publicId: "p4", isMain: true }],
-    variants: [{ id: "v4", size: "L", color: "Beige", stock: 15 }],
-    brand: { id: "4", name: "THE ARCHIVE", slug: "the-archive" }
-  },
-  {
-    id: "ep-5",
-    name: "Tan Suede Loafer",
-    slug: "tan-suede-loafer",
-    description: "High-end suede loafers.",
-    price: 410,
-    featured: false,
-    categoryId: "1",
-    brandId: "5",
-    avgRating: 5,
-    reviewCount: 31,
-    createdAt: new Date().toISOString(),
-    images: [{ id: "i5", url: "https://lh3.googleusercontent.com/aida-public/AB6AXuCsZWKrGeDOWGjeN2Y9Q-PfSq5Pq-v-WB7u-HBl8Bvqv4gffi44ZDkNcLLs2eLaPdIn47vV38efwnPLWBc8nt0lCXmCAXZ2Ju0-EcdRvBFToxVs4nS3Fw_ilcpfpdq32NrifVUNs1K-zXSzoUFTOIOVdMw7yattO_xyQZsof8IjL1-UuMduKLrZRBFyMdPlNGL-omNbHMb2XJQ6x-T-EPsjlcotnkGKzlOB_TqoyZmY3EWeYevrSBcmj0ekeJoYd-RWjs9xwdTFaGU", publicId: "p5", isMain: true }],
-    variants: [{ id: "v5", size: "43", color: "Tan", stock: 12 }],
-    brand: { id: "5", name: "PÉDALEUR", slug: "pedaleur" }
-  },
-  {
-    id: "ep-6",
-    name: "Sculptural Leather Tote",
-    slug: "sculptural-leather-tote",
-    description: "Handcrafted leather tote bag.",
-    price: 1200,
-    featured: false,
-    categoryId: "1",
-    brandId: "6",
-    avgRating: 4.5,
-    reviewCount: 56,
-    createdAt: new Date().toISOString(),
-    images: [{ id: "i6", url: "https://lh3.googleusercontent.com/aida-public/AB6AXuATRvT0aJAzjgTFSq375pxvOv9qEtUBrJwTMoAcDyioZVISU3HoQofeBD-oCCIRxlbcfZw6z0G9ca0KnAa2wy7aQWGmAKxAyw4bMRAysWMB2S813RlHjS9IPrkTKHgJDRdvzyAk6SsGx6Ag3nkco_mwNvf4BLwpCGb4kvzmAMkdfAV85Gkx4QsmXmPPHy3Zh0q4EYUhCN1xU77MiLiMYH3QLjYTU2UzRmmLeHJCngOPdfXuarrPrKUV9cTGoDMbq0MhuiLfPL_dS18", publicId: "p6", isMain: true }],
-    variants: [{ id: "v6", size: "OS", color: "Brown", stock: 4 }],
-    brand: { id: "6", name: "MATIÈRE PREMIÈRE", slug: "matiere-premiere" }
+type Action =
+  | { type: "toggle_category"; payload: string }
+  | { type: "toggle_brand"; payload: string }
+  | { type: "toggle_color"; payload: string }
+  | { type: "set_max_price"; payload: number }
+  | { type: "set_sort"; payload: string }
+  | { type: "reset" }
+  | { type: "sync_from_url"; payload: Partial<FilterState> };
+
+const initialState: FilterState = {
+  category: [],
+  brand: [],
+  size: [],
+  color: [],
+  minPrice: 0,
+  maxPrice: 2000,
+  sort: "createdAt:desc",
+};
+
+function filterReducer(state: FilterState, action: Action): FilterState {
+  switch (action.type) {
+    case "toggle_category":
+      return {
+        ...state,
+        category: state.category.includes(action.payload)
+          ? state.category.filter((c) => c !== action.payload)
+          : [...state.category, action.payload],
+      };
+    case "toggle_color":
+      return {
+        ...state,
+        color: state.color.includes(action.payload)
+          ? state.color.filter((c) => c !== action.payload)
+          : [...state.color, action.payload],
+      };
+    case "set_max_price":
+      return { ...state, maxPrice: action.payload };
+    case "set_sort":
+      return { ...state, sort: action.payload };
+    case "reset":
+      return initialState;
+    case "sync_from_url":
+      return { ...state, ...action.payload };
+    default:
+      return state;
   }
-];
+}
 
 function ProductsContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const [products, setProducts] = useState<Product[]>(FALLBACK_PRODUCTS);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isGridView, setIsGridView] = useState(true);
-  
-  const currentCategorySlug = searchParams.get("category");
-  const currentCategory = categories.find(c => c.slug === currentCategorySlug);
+  const [state, dispatch] = useReducer(filterReducer, initialState);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Sync URL to state on mount
+  useEffect(() => {
+    const params: Partial<FilterState> = {};
+    const cat = searchParams.get("category");
+    if (cat) params.category = cat.split(",");
+    const max = searchParams.get("maxPrice");
+    if (max) params.maxPrice = parseInt(max);
+    // Add other sync bits here...
+
+    if (Object.keys(params).length > 0) {
+      dispatch({ type: "sync_from_url", payload: params });
+    }
+  }, [searchParams]);
+
+  // Fetch products and update URL on state change
+  const fetchProducts = useCallback(async () => {
+    setIsLoading(true);
+    
+    // Update URL
+    const params = new URLSearchParams();
+    if (state.category.length) params.set("category", state.category.join(","));
+    if (state.color.length) params.set("color", state.color.join(","));
+    if (state.maxPrice < 2000) params.set("maxPrice", state.maxPrice.toString());
+    params.set("sort", state.sort);
+    
+    router.push(`/products?${params.toString()}`, { scroll: false });
+
+    try {
+      const res = await productApi.getAll({
+        category: state.category.join(","),
+        color: state.color.join(","),
+        maxPrice: state.maxPrice,
+        sort: state.sort,
+        limit: 12,
+      });
+      
+      if (res.data.success) {
+        setProducts(res.data.data);
+      }
+    } catch (error) {
+      console.error("Fetch error:", error);
+    } finally {
+      // Small artificial delay to show transition if it's too fast
+      setTimeout(() => setIsLoading(false), 300);
+    }
+  }, [state, router]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      // In a real scenario we use the API, falling back to static 
-      try {
-        const catRes = await categoryApi.getAll();
-        if (catRes.data.success && catRes.data.data.length > 0) {
-          setCategories(catRes.data.data);
-        }
-        
-        const prodRes = await productApi.getAll({ category: currentCategorySlug });
-        if (prodRes.data.success && prodRes.data.data.length > 0) {
-          setProducts(prodRes.data.data);
-        }
-      } catch (error) {
-        // Fallback already populated
-      }
-    };
-
-    fetchData();
-  }, [currentCategorySlug]);
+    fetchProducts();
+  }, [fetchProducts]);
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen">
-      <FilterSidebar />
+      {/* Sidebar - Desktop */}
+      <FilterSidebar state={state} dispatch={dispatch} />
+      
+      {/* Sidebar - Mobile Drawer */}
+      <FilterSidebar 
+        state={state} 
+        dispatch={dispatch} 
+        isMobile 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+      />
 
       <section className="flex-1 p-8 lg:p-12">
-        <ProductGridHeader 
-          totalProducts={products.length}
-          categoryName={currentCategory ? currentCategory.name : "Summer Editorial"}
-          isGridView={isGridView}
-          onViewChange={setIsGridView}
-        />
-
-        <div className={`grid gap-y-16 gap-x-8 ${isGridView ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3" : "grid-cols-1"}`}>
-          <AnimatePresence mode="popLayout">
-            {isLoading ? (
-              Array(6).fill(0).map((_, i) => (
-                <div key={i} className="aspect-3/4 bg-surface-container-high animate-pulse" />
-              ))
-            ) : (
-              products.map((product, index) => (
-                <ProductCard 
-                  key={product.id} 
-                  product={product} 
-                  variant="editorial"
-                  delay={index * 0.1}
-                  className={!isGridView ? "md:flex gap-8 items-center" : ""}
-                />
-              ))
-            )}
-          </AnimatePresence>
-        </div>
-        
-        {!isLoading && products.length === 0 && (
-          <div className="py-24 text-center space-y-4">
-            <p className="text-on-surface-variant">No items found in this collection.</p>
-            <Button variant="outline" onClick={() => window.history.back()}>Go Back</Button>
+        {/* Header Tools */}
+        <header className="flex flex-col md:flex-row justify-between items-end gap-6 mb-12">
+          <div className="space-y-4 w-full">
+            <h1 className="text-4xl lg:text-6xl font-medium tracking-tighter">
+              Collections
+            </h1>
+            <div className="flex items-center gap-4 text-xs uppercase tracking-widest text-on-surface-variant">
+              <span className="font-bold text-on-surface">{products.length} Products</span>
+              <span className="w-8 h-1px bg-outline-variant"></span>
+              <button 
+                onClick={() => setIsSidebarOpen(true)}
+                className="lg:hidden flex items-center gap-2 font-bold text-primary"
+              >
+                <span className="material-symbols-outlined text-sm">filter_list</span>
+                Filters
+              </button>
+            </div>
           </div>
-        )}
+          
+          <div className="flex items-center gap-8 border-b border-outline-variant/30 pb-2 w-full md:w-auto overflow-x-auto">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-widest shrink-0">
+              <span className="text-on-surface-variant">Sort:</span>
+              <select 
+                value={state.sort}
+                onChange={(e) => dispatch({ type: "set_sort", payload: e.target.value })}
+                className="bg-transparent border-none focus:ring-0 p-0 pr-6 text-on-surface font-bold text-xs uppercase tracking-widest cursor-pointer outline-none"
+              >
+                <option value="createdAt:desc">Newest Arrivals</option>
+                <option value="price:asc">Price Low-High</option>
+                <option value="price:desc">Price High-Low</option>
+                <option value="createdAt:asc">Oldest First</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-4 shrink-0">
+              <button className="text-primary"><span className="material-symbols-outlined text-xl">grid_view</span></button>
+              <button className="text-on-surface-variant hover:text-primary transition-colors"><span className="material-symbols-outlined text-xl">view_list</span></button>
+            </div>
+          </div>
+        </header>
 
+        {/* Active Filters Row */}
+        <ActiveFilters state={state} dispatch={dispatch} />
+
+        {/* Animated Product Grid */}
+        <ProductGrid isLoading={isLoading}>
+          {isLoading ? (
+            Array(6).fill(0).map((_, i) => (
+              <ProductSkeleton key={i} />
+            ))
+          ) : products.length > 0 ? (
+            products.map((product, index) => (
+              <ProductCard 
+                key={product.id} 
+                product={product} 
+                variant="editorial" 
+                delay={index * 0.06} // Exactly 60ms stagger per item
+              />
+            ))
+          ) : (
+            <div className="col-span-full py-32 text-center text-stone-400 font-medium tracking-wide">
+              No pieces found matching your criteria.
+            </div>
+          )}
+        </ProductGrid>
+
+        {/* Simple Pagination Mock */}
         {products.length > 0 && (
           <footer className="mt-24 flex justify-center items-center gap-8 border-t border-outline-variant/20 pt-12">
             <button className="text-xs uppercase tracking-widest text-on-surface-variant hover:text-primary flex items-center gap-2">
@@ -187,10 +205,7 @@ function ProductsContent() {
             </button>
             <div className="flex items-center gap-6 text-xs font-bold tracking-widest">
               <span className="text-primary border-b border-primary pb-1">01</span>
-              <span className="text-on-surface-variant hover:text-primary cursor-pointer transition-colors">02</span>
-              <span className="text-on-surface-variant hover:text-primary cursor-pointer transition-colors">03</span>
-              <span className="text-on-surface-variant">...</span>
-              <span className="text-on-surface-variant hover:text-primary cursor-pointer transition-colors">12</span>
+              <span className="text-on-surface-variant cursor-not-allowed opacity-50">02</span>
             </div>
             <button className="text-xs uppercase tracking-widest text-on-surface-variant hover:text-primary flex items-center gap-2">
               Next <span className="material-symbols-outlined text-sm">east</span>
@@ -204,10 +219,8 @@ function ProductsContent() {
 
 export default function ProductsPage() {
   return (
-    <div className="pt-20">
-      <Suspense fallback={<div className="h-screen w-full bg-surface"></div>}>
-        <ProductsContent />
-      </Suspense>
-    </div>
+    <Suspense fallback={<div className="h-screen bg-surface" />}>
+      <ProductsContent />
+    </Suspense>
   );
 }

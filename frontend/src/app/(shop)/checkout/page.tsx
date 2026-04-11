@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
 import { useCartStore } from "@/store/cartStore";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { orderApi } from "@/lib/api";
@@ -49,8 +48,9 @@ export default function CheckoutPage() {
         clearCart();
         router.push(`/order-success?id=${response.data.data.order.id}`);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Checkout failed. Please check your details.");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? (err as { response?: { data?: { message?: string } } }).response?.data?.message : "Checkout failed. Please check your details.";
+      setError(errorMessage || "Checkout failed. Please check your details.");
     } finally {
       setIsProcessing(false);
     }
