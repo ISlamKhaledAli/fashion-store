@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { ShoppingBag, User, Menu } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
@@ -29,7 +30,7 @@ export const Navbar = () => {
   }, []);
 
   useEffect(() => {
-    return scrollY.onChange((latest) => {
+    return scrollY.on("change", (latest) => {
       setIsScrolled(latest > 80);
     });
   }, [scrollY]);
@@ -79,9 +80,9 @@ export const Navbar = () => {
       <div className="flex items-center gap-6">
         <button
           onClick={() => toggleDrawer(true)}
-          className="relative material-symbols-outlined text-on-surface hover:scale-95 transition-all duration-500 ease-out"
+          className="relative text-on-surface hover:scale-95 transition-all duration-500 ease-out flex items-center justify-center"
         >
-          shopping_bag
+          <ShoppingBag size={20} strokeWidth={1.5} />
           <AnimatePresence>
             {isMounted && getTotalItems() > 0 && (
               <motion.span
@@ -98,14 +99,14 @@ export const Navbar = () => {
 
         <Link
           href={isMounted && isAuthenticated ? "/account" : "/login"}
-          className="material-symbols-outlined text-on-surface hover:scale-95 transition-all duration-500 ease-out"
+          className="text-on-surface hover:scale-95 transition-all duration-500 ease-out flex items-center justify-center"
         >
-          person
+          <User size={20} strokeWidth={1.5} />
         </Link>
         
         {/* Mobile Menu Toggle */}
-        <button className="md:hidden material-symbols-outlined text-on-surface">
-          menu
+        <button className="md:hidden text-on-surface flex items-center justify-center">
+          <Menu size={20} strokeWidth={1.5} />
         </button>
       </div>
     </motion.nav>

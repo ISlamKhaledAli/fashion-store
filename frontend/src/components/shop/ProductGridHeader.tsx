@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { X, LayoutGrid, List } from "lucide-react";
 
 interface ProductGridHeaderProps {
   totalProducts?: number;
@@ -36,7 +37,7 @@ export const ProductGridHeader = ({
         </h1>
         <div className="flex flex-wrap items-center gap-4 text-xs uppercase tracking-widest text-on-surface-variant">
           <span className="font-bold text-on-surface">{totalProducts} Products</span>
-          <span className="w-8 h-[1px] bg-outline-variant hidden sm:block"></span>
+          <span className="w-8 h-1px bg-outline-variant hidden sm:block"></span>
           
           <div className="flex flex-wrap gap-2">
             {activeFilters.map(filter => (
@@ -45,8 +46,8 @@ export const ProductGridHeader = ({
                 className="bg-surface-container-low px-3 py-1 flex items-center gap-2 rounded-full"
               >
                 {filter.label} 
-                <button onClick={() => removeFilter(filter.id)} className="hover:text-primary transition-colors">
-                  <span className="material-symbols-outlined text-xs">close</span>
+                <button onClick={() => removeFilter(filter.id)} className="hover:text-primary transition-colors flex items-center justify-center">
+                  <X size={12} strokeWidth={2} />
                 </button>
               </span>
             ))}
@@ -68,17 +69,17 @@ export const ProductGridHeader = ({
         <div className="flex items-center gap-4 shrink-0">
           <button 
             onClick={() => onViewChange?.(true)}
-            className={`transition-colors ${isGridView ? "text-primary opacity-100" : "text-on-surface-variant hover:text-primary"}`}
+            className={`transition-colors flex items-center justify-center ${isGridView ? "text-primary opacity-100" : "text-on-surface-variant hover:text-primary"}`}
             aria-label="Grid view"
           >
-            <span className="material-symbols-outlined text-xl">grid_view</span>
+            <LayoutGrid size={20} strokeWidth={1.5} />
           </button>
           <button 
             onClick={() => onViewChange?.(false)}
-            className={`transition-colors ${!isGridView ? "text-primary opacity-100" : "text-on-surface-variant hover:text-primary"}`}
+            className={`transition-colors flex items-center justify-center ${!isGridView ? "text-primary opacity-100" : "text-on-surface-variant hover:text-primary"}`}
             aria-label="List view"
           >
-            <span className="material-symbols-outlined text-xl">view_list</span>
+            <List size={20} strokeWidth={1.5} />
           </button>
         </div>
       </div>

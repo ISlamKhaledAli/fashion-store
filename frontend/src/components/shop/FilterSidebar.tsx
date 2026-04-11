@@ -1,8 +1,8 @@
-"use client";
-
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { categoryApi, productApi } from "@/lib/api";
+import { Category } from "@/types";
 
 export interface FilterState {
   category: string[];
@@ -33,13 +33,33 @@ interface FilterSidebarProps {
 }
 
 export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: FilterSidebarProps) => {
-  const categories = ["Clothing", "Accessories", "New Arrivals"];
-  const colors = [
-    { name: "Black", class: "bg-stone-950" },
-    { name: "White", class: "bg-stone-100" },
-    { name: "Grey", class: "bg-stone-400" },
-    { name: "Tan", class: "bg-[#D2B48C]" },
-  ];
+  const [categories, setCategories] = useState<string[]>([]);
+  const [colors, setColors] = useState<{ name: string; class: string }[]>([]);
+  
+  useEffect(() => {
+    const fetchFilterData = async () => {
+      try {
+        // Fetch Categories
+        const catRes = await categoryApi.getAll();
+        if (catRes.data.success) {
+          setCategories(catRes.data.data.map((c: Category) => c.name));
+        }
+
+        // Fetch Product Filters (Colors)
+        const filterRes = await productApi.getFilters();
+        if (filterRes.data.success) {
+          setColors(filterRes.data.data.colors.map((c: { name: string; hex: string }) => ({
+            name: c.name,
+            class: "", // We'll use style instead of class for dynamic hex
+            hex: c.hex
+          })));
+        }
+      } catch (error) {
+        console.error("Failed to fetch filter data:", error);
+      }
+    };
+    fetchFilterData();
+  }, []);
 
   const content = (
     <div className="space-y-8 flex flex-col h-full">
@@ -97,15 +117,15 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
         <section>
           <h3 className="text-[11px] font-bold uppercase tracking-widest mb-4">Colors</h3>
           <div className="flex flex-wrap gap-3">
-            {colors.map((color) => (
+            {(colors as any[]).map((color) => (
               <button 
                 key={color.name}
                 onClick={() => dispatch({ type: "toggle_color", payload: color.name })}
                 className={cn(
                   "w-6 h-6 rounded-full ring-1 transition-all hover:scale-110",
-                  color.class,
                   state.color.includes(color.name) ? "ring-offset-2 ring-primary" : "ring-stone-200"
                 )}
+                style={{ backgroundColor: color.hex }}
                 title={color.name}
               />
             ))}

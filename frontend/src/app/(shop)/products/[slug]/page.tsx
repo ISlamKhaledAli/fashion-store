@@ -9,6 +9,7 @@ import { ProductStorytelling } from "@/components/shop/pdp/ProductStorytelling";
 import { ProductAccordions } from "@/components/shop/pdp/ProductAccordions";
 import { ProductReviews } from "@/components/shop/pdp/ProductReviews";
 import { ProductCard } from "@/components/shop/ProductCard";
+import { Leaf, Compass, History, Snowflake, ArrowLeft, ArrowRight } from "lucide-react";
 import Skeleton from "@/components/ui/Skeleton";
 
 interface PageProps {
@@ -75,22 +76,22 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   const stories = [
     {
-      icon: "eco",
+      icon: Leaf,
       title: "Virgin Wool Blend",
       description: product.description || "Sourced from the finest Italian mills, maintaining natural lanolin for superior weather resistance and a soft hand-feel.",
     },
     {
-      icon: "architecture",
+      icon: Compass,
       title: "Anatomical Tailoring",
       description: "Developed over eighteen months, our proprietary fit pattern follows the natural curvature of the spine and shoulders.",
     },
     {
-      icon: "history",
+      icon: History,
       title: "Heirloom Quality",
       description: "Every seam is reinforced with silk-wrapped thread. Designed to be passed down through generations.",
     },
     {
-      icon: "ac_unit",
+      icon: Snowflake,
       title: "Thermal Regulation",
       description: "The dense weave provides natural insulation for temperatures as low as -10°C while remaining breathable.",
     },
@@ -131,10 +132,10 @@ export default function ProductDetailPage({ params }: PageProps) {
               </div>
               <div className="hidden md:flex gap-4">
                 <button className="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:bg-white transition-all active:scale-95">
-                  <span className="material-symbols-outlined">west</span>
+                  <ArrowLeft size={20} strokeWidth={1.5} />
                 </button>
                 <button className="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:bg-white transition-all active:scale-95">
-                  <span className="material-symbols-outlined">east</span>
+                  <ArrowRight size={20} strokeWidth={1.5} />
                 </button>
               </div>
             </div>

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Plus } from "lucide-react";
 
 interface AccordionItemProps {
   title: string;
@@ -20,12 +21,12 @@ const AccordionItem = ({ title, children, isOpen, onToggle }: AccordionItemProps
         <span className="text-lg font-medium text-on-surface tracking-tight">
           {title}
         </span>
-        <motion.span
+        <motion.div
           animate={{ rotate: isOpen ? 45 : 0 }}
-          className="material-symbols-outlined text-zinc-400 group-hover:text-primary transition-colors"
+          className="text-stone-400 group-hover:text-primary transition-colors flex items-center justify-center font-bold"
         >
-          add
-        </motion.span>
+          <Plus size={20} strokeWidth={2} />
+        </motion.div>
       </button>
 
       <AnimatePresence initial={false}>

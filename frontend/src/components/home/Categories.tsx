@@ -91,6 +91,8 @@ export const Categories = () => {
                   src={category.image || ""}
                   alt={category.name}
                   fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  priority={index === 0}
                   className="object-cover transition-transform duration-[0.6s] cinematic-ease group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 border-1px border-white/20" />

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { X } from "lucide-react";
 import { FilterState, FilterAction } from "./FilterSidebar";
 
 interface ActiveFiltersProps {
@@ -54,9 +55,9 @@ export const ActiveFilters = ({ state, dispatch }: ActiveFiltersProps) => {
           {item.label}
           <button 
             onClick={item.onRemove} 
-            className="hover:text-primary transition-colors flex items-center"
+            className="hover:text-primary transition-colors flex items-center justify-center p-0.5"
           >
-            <span className="material-symbols-outlined text-[10px]">close</span>
+            <X size={10} strokeWidth={2.5} />
           </button>
         </span>
       ))}

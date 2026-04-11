@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Product } from "@/types";
 import { formatCurrency, cn } from "@/lib/utils";
+import { Star, Minus, Plus, Heart, Truck, CreditCard, Apple, Smartphone } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 
 interface ProductInfoProps {
@@ -55,15 +56,17 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
           {product.name}
         </h1>
         <div className="flex items-center gap-3">
-          <div className="flex text-primary">
+          <div className="flex gap-1 text-primary">
             {[...Array(5)].map((_, i) => (
-              <span 
+              <Star 
                 key={i} 
-                className="material-symbols-outlined text-sm"
-                style={{ fontVariationSettings: `'FILL' ${i < Math.floor(product.avgRating || 4.5) ? 1 : 0}` }}
-              >
-                star
-              </span>
+                size={14}
+                className={cn(
+                  "transition-all",
+                  i < Math.floor(product.avgRating || 4.5) ? "fill-primary text-primary" : "text-outline-variant"
+                )}
+                strokeWidth={1.5}
+              />
             ))}
           </div>
           <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mt-0.5">
@@ -137,16 +140,16 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
         <div className="flex items-center border border-outline-variant px-4 py-2 bg-white">
           <button 
             onClick={() => setQuantity(Math.max(1, quantity - 1))}
-            className="p-1 hover:text-primary transition-colors"
+            className="p-1 hover:text-primary transition-colors flex items-center"
           >
-            <span className="material-symbols-outlined text-lg">remove</span>
+            <Minus size={18} strokeWidth={1.5} />
           </button>
           <span className="mx-6 text-sm font-medium w-4 text-center">{quantity}</span>
           <button 
             onClick={() => setQuantity(quantity + 1)}
-            className="p-1 hover:text-primary transition-colors"
+            className="p-1 hover:text-primary transition-colors flex items-center"
           >
-            <span className="material-symbols-outlined text-lg">add</span>
+            <Plus size={18} strokeWidth={1.5} />
           </button>
         </div>
         <button
@@ -159,23 +162,25 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
         <button 
           onClick={() => setIsFavorite(!isFavorite)}
           className={cn(
-            "p-4 border border-outline-variant transition-all hover:bg-surface-container",
+            "p-4 border border-outline-variant transition-all hover:bg-surface-container flex items-center justify-center",
             isFavorite && "text-error"
           )}
         >
-          <span className={cn(
-            "material-symbols-outlined transition-all",
-            isFavorite && "fill-[1]"
-          )}>
-            favorite
-          </span>
+          <Heart 
+            size={20} 
+            className={cn(
+              "transition-all",
+              isFavorite && "fill-current"
+            )}
+            strokeWidth={1.5}
+          />
         </button>
       </div>
 
       {/* Shipping Info */}
       <div className="pt-8 border-t border-surface-container space-y-6">
         <div className="flex items-start gap-4">
-          <span className="material-symbols-outlined text-on-surface-variant">local_shipping</span>
+          <Truck className="text-on-surface-variant" size={20} strokeWidth={1.5} />
           <div className="space-y-1">
             <p className="text-sm font-medium">Carbon-Neutral Shipping</p>
             <p className="text-xs text-on-surface-variant">Complimentary delivery on all orders over $500.</p>
@@ -183,9 +188,9 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
         </div>
         
         <div className="flex gap-6 items-center opacity-40 grayscale hover:opacity-100 transition-all duration-500">
-          <span className="material-symbols-outlined text-2xl">credit_card</span>
-          <span className="material-symbols-outlined text-2xl">apple_pay</span>
-          <span className="material-symbols-outlined text-2xl">google_pay</span>
+          <CreditCard size={24} strokeWidth={1.5} />
+          <Apple size={24} strokeWidth={1.5} />
+          <Smartphone size={24} strokeWidth={1.5} />
         </div>
       </div>
     </div>

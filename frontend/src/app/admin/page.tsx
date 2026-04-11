@@ -11,6 +11,7 @@ import {
   AreaChart,
   Area 
 } from "recharts";
+import { TrendingUp } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 
@@ -61,7 +62,7 @@ export default function AdminDashboard() {
               </span>
               <span className="text-green-600 text-[10px] font-bold flex items-center">
                 {metric.trend}
-                <span className="material-symbols-outlined text-[12px] ml-0.5">trending_up</span>
+                <TrendingUp size={12} className="ml-0.5" strokeWidth={2} />
               </span>
             </div>
             <div className="text-3xl font-bold tracking-tighter text-on-surface">

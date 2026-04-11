@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useReducer, useEffect, useState, Suspense, useCallback } from "react";
+import React, { useReducer, useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { FilterSidebar, FilterState } from "@/components/shop/FilterSidebar";
@@ -9,6 +9,7 @@ import { ActiveFilters } from "@/components/shop/ActiveFilters";
 import { ProductSkeleton } from "@/components/shop/ProductSkeleton";
 import { productApi } from "@/lib/api";
 import { Product } from "@/types";
+import { Filter, LayoutGrid, List, ArrowLeft, ArrowRight } from "lucide-react";
 
 type Action =
   | { type: "toggle_category"; payload: string }
@@ -65,57 +66,91 @@ function ProductsContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const isInitialMount = React.useRef(true);
+  const fetchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  // Sync URL to state on mount
+  // Single mount effect: sync URL → fetch once
   useEffect(() => {
     const params: Partial<FilterState> = {};
     const cat = searchParams.get("category");
     if (cat) params.category = cat.split(",");
     const max = searchParams.get("maxPrice");
     if (max) params.maxPrice = parseInt(max);
-    // Add other sync bits here...
 
     if (Object.keys(params).length > 0) {
       dispatch({ type: "sync_from_url", payload: params });
     }
-  }, [searchParams]);
 
-  // Fetch products and update URL on state change
-  const fetchProducts = useCallback(async () => {
-    setIsLoading(true);
-    
-    // Update URL
-    const params = new URLSearchParams();
-    if (state.category.length) params.set("category", state.category.join(","));
-    if (state.color.length) params.set("color", state.color.join(","));
-    if (state.maxPrice < 2000) params.set("maxPrice", state.maxPrice.toString());
-    params.set("sort", state.sort);
-    
-    router.push(`/products?${params.toString()}`, { scroll: false });
-
-    try {
-      const res = await productApi.getAll({
-        category: state.category.join(","),
-        color: state.color.join(","),
-        maxPrice: state.maxPrice,
-        sort: state.sort,
-        limit: 12,
-      });
-      
-      if (res.data.success) {
-        setProducts(res.data.data);
+    // Initial fetch using URL params directly
+    const fetchInitial = async () => {
+      setIsLoading(true);
+      try {
+        const res = await productApi.getAll({
+          category: cat || "",
+          color: "",
+          maxPrice: max ? parseInt(max) : 2000,
+          sort: "createdAt:desc",
+          limit: 12,
+        });
+        if (res.data.success) {
+          setProducts(res.data.data);
+        }
+      } catch (error) {
+        console.error("Fetch error:", error);
+      } finally {
+        setTimeout(() => setIsLoading(false), 300);
       }
-    } catch (error) {
-      console.error("Fetch error:", error);
-    } finally {
-      // Small artificial delay to show transition if it's too fast
-      setTimeout(() => setIsLoading(false), 300);
-    }
-  }, [state, router]);
+    };
 
+    fetchInitial().then(() => {
+      // Only after the first fetch completes, allow the debounced effect to run
+      isInitialMount.current = false;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Debounced fetch on subsequent filter state changes only
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    if (isInitialMount.current) return;
+
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+
+    fetchTimeoutRef.current = setTimeout(async () => {
+      setIsLoading(true);
+
+      const params = new URLSearchParams();
+      if (state.category.length) params.set("category", state.category.join(","));
+      if (state.color.length) params.set("color", state.color.join(","));
+      if (state.maxPrice < 2000) params.set("maxPrice", state.maxPrice.toString());
+      params.set("sort", state.sort);
+      router.replace(`/products?${params.toString()}`, { scroll: false });
+
+      try {
+        const res = await productApi.getAll({
+          category: state.category.map(c => c.trim()).join(","),
+          color: state.color.map(c => c.trim()).join(","),
+          maxPrice: state.maxPrice,
+          sort: state.sort,
+          limit: 12,
+        });
+        if (res.data.success) {
+          setProducts(res.data.data);
+        }
+      } catch (error) {
+        console.error("Fetch error:", error);
+      } finally {
+        setTimeout(() => setIsLoading(false), 300);
+      }
+    }, 150);
+
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
+  }, [state, router]);
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen">
@@ -145,7 +180,7 @@ function ProductsContent() {
                 onClick={() => setIsSidebarOpen(true)}
                 className="lg:hidden flex items-center gap-2 font-bold text-primary"
               >
-                <span className="material-symbols-outlined text-sm">filter_list</span>
+                <Filter size={14} strokeWidth={2} />
                 Filters
               </button>
             </div>
@@ -166,8 +201,12 @@ function ProductsContent() {
               </select>
             </div>
             <div className="flex items-center gap-4 shrink-0">
-              <button className="text-primary"><span className="material-symbols-outlined text-xl">grid_view</span></button>
-              <button className="text-on-surface-variant hover:text-primary transition-colors"><span className="material-symbols-outlined text-xl">view_list</span></button>
+              <button className="text-primary flex items-center justify-center">
+                <LayoutGrid size={20} strokeWidth={1.5} />
+              </button>
+              <button className="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center">
+                <List size={20} strokeWidth={1.5} />
+              </button>
             </div>
           </div>
         </header>
@@ -201,14 +240,14 @@ function ProductsContent() {
         {products.length > 0 && (
           <footer className="mt-24 flex justify-center items-center gap-8 border-t border-outline-variant/20 pt-12">
             <button className="text-xs uppercase tracking-widest text-on-surface-variant hover:text-primary flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm">west</span> Prev
+              <ArrowLeft size={14} strokeWidth={1.5} /> Prev
             </button>
             <div className="flex items-center gap-6 text-xs font-bold tracking-widest">
               <span className="text-primary border-b border-primary pb-1">01</span>
               <span className="text-on-surface-variant cursor-not-allowed opacity-50">02</span>
             </div>
             <button className="text-xs uppercase tracking-widest text-on-surface-variant hover:text-primary flex items-center gap-2">
-              Next <span className="material-symbols-outlined text-sm">east</span>
+              Next <ArrowRight size={14} strokeWidth={1.5} />
             </button>
           </footer>
         )}

@@ -7,6 +7,7 @@ import { NotFoundError } from "../utils/AppError";
 
 export const getProducts = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    console.log("[DEBUG] Incoming Products Query:", req.query);
     const { category, brand, minPrice, maxPrice, search, sort, page, limit, featured, color } = req.query;
 
     const { skip, limit: take, page: currentPage } = getPagination({
@@ -19,18 +20,37 @@ export const getProducts = async (req: Request, res: Response, next: NextFunctio
     };
 
     if (category) {
-      const cats = String(category).split(",");
-      where.category = cats.length > 1 ? { name: { in: cats } } : { name: cats[0] };
+      const cats = String(category).split(",").map(c => c.trim());
+      // use OR with mode: insensitive to support multiple categories correctly
+      where.category = {
+        OR: cats.map(cat => ({
+          name: {
+            equals: cat,
+            mode: "insensitive"
+          }
+        }))
+      };
     }
-    if (brand) where.brand = { slug: String(brand) };
+
+    if (brand) {
+      where.brand = {
+        OR: [
+          { slug: { equals: String(brand), mode: "insensitive" } },
+          { name: { equals: String(brand), mode: "insensitive" } }
+        ]
+      };
+    }
+
     if (featured !== undefined) {
       where.featured = String(featured) === "true";
     }
+
     if (minPrice || maxPrice) {
       where.price = {};
       if (minPrice) where.price.gte = Number(minPrice);
       if (maxPrice) where.price.lte = Number(maxPrice);
     }
+
     if (search) {
       where.OR = [
         { name: { contains: String(search), mode: "insensitive" } },
@@ -39,11 +59,18 @@ export const getProducts = async (req: Request, res: Response, next: NextFunctio
     }
     
     if (color) {
-      const colors = String(color).split(",");
+      const colors = String(color).split(",").map(c => c.trim());
       where.variants = {
-        some: { color: { in: colors } }
+        some: { 
+          color: { 
+            in: colors,
+            mode: "insensitive"
+          } 
+        }
       };
     }
+
+    console.log("[DEBUG] Prisma Where Clause:", JSON.stringify(where, null, 2));
 
     const orderBy: any = {};
     if (sort) {
@@ -67,6 +94,8 @@ export const getProducts = async (req: Request, res: Response, next: NextFunctio
       }),
       prisma.product.count({ where }),
     ]);
+
+    console.log(`[DEBUG] Found ${products.length} products (Total: ${total})`);
 
     const pagination = calculatePagination(total, currentPage, take);
 
@@ -206,3 +235,30 @@ export const deleteProduct = async (req: Request, res: Response, next: NextFunct
     next(error);
   }
 };
+
+export const getProductFilters = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const variants = await prisma.variant.findMany({
+      distinct: ["color"],
+      select: {
+        color: true,
+        colorHex: true,
+      },
+    });
+
+    const colors = variants.map(v => ({
+      name: v.color,
+      hex: v.colorHex || "#000000"
+    }));
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      data: { colors },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

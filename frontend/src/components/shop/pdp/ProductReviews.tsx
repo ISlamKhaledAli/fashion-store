@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import { Star } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Review {
   id: string;
@@ -45,15 +47,14 @@ export const ProductReviews = () => {
         <div className="lg:col-span-1">
           <h2 className="text-3xl font-medium mb-6 tracking-tight">User Reviews</h2>
           <div className="text-6xl font-bold mb-2 tracking-tighter">4.8</div>
-          <div className="flex text-primary mb-4">
+          <div className="flex gap-1 text-primary mb-4">
             {[...Array(5)].map((_, i) => (
-              <span 
+              <Star 
                 key={i} 
-                className="material-symbols-outlined"
-                style={{ fontVariationSettings: "'FILL' 1" }}
-              >
-                star
-              </span>
+                size={20}
+                className="fill-primary text-primary"
+                strokeWidth={1.5}
+              />
             ))}
           </div>
           <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em]">
@@ -76,15 +77,17 @@ export const ProductReviews = () => {
                     </p>
                   )}
                 </div>
-                <div className="flex text-primary text-sm">
+                <div className="flex gap-0.5 text-primary text-sm">
                    {[...Array(5)].map((_, i) => (
-                    <span 
+                    <Star 
                       key={i} 
-                      className="material-symbols-outlined text-xs"
-                      style={{ fontVariationSettings: `'FILL' ${i < review.rating ? 1 : 0}` }}
-                    >
-                      star
-                    </span>
+                      size={12}
+                      className={cn(
+                        "transition-all",
+                        i < review.rating ? "fill-primary text-primary" : "text-outline-variant"
+                      )}
+                      strokeWidth={1.5}
+                    />
                   ))}
                 </div>
               </div>

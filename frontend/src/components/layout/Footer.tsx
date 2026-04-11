@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { Globe, Share2 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 
 export const Footer = () => {
@@ -73,12 +74,8 @@ export const Footer = () => {
             © {new Date().getFullYear()} Curator Editorial. All Rights Reserved.
           </p>
           <div className="flex gap-8">
-            <span className="material-symbols-outlined text-outline cursor-pointer hover:text-primary transition-colors">
-              language
-            </span>
-            <span className="material-symbols-outlined text-outline cursor-pointer hover:text-primary transition-colors">
-              share
-            </span>
+            <Globe className="text-on-surface-variant/40 cursor-pointer hover:text-primary transition-colors" size={20} strokeWidth={1.5} />
+            <Share2 className="text-on-surface-variant/40 cursor-pointer hover:text-primary transition-colors" size={20} strokeWidth={1.5} />
           </div>
         </div>
       </div>

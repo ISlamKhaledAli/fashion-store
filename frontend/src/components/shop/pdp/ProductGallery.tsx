@@ -31,6 +31,7 @@ export const ProductGallery = ({ images }: ProductGalleryProps) => {
               src={images[activeImage]?.url}
               alt={images[activeImage]?.alt || "Product image"}
               fill
+              sizes="(max-width: 1024px) 100vw, 58vw"
               className="object-cover transition-transform duration-[1.2s] cinematic-ease group-hover:scale-110"
               priority
             />
@@ -53,6 +54,7 @@ export const ProductGallery = ({ images }: ProductGalleryProps) => {
               src={img.url}
               alt={img.alt || `Thumbnail ${idx + 1}`}
               fill
+              sizes="10vw"
               className="object-cover"
             />
           </button>

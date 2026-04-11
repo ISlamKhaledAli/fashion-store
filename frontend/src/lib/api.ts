@@ -25,6 +25,8 @@ export const productApi = {
     api.get<ApiResponse<Product>>(`/products/${slug}`),
   getFeatured: () => 
     api.get<ApiResponse<Product[]>>("/products", { params: { featured: true } }),
+  getFilters: () => 
+    api.get<ApiResponse<{ colors: { name: string; hex: string }[] }>>("/products/filters"),
 };
 
 export const categoryApi = {

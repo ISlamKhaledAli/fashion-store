@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { Star, Heart, Plus } from "lucide-react";
 import { Product } from "@/types";
 import { formatCurrency, cn } from "@/lib/utils";
 import { useCartStore } from "@/store/cartStore";
@@ -53,13 +54,15 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
     return (
       <div className="flex items-center gap-1">
         {[...Array(5)].map((_, i) => (
-          <span 
+          <Star 
             key={i} 
-            className="material-symbols-outlined text-[10px]" 
-            style={{ fontVariationSettings: `'FILL' ${i < fullStars ? 1 : 0}` }}
-          >
-            star
-          </span>
+            size={10} 
+            className={cn(
+              "transition-all duration-300",
+              i < fullStars ? "fill-primary text-primary" : "text-outline-variant"
+            )}
+            strokeWidth={1.5}
+          />
         ))}
         <span className="text-[10px] text-on-surface-variant ml-1">
           ({count})
@@ -81,20 +84,23 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
                 src={product.images.find(img => img.isMain)?.url || product.images[0].url}
                 alt={product.name}
                 fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
             )}
             
             <button
               onClick={toggleFavorite}
-              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-primary transition-all active:scale-90 z-10"
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-primary transition-all active:scale-90 z-10 group/fav"
             >
-              <span 
-                className="material-symbols-outlined text-xl"
-                style={{ fontVariationSettings: `'FILL' ${isFavorite ? 1 : 0}` }}
-              >
-                favorite
-              </span>
+              <Heart 
+                size={20} 
+                className={cn(
+                  "transition-all duration-300",
+                  isFavorite ? "fill-current text-white group-hover/fav:text-primary" : "text-white group-hover/fav:text-primary"
+                )}
+                strokeWidth={1.5}
+              />
             </button>
             
             <button
@@ -136,6 +142,7 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
               src={product.images.find(img => img.isMain)?.url || product.images[0].url}
               alt={product.name}
               fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
               className="object-cover cinematic-ease duration-[0.8s] group-hover:scale-110"
             />
           )}
@@ -144,7 +151,7 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
             onClick={handleAddToCart}
             className="absolute bottom-6 right-6 w-12 h-12 bg-primary text-on-primary rounded-full flex items-center justify-center opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 delay-100 shadow-xl"
           >
-            <span className="material-symbols-outlined">add</span>
+            <Plus size={24} strokeWidth={1.5} />
           </button>
         </div>
 

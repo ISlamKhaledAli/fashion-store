@@ -3,6 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
+import { ArrowDown } from "lucide-react";
 import Image from "next/image";
 
 export const Hero = () => {
@@ -39,6 +40,7 @@ export const Hero = () => {
           src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAGnsbbuvwSlUY_WStz922zawWfeVdjUP72_IMBp2BH0hcqUfFKm6DOtNXmlVjrzbM2yR8U5J6nNN5QSa0wkTb5lvDUakRpIrBY4ecAmffAKnggO_EySHje0YxYb1IcCYOqUtsOW6fLlJKBe5ElgioKVjYdsseGqxX4Te9mKiaWnZo6zfriKOBosLxXKN-VMcrpXUiMTyP23KEGss6NKBhpUuLqejitEv8BQ_Aq27CokLJu_Q7DdVsbZYhzXrcr9YX7Od03JP2Xqs"
           alt="Hero Background"
           fill
+          sizes="100vw"
           priority
           className="object-cover opacity-60 scale-105"
         />
@@ -77,9 +79,7 @@ export const Hero = () => {
         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         className="absolute bottom-10 left-1/2 -translate-x-1/2 opacity-40"
       >
-        <span className="material-symbols-outlined text-white text-4xl">
-          south
-        </span>
+        <ArrowDown className="text-white" size={32} strokeWidth={1} />
       </motion.div>
     </section>
   );

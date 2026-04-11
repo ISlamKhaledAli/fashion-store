@@ -3,9 +3,10 @@
 import React from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { LucideIcon } from "lucide-react";
 
 interface StoryItem {
-  icon: string;
+  icon: LucideIcon;
   title: string;
   description: string;
 }
@@ -31,6 +32,7 @@ export const ProductStorytelling = ({ image, stories }: ProductStorytellingProps
               src={image}
               alt="Editorial storytelling image"
               fill
+              sizes="50vw"
               className="object-cover"
             />
             {/* Overlay for cinematic depth */}
@@ -49,9 +51,7 @@ export const ProductStorytelling = ({ image, stories }: ProductStorytellingProps
               transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
               className="space-y-6"
             >
-              <span className="material-symbols-outlined text-4xl text-primary">
-                {story.icon}
-              </span>
+              <story.icon className="w-10 h-10 text-primary" strokeWidth={1.5} />
               <h2 className="text-3xl md:text-4xl font-medium tracking-tight text-on-surface">
                 {story.title}
               </h2>

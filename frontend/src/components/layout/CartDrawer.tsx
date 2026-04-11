@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import { X, ShoppingBag, Trash2, Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -48,11 +49,9 @@ export const CartDrawer = () => {
               </div>
               <button
                 onClick={() => toggleDrawer(false)}
-                className="p-2 hover:bg-surface-container-low rounded-full transition-colors group"
+                className="p-2 hover:bg-surface-container-low rounded-full transition-colors group flex items-center justify-center"
               >
-                <span className="material-symbols-outlined text-on-surface group-hover:rotate-90 transition-transform duration-500">
-                  close
-                </span>
+                <X size={20} className="text-on-surface group-hover:rotate-90 transition-transform duration-500" strokeWidth={1.5} />
               </button>
             </div>
 
@@ -60,9 +59,7 @@ export const CartDrawer = () => {
             <div className="flex-1 overflow-y-auto no-scrollbar px-8 py-6 space-y-8">
               {items.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
-                  <span className="material-symbols-outlined text-4xl text-outline-variant">
-                    shopping_bag
-                  </span>
+                  <ShoppingBag size={48} className="text-outline-variant" strokeWidth={1} />
                   <p className="text-sm font-medium text-on-surface-variant">Your bag is empty</p>
                   <Button variant="outline" size="sm" onClick={() => toggleDrawer(false)}>
                     Start Exploring
@@ -83,6 +80,7 @@ export const CartDrawer = () => {
                         src={item.image}
                         alt={item.name}
                         fill
+                        sizes="96px"
                         className="object-cover transition-transform duration-700 group-hover:scale-110"
                       />
                     </div>
@@ -96,25 +94,25 @@ export const CartDrawer = () => {
                         </div>
                         <button
                           onClick={() => removeItem(item.id)}
-                          className="text-outline hover:text-error transition-colors"
+                          className="text-outline hover:text-error transition-colors flex items-center"
                         >
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
+                          <Trash2 size={18} strokeWidth={1.5} />
                         </button>
                       </div>
                       <div className="flex justify-between items-end">
                         <div className="flex items-center gap-4 bg-surface-container-low px-3 py-1.5 rounded-full">
                           <button
                             onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                            className="text-on-surface-variant hover:text-primary transition-colors"
+                            className="text-on-surface-variant hover:text-primary transition-colors flex items-center"
                           >
-                            <span className="material-symbols-outlined text-xs">remove</span>
+                            <Minus size={14} strokeWidth={2} />
                           </button>
                           <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="text-on-surface-variant hover:text-primary transition-colors"
+                            className="text-on-surface-variant hover:text-primary transition-colors flex items-center"
                           >
-                            <span className="material-symbols-outlined text-xs">add</span>
+                            <Plus size={14} strokeWidth={2} />
                           </button>
                         </div>
                         <span className="text-sm font-bold text-on-surface">

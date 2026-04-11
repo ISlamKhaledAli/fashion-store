@@ -30,6 +30,7 @@ export const BrandStory = () => {
           src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1_lGLYExz9Ivn1c1cVkz4T8j9N5-zvp5-WMqVCYP50XCmPlxbgrvKF9SPxT5L_o3qVwdFVT6CRTGDUkCW3YHIRns_OgNSvpH2HK9sGxJpOvBTsT2CWSN25soiU6zzHCPYsOg3UO525Y6dL3RRZ0AZc03hZA5yaepmbjGgid9QSRov27ENM_LdD5uLzVH4bxBhpEy944jQfvyYLIldeuKhoGgbW5ptO3H8sl3ClCrJ8xkFVL1KJVqF2y-BQH5hF95YsJWf9r5wyUE"
           alt="Brand Manifesto Background"
           fill
+          sizes="100vw"
           className="object-cover"
         />
       </motion.div>
