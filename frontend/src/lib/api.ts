@@ -24,7 +24,7 @@ export const productApi = {
   getAll: (params: any) => 
     api.get<ApiResponse<Product[]>>("/products", { params }),
   getBySlug: (slug: string) => 
-    api.get<ApiResponse<Product>>(`/products/slug/${slug}`),
+    api.get<ApiResponse<Product>>(`/products/${slug}`),
   getFeatured: () => 
     api.get<ApiResponse<Product[]>>("/products", { params: { featured: true } }),
 };

@@ -10,10 +10,11 @@ import { cn } from "@/lib/utils";
 export const Navbar = () => {
   const { scrollY } = useScroll();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const { toggleDrawer, getTotalItems } = useCartStore();
   const { isAuthenticated, user } = useAuthStore();
 
-  const height = useTransform(scrollY, [0, 80], ["80px", "64px"]);
+  const height = useTransform(scrollY, [0, 80], ["70px", "56px"]);
   const backgroundColor = useTransform(
     scrollY,
     [0, 80],
@@ -21,6 +22,7 @@ export const Navbar = () => {
   );
 
   useEffect(() => {
+    setIsMounted(true);
     return scrollY.onChange((latest) => {
       setIsScrolled(latest > 80);
     });
@@ -71,11 +73,11 @@ export const Navbar = () => {
       <div className="flex items-center gap-6">
         <button
           onClick={() => toggleDrawer(true)}
-          className="relative material-symbols-outlined text-on-surface hover:scale-95 duration-500 ease-out"
+          className="relative material-symbols-outlined text-on-surface hover:scale-95 transition-all duration-500 ease-out"
         >
           shopping_bag
           <AnimatePresence>
-            {getTotalItems() > 0 && (
+            {isMounted && getTotalItems() > 0 && (
               <motion.span
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -89,11 +91,16 @@ export const Navbar = () => {
         </button>
 
         <Link
-          href={isAuthenticated ? "/account" : "/login"}
-          className="material-symbols-outlined text-on-surface hover:scale-95 duration-500 ease-out"
+          href={isMounted && isAuthenticated ? "/account" : "/login"}
+          className="material-symbols-outlined text-on-surface hover:scale-95 transition-all duration-500 ease-out"
         >
           person
         </Link>
+        
+        {/* Mobile Menu Toggle */}
+        <button className="md:hidden material-symbols-outlined text-on-surface">
+          menu
+        </button>
       </div>
     </motion.nav>
   );

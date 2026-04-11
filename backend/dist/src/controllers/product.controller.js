@@ -8,7 +8,7 @@ const product_validator_1 = require("../validators/product.validator");
 const AppError_1 = require("../utils/AppError");
 const getProducts = async (req, res, next) => {
     try {
-        const { category, brand, minPrice, maxPrice, search, sort, page, limit } = req.query;
+        const { category, brand, minPrice, maxPrice, search, sort, page, limit, featured } = req.query;
         const { skip, limit: take, page: currentPage } = (0, pagination_1.getPagination)({
             page: Number(page),
             limit: Number(limit),
@@ -20,6 +20,9 @@ const getProducts = async (req, res, next) => {
             where.category = { slug: String(category) };
         if (brand)
             where.brand = { slug: String(brand) };
+        if (featured !== undefined) {
+            where.featured = String(featured) === "true";
+        }
         if (minPrice || maxPrice) {
             where.price = {};
             if (minPrice)

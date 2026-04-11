@@ -8,7 +8,10 @@ export const getCategories = async (req: Request, res: Response, next: NextFunct
   try {
     const categories = await prisma.category.findMany({
       where: { parentId: null },
-      include: { children: true },
+      include: {
+        children: true,
+        _count: { select: { products: true } },
+      },
     });
     return sendResponse({ res, status: 200, success: true, data: categories });
   } catch (error) {

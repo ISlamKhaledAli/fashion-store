@@ -7,7 +7,7 @@ import { NotFoundError } from "../utils/AppError";
 
 export const getProducts = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { category, brand, minPrice, maxPrice, search, sort, page, limit } = req.query;
+    const { category, brand, minPrice, maxPrice, search, sort, page, limit, featured } = req.query;
 
     const { skip, limit: take, page: currentPage } = getPagination({
       page: Number(page),
@@ -20,6 +20,9 @@ export const getProducts = async (req: Request, res: Response, next: NextFunctio
 
     if (category) where.category = { slug: String(category) };
     if (brand) where.brand = { slug: String(brand) };
+    if (featured !== undefined) {
+      where.featured = String(featured) === "true";
+    }
     if (minPrice || maxPrice) {
       where.price = {};
       if (minPrice) where.price.gte = Number(minPrice);

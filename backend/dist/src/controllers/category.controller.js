@@ -9,7 +9,10 @@ const getCategories = async (req, res, next) => {
     try {
         const categories = await prisma_1.prisma.category.findMany({
             where: { parentId: null },
-            include: { children: true },
+            include: {
+                children: true,
+                _count: { select: { products: true } },
+            },
         });
         return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data: categories });
     }
