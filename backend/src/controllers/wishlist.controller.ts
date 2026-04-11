@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../server";
 import { sendResponse } from "../utils/apiResponse";
+import { NotFoundError } from "../utils/AppError";
 
 export const getWishlist = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -49,13 +50,16 @@ export const removeFromWishlist = async (req: Request, res: Response, next: Next
       where: {
         userId_productId: {
           userId,
-          productId,
+          productId: String(productId),
         },
       },
     });
 
     return sendResponse({ res, status: 200, success: true, message: "Removed from wishlist" });
   } catch (error) {
+    if (error instanceof Error && (error as any).code === "P2025") {
+      throw new NotFoundError("Item not found in wishlist");
+    }
     next(error);
   }
 };

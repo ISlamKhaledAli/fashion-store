@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { prisma } from "../server";
 import { sendResponse } from "../utils/apiResponse";
 import { addToCartSchema, updateCartItemSchema } from "../validators/common.validator";
+import { NotFoundError } from "../utils/AppError";
 
 export const getCart = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -81,6 +82,9 @@ export const updateCartItem = async (req: Request, res: Response, next: NextFunc
 
     return sendResponse({ res, status: 200, success: true, data: cartItem });
   } catch (error) {
+    if (error instanceof Error && (error as any).code === "P2025") {
+      throw new NotFoundError("Cart item not found");
+    }
     next(error);
   }
 };
@@ -90,11 +94,14 @@ export const removeFromCart = async (req: Request, res: Response, next: NextFunc
     const { cartItemId } = req.params;
 
     await prisma.cartItem.delete({
-      where: { id: cartItemId },
+      where: { id: String(cartItemId) },
     });
 
     return sendResponse({ res, status: 200, success: true, message: "Item removed from cart" });
   } catch (error) {
+    if (error instanceof Error && (error as any).code === "P2025") {
+      throw new NotFoundError("Cart item not found");
+    }
     next(error);
   }
 };

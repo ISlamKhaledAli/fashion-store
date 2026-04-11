@@ -3,6 +3,7 @@ import { prisma } from "../server";
 import { sendResponse } from "../utils/apiResponse";
 import { getPagination, calculatePagination } from "../utils/pagination";
 import { createDiscountSchema } from "../validators/common.validator";
+import { NotFoundError } from "../utils/AppError";
 
 export const getAdminOrders = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -40,12 +41,15 @@ export const updateOrderStatus = async (req: Request, res: Response, next: NextF
     const { status } = req.body;
 
     const order = await prisma.order.update({
-      where: { id },
+      where: { id: String(id) },
       data: { status },
     });
 
     return sendResponse({ res, status: 200, success: true, data: order });
   } catch (error) {
+    if (error instanceof Error && (error as any).code === "P2025") {
+      throw new NotFoundError("Order not found");
+    }
     next(error);
   }
 };

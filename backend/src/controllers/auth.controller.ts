@@ -4,6 +4,7 @@ import { hashPassword, comparePassword } from "../utils/bcrypt";
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../utils/jwt";
 import { sendResponse } from "../utils/apiResponse";
 import { registerSchema, loginSchema, refreshSchema } from "../validators/auth.validator";
+import { AuthError, ConflictError, NotFoundError } from "../utils/AppError";
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -14,12 +15,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     });
 
     if (existingUser) {
-      return sendResponse({
-        res,
-        status: 400,
-        success: false,
-        message: "User already exists with this email",
-      });
+      throw new ConflictError("User already exists with this email");
     }
 
     const hashedPassword = await hashPassword(validatedData.password);
@@ -33,9 +29,6 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 
     const accessToken = generateAccessToken(user.id, user.role);
     const refreshToken = generateRefreshToken(user.id);
-
-    // Note: In a production app, we would store the refreshToken in the DB or Redis.
-    // For now, we'll return it to the client.
 
     return sendResponse({
       res,
@@ -67,12 +60,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     });
 
     if (!user || !(await comparePassword(validatedData.password, user.password))) {
-      return sendResponse({
-        res,
-        status: 401,
-        success: false,
-        message: "Invalid email or password",
-      });
+      throw new AuthError("Invalid email or password");
     }
 
     const accessToken = generateAccessToken(user.id, user.role);
@@ -102,17 +90,17 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 export const refresh = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { refreshToken } = refreshSchema.parse(req.body);
-    const decoded = verifyRefreshToken(refreshToken);
-
-    if (!decoded) {
-      return sendResponse({
-        res, status: 401, success: false, message: "Invalid or expired refresh token"
-      });
+    
+    let decoded;
+    try {
+      decoded = verifyRefreshToken(refreshToken);
+    } catch (err) {
+      throw new AuthError("Invalid or expired refresh token");
     }
 
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
     if (!user) {
-      return sendResponse({ res, status: 404, success: false, message: "User not found" });
+      throw new NotFoundError("User not found");
     }
 
     const accessToken = generateAccessToken(user.id, user.role);
@@ -128,8 +116,6 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
 };
 
 export const logout = async (req: Request, res: Response, next: NextFunction) => {
-  // In a real app with stored tokens, we would delete the refresh token from DB.
-  // Since we don't store it yet, logic is minimal.
   return sendResponse({
     res,
     status: 200,
@@ -146,7 +132,7 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
     });
 
     if (!user) {
-      return sendResponse({ res, status: 404, success: false, message: "User not found" });
+      throw new NotFoundError("User not found");
     }
 
     return sendResponse({ res, status: 200, success: true, data: user });

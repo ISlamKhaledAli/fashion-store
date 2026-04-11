@@ -1,25 +1,27 @@
 import nodemailer from "nodemailer";
+import { env } from "../utils/validateEnv";
+import logger from "../utils/logger";
 
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT || "587"),
-  secure: process.env.EMAIL_SECURE === "true",
+  host: env.EMAIL_HOST,
+  port: parseInt(env.EMAIL_PORT || "587"),
+  secure: env.EMAIL_SECURE === "true",
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: env.EMAIL_USER,
+    pass: env.EMAIL_PASS,
   },
 });
 
 export const sendEmail = async (to: string, subject: string, html: string) => {
   try {
     await transporter.sendMail({
-      from: `"Fashion Store" <${process.env.EMAIL_USER}>`,
+      from: `"Fashion Store" <${env.EMAIL_USER}>`,
       to,
       subject,
       html,
     });
-    console.log(`Email sent to ${to}`);
+    logger.info(`Email sent to ${to}`);
   } catch (error) {
-    console.error("Error sending email:", error);
+    logger.error("Error sending email:", { error });
   }
 };

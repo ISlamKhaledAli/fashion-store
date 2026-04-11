@@ -13,6 +13,7 @@ interface ApiResponseOptions {
     totalPages: number;
   };
   errors?: any[];
+  stack?: string;
 }
 
 export const sendResponse = ({
@@ -23,6 +24,7 @@ export const sendResponse = ({
   data,
   pagination,
   errors,
+  stack,
 }: ApiResponseOptions) => {
   return res.status(status).json({
     success,
@@ -30,5 +32,6 @@ export const sendResponse = ({
     data,
     pagination,
     errors,
+    stack,
   });
 };

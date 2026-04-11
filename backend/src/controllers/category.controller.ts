@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { prisma } from "../server";
 import { sendResponse } from "../utils/apiResponse";
 import { categorySchema } from "../validators/common.validator";
+import { NotFoundError } from "../utils/AppError";
 
 export const getCategories = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -29,12 +30,16 @@ export const updateCategory = async (req: Request, res: Response, next: NextFunc
   try {
     const { id } = req.params;
     const validatedData = categorySchema.partial().parse(req.body);
+
     const category = await prisma.category.update({
-      where: { id },
+      where: { id: String(id) },
       data: validatedData,
     });
     return sendResponse({ res, status: 200, success: true, data: category });
   } catch (error) {
+    if (error instanceof Error && (error as any).code === "P2025") {
+      throw new NotFoundError("Category not found");
+    }
     next(error);
   }
 };
@@ -42,9 +47,12 @@ export const updateCategory = async (req: Request, res: Response, next: NextFunc
 export const deleteCategory = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    await prisma.category.delete({ where: { id } });
+    await prisma.category.delete({ where: { id: String(id) } });
     return sendResponse({ res, status: 200, success: true, message: "Category deleted" });
   } catch (error) {
+    if (error instanceof Error && (error as any).code === "P2025") {
+      throw new NotFoundError("Category not found");
+    }
     next(error);
   }
 };

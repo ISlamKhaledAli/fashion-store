@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../server";
-import { sendResponse } from "../utils/apiResponse";
 import { verifyStripeWebhook } from "../services/stripe";
+import logger from "../utils/logger";
+import { ValidationError } from "../utils/AppError";
 
 export const stripeWebhook = async (req: Request, res: Response, next: NextFunction) => {
   const sig = req.headers["stripe-signature"] as string;
@@ -11,8 +12,8 @@ export const stripeWebhook = async (req: Request, res: Response, next: NextFunct
   try {
     event = verifyStripeWebhook(req.body, sig);
   } catch (err: any) {
-    console.error("Webhook signature verification failed:", err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    logger.error("Webhook signature verification failed:", { message: err.message });
+    throw new ValidationError(`Webhook Error: ${err.message}`);
   }
 
   // Handle the event
@@ -30,7 +31,7 @@ export const stripeWebhook = async (req: Request, res: Response, next: NextFunct
             stripePaymentId: paymentIntent.id,
           },
         });
-        console.log(`Order ${orderId} marked as PAID`);
+        logger.info(`Order ${orderId} marked as PAID`);
       }
       break;
 
@@ -43,13 +44,13 @@ export const stripeWebhook = async (req: Request, res: Response, next: NextFunct
           where: { id: failedOrderId },
           data: { paymentStatus: "FAILED" },
         });
-        console.log(`Order ${failedOrderId} payment FAILED`);
+        logger.error(`Order ${failedOrderId} payment FAILED`);
       }
       break;
 
     default:
-      console.log(`Unhandled event type ${event.type}`);
+      logger.info(`Unhandled event type ${event.type}`);
   }
 
-  res.json({ received: true });
+  res.json({ success: true, received: true });
 };

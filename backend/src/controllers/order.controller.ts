@@ -3,6 +3,7 @@ import { prisma } from "../server";
 import { sendResponse } from "../utils/apiResponse";
 import { createOrderSchema } from "../validators/order.validator";
 import { createPaymentIntent } from "../services/stripe";
+import { NotFoundError, ConflictError, ValidationError } from "../utils/AppError";
 
 export const getOrders = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -20,7 +21,7 @@ export const getOrders = async (req: Request, res: Response, next: NextFunction)
 export const getOrderById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const order = await prisma.order.findUnique({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       include: {
         items: { include: { product: true, variant: true } },
         address: true,
@@ -28,7 +29,7 @@ export const getOrderById = async (req: Request, res: Response, next: NextFuncti
     });
 
     if (!order || order.userId !== req.user?.id) {
-      return sendResponse({ res, status: 404, success: false, message: "Order not found" });
+      throw new NotFoundError("Order not found");
     }
 
     return sendResponse({ res, status: 200, success: true, data: order });
@@ -42,7 +43,7 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
     const userId = req.user?.id as string;
     const { addressId, notes } = createOrderSchema.parse(req.body);
 
-    // 1. Get cart items
+    // 1. Get cart items and validate
     const cart = await prisma.cart.findUnique({
       where: { userId },
       include: {
@@ -55,30 +56,37 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
     });
 
     if (!cart || cart.items.length === 0) {
-      return sendResponse({ res, status: 400, success: false, message: "Cart is empty" });
+      throw new ValidationError("Cart is empty");
     }
 
-    // 2. Check stock and calculate totals
+    // 2. Calculate totals
     let subtotal = 0;
     for (const item of cart.items) {
-      if (item.variant.stock < item.quantity) {
-        return sendResponse({
-          res,
-          status: 400,
-          success: false,
-          message: `Insufficient stock for ${item.variant.product.name} (${item.variant.size}/${item.variant.color})`,
-        });
-      }
       subtotal += item.variant.product.price * item.quantity;
     }
 
-    const shipping = 10; // Fixed for now
-    const tax = subtotal * 0.1; // 10% tax
+    const shipping = 10;
+    const tax = subtotal * 0.1;
     const total = subtotal + shipping + tax;
 
-    // 3. Create order in transaction
+    // 3. Execute Checkout Transaction
     const order = await prisma.$transaction(async (tx) => {
-      // Create order
+      // Step 1: Verify stock for ALL items
+      for (const item of cart.items) {
+        // Fetch fresh variant data to ensure stock is accurate at start of transaction
+        const variant = await tx.variant.findUnique({
+          where: { id: item.variantId },
+          select: { stock: true, product: { select: { name: true } } }
+        });
+
+        if (!variant || variant.stock < item.quantity) {
+          throw new ConflictError(
+            `Insufficient stock for ${variant?.product.name || "item"}`
+          );
+        }
+      }
+
+      // Step 2 & 3: Create Order and OrderItems
       const newOrder = await tx.order.create({
         data: {
           userId,
@@ -99,7 +107,7 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
         },
       });
 
-      // Update stocks
+      // Step 4: Decrement stock
       for (const item of cart.items) {
         await tx.variant.update({
           where: { id: item.variantId },
@@ -107,10 +115,12 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
         });
       }
 
-      // Clear cart
+      // Step 5: Clear cart
       await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
 
       return newOrder;
+    }, {
+      timeout: 10000 // 10s timeout as requested
     });
 
     // 4. Create Stripe payment intent
@@ -133,18 +143,18 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
 export const cancelOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const order = await prisma.order.findUnique({ where: { id } });
+    const order = await prisma.order.findUnique({ where: { id: String(id) } });
 
     if (!order || order.userId !== req.user?.id) {
-      return sendResponse({ res, status: 404, success: false, message: "Order not found" });
+      throw new NotFoundError("Order not found");
     }
 
     if (order.status !== "PENDING") {
-      return sendResponse({ res, status: 400, success: false, message: "Only pending orders can be cancelled" });
+      throw new ValidationError("Only pending orders can be cancelled");
     }
 
     await prisma.order.update({
-      where: { id },
+      where: { id: String(id) },
       data: { status: "CANCELLED" },
     });
 

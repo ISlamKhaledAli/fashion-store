@@ -3,6 +3,7 @@ import { prisma } from "../server";
 import { sendResponse } from "../utils/apiResponse";
 import { getPagination, calculatePagination } from "../utils/pagination";
 import { createProductSchema, updateProductSchema } from "../validators/product.validator";
+import { NotFoundError } from "../utils/AppError";
 
 export const getProducts = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -17,8 +18,8 @@ export const getProducts = async (req: Request, res: Response, next: NextFunctio
       status: "ACTIVE",
     };
 
-    if (category) where.category = { slug: category };
-    if (brand) where.brand = { slug: brand };
+    if (category) where.category = { slug: String(category) };
+    if (brand) where.brand = { slug: String(brand) };
     if (minPrice || maxPrice) {
       where.price = {};
       if (minPrice) where.price.gte = Number(minPrice);
@@ -73,7 +74,7 @@ export const getProductBySlug = async (req: Request, res: Response, next: NextFu
     const { slug } = req.params;
 
     const product = await prisma.product.findUnique({
-      where: { slug },
+      where: { slug: String(slug) },
       include: {
         category: true,
         brand: true,
@@ -83,15 +84,15 @@ export const getProductBySlug = async (req: Request, res: Response, next: NextFu
           include: { user: { select: { name: true, avatar: true } } },
         },
       },
-    });
+    }) as any;
 
     if (!product) {
-      return sendResponse({ res, status: 404, success: false, message: "Product not found" });
+      throw new NotFoundError("Product not found");
     }
 
     // Calculate average rating
     const avgRating = product.reviews.length > 0
-      ? product.reviews.reduce((acc, rev) => acc + rev.rating, 0) / product.reviews.length
+      ? product.reviews.reduce((acc: number, rev: any) => acc + rev.rating, 0) / product.reviews.length
       : 0;
 
     return sendResponse({
@@ -140,18 +141,20 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
     const validatedData = updateProductSchema.parse(req.body);
     const { variants, ...productData } = validatedData;
 
+    // First check if product exists
+    const existing = await prisma.product.findUnique({ where: { id: String(id) } });
+    if (!existing) throw new NotFoundError("Product not found");
+
     // Handle variants separately if provided
     if (variants) {
-      // For simplicity in this demo, we'll replace variants or update them
-      // In production, we'd handle upsert logic
-      await prisma.variant.deleteMany({ where: { productId: id } });
+      await prisma.variant.deleteMany({ where: { productId: String(id) } });
       await prisma.variant.createMany({
-        data: variants.map(v => ({ ...v, productId: id })) as any,
+        data: variants.map(v => ({ ...v, productId: String(id) })) as any,
       });
     }
 
     const product = await prisma.product.update({
-      where: { id },
+      where: { id: String(id) },
       data: productData as any,
       include: { variants: true },
     });
@@ -170,8 +173,13 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
 export const deleteProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    
+    // Check existence
+    const existing = await prisma.product.findUnique({ where: { id: String(id) } });
+    if (!existing) throw new NotFoundError("Product not found");
+
     await prisma.product.update({
-      where: { id },
+      where: { id: String(id) },
       data: { status: "ARCHIVED" },
     });
 

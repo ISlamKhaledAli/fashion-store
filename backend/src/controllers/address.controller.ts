@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { prisma } from "../server";
 import { sendResponse } from "../utils/apiResponse";
 import { addressSchema } from "../validators/address.validator";
+import { NotFoundError } from "../utils/AppError";
 
 export const getAddresses = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -42,6 +43,14 @@ export const updateAddress = async (req: Request, res: Response, next: NextFunct
     const userId = req.user?.id as string;
     const validatedData = addressSchema.partial().parse(req.body);
 
+    const existingAddress = await prisma.address.findUnique({
+      where: { id: String(id), userId }
+    });
+
+    if (!existingAddress) {
+      throw new NotFoundError("Address not found");
+    }
+
     if (validatedData.isDefault) {
       await prisma.address.updateMany({
         where: { userId, isDefault: true },
@@ -50,7 +59,7 @@ export const updateAddress = async (req: Request, res: Response, next: NextFunct
     }
 
     const address = await prisma.address.update({
-      where: { id, userId },
+      where: { id: String(id), userId },
       data: validatedData,
     });
 
@@ -65,8 +74,16 @@ export const deleteAddress = async (req: Request, res: Response, next: NextFunct
     const { id } = req.params;
     const userId = req.user?.id;
 
+    const existingAddress = await prisma.address.findUnique({
+      where: { id: String(id), userId }
+    });
+
+    if (!existingAddress) {
+      throw new NotFoundError("Address not found");
+    }
+
     await prisma.address.delete({
-      where: { id, userId },
+      where: { id: String(id), userId },
     });
 
     return sendResponse({ res, status: 200, success: true, message: "Address deleted" });

@@ -2,12 +2,13 @@ import { Request, Response, NextFunction } from "express";
 import { prisma } from "../server";
 import { sendResponse } from "../utils/apiResponse";
 import { reviewSchema } from "../validators/review.validator";
+import { ConflictError, NotFoundError } from "../utils/AppError";
 
 export const getProductReviews = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { productId } = req.params;
     const reviews = await prisma.review.findMany({
-      where: { productId },
+      where: { productId: String(productId) },
       include: { user: { select: { name: true, avatar: true } } },
       orderBy: { createdAt: "desc" },
     });
@@ -32,12 +33,7 @@ export const createReview = async (req: Request, res: Response, next: NextFuncti
     });
 
     if (existingReview) {
-      return sendResponse({
-        res,
-        status: 400,
-        success: false,
-        message: "You have already reviewed this product",
-      });
+      throw new ConflictError("You have already reviewed this product");
     }
 
     const review = await prisma.review.create({
@@ -60,12 +56,15 @@ export const updateReview = async (req: Request, res: Response, next: NextFuncti
     const validatedData = reviewSchema.partial().parse(req.body);
 
     const review = await prisma.review.update({
-      where: { id, userId },
+      where: { id: String(id), userId },
       data: validatedData,
     });
 
     return sendResponse({ res, status: 200, success: true, data: review });
   } catch (error) {
+    if (error instanceof Error && (error as any).code === "P2025") {
+      throw new NotFoundError("Review not found");
+    }
     next(error);
   }
 };
@@ -76,11 +75,14 @@ export const deleteReview = async (req: Request, res: Response, next: NextFuncti
     const userId = req.user?.id;
 
     await prisma.review.delete({
-      where: { id, userId },
+      where: { id: String(id), userId },
     });
 
     return sendResponse({ res, status: 200, success: true, message: "Review deleted" });
   } catch (error) {
+    if (error instanceof Error && (error as any).code === "P2025") {
+      throw new NotFoundError("Review not found");
+    }
     next(error);
   }
 };

@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import { sendResponse } from "../utils/apiResponse";
 import { uploadToCloudinary, deleteFromCloudinary } from "../services/cloudinary";
+import { ValidationError } from "../utils/AppError";
 
 export const uploadImage = async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.file) {
-      return sendResponse({ res, status: 400, success: false, message: "No file uploaded" });
+      throw new ValidationError("No file uploaded");
     }
 
     const result: any = await uploadToCloudinary(req.file);
@@ -29,7 +30,7 @@ export const deleteImage = async (req: Request, res: Response, next: NextFunctio
     const { publicId } = req.body;
 
     if (!publicId) {
-      return sendResponse({ res, status: 400, success: false, message: "Public ID is required" });
+      throw new ValidationError("Public ID is required");
     }
 
     await deleteFromCloudinary(publicId);

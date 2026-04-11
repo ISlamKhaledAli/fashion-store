@@ -1,28 +1,18 @@
 import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "default_refresh_secret";
+import { env } from "./validateEnv";
 
 export const generateAccessToken = (userId: string, role: string) => {
-  return jwt.sign({ id: userId, role }, JWT_SECRET, { expiresIn: "15m" });
+  return jwt.sign({ id: userId, role }, env.JWT_SECRET, { expiresIn: "15m" });
 };
 
 export const generateRefreshToken = (userId: string) => {
-  return jwt.sign({ id: userId }, JWT_REFRESH_SECRET, { expiresIn: "7d" });
+  return jwt.sign({ id: userId }, env.JWT_REFRESH_SECRET, { expiresIn: "7d" });
 };
 
 export const verifyAccessToken = (token: string) => {
-  try {
-    return jwt.verify(token, JWT_SECRET) as { id: string; role: string };
-  } catch (error) {
-    return null;
-  }
+  return jwt.verify(token, env.JWT_SECRET) as { id: string; role: string };
 };
 
 export const verifyRefreshToken = (token: string) => {
-  try {
-    return jwt.verify(token, JWT_REFRESH_SECRET) as { id: string };
-  } catch (error) {
-    return null;
-  }
+  return jwt.verify(token, env.JWT_REFRESH_SECRET) as { id: string };
 };
