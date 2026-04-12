@@ -26,5 +26,5 @@ export async function startServer() {
 if (require.main === module) {
   void startServer();
 }
-
 export { app };
+export default app;
