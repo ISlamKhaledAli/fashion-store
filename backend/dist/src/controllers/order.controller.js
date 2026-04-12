@@ -41,7 +41,6 @@ const getOrderById = async (req, res, next) => {
 exports.getOrderById = getOrderById;
 const createOrder = async (req, res, next) => {
     try {
-        console.log('Order request body:', req.body);
         const userId = req.user?.id;
         const { addressId, notes, stripePaymentId, items: inputItems } = order_validator_1.createOrderSchema.parse(req.body);
         let orderItems = [];
