@@ -125,8 +125,8 @@ function OrderCard({ order, isExpanded, onToggle, onCancel }: {
   return (
     <section 
       className={cn(
-        "cinematic-transition rounded-xl p-8 group",
-        isExpanded ? "bg-surface-container-lowest shadow-lg shadow-black/5" : "bg-surface-container-low hover:bg-surface-container cursor-pointer"
+        "cinematic-transition rounded-xl p-8 group outline-none focus:outline-none focus-visible:outline-none overflow-hidden",
+        isExpanded ? "bg-surface-container-lowest shadow-lg shadow-black/5" : "bg-surface-container-low hover:bg-surface-container/50 cursor-pointer transition-colors duration-300"
       )}
       onClick={!isExpanded ? onToggle : undefined}
     >
@@ -195,7 +195,7 @@ function OrderCard({ order, isExpanded, onToggle, onCancel }: {
                 <span className="capitalize">{order.status.toLowerCase()}</span>
               </p>
             </div>
-            <Button variant="none" size="none" onClick={onToggle} className="absolute right-0 text-on-surface-variant hover:text-on-surface p-2 rounded-full cursor-pointer hover:bg-surface-container transition-colors">
+            <Button variant="none" size="none" onClick={onToggle} className="absolute right-0 text-on-surface-variant hover:text-on-surface p-2 rounded-full cursor-pointer hover:bg-surface-container hover:rotate-90 transition-all duration-300">
               <span className="material-symbols-outlined">close</span>
             </Button>
           </div>
@@ -210,21 +210,13 @@ function OrderCard({ order, isExpanded, onToggle, onCancel }: {
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
+            style={{ outline: "none", border: "none", boxShadow: "none" }}
           >
             <div>
               {/* Tracking Timeline */}
               <div className="mb-12 pt-4">
                 <div className="relative flex justify-between items-center px-4">
-                  <div className="absolute top-1/2 left-4 right-4 h-[1px] bg-outline-variant/30 -translate-y-1/2 -z-10" />
-                  <div 
-                    className="absolute top-1/2 left-4 h-[1px] bg-primary -translate-y-1/2 -z-10 transition-all duration-1000" 
-                    style={{ width: 
-                      order.status === 'PENDING' ? '0%' : 
-                      order.status === 'PROCESSING' ? '25%' : 
-                      order.status === 'SHIPPED' ? '50%' : 
-                      order.status === 'DELIVERED' ? 'calc(100% - 2rem)' : '0%' 
-                    }}
-                  />
+
                   
                   <TimelineStep label="Order Placed" active={true} />
                   <TimelineStep label="Processing" active={order.status !== 'PENDING' && order.status !== 'CANCELLED'} />
@@ -248,10 +240,10 @@ function OrderCard({ order, isExpanded, onToggle, onCancel }: {
                         <img 
                           src={item?.product?.images?.[0]?.url || ""} 
                           alt={item?.product?.name || "Product"} 
-                          className="w-full h-full object-cover group-hover:scale-105 cinematic-transition" 
+                          className="w-full h-full object-cover transition-transform duration-500 ease-out hover:scale-105" 
                         />
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-outline-variant bg-surface-container group-hover:scale-105 cinematic-transition">
+                        <div className="w-full h-full flex flex-col items-center justify-center text-outline-variant bg-surface-container">
                           <span className="material-symbols-outlined mb-2 text-2xl">image</span>
                         </div>
                       )}
@@ -286,7 +278,7 @@ function OrderCard({ order, isExpanded, onToggle, onCancel }: {
                           <Button 
                             variant="none" size="none"
                             onClick={(e: any) => e.stopPropagation()}
-                            className="bg-primary text-on-primary px-8 py-3 rounded-md text-sm font-medium hover:scale-[0.98] cinematic-transition"
+                            className="bg-primary text-on-primary px-8 py-3 rounded-md text-sm font-medium hover:opacity-80 transition"
                           >
                             Track Order
                           </Button>
@@ -322,7 +314,7 @@ function OrderCard({ order, isExpanded, onToggle, onCancel }: {
 function TimelineStep({ label, active, icon, current }: { label: string; active: boolean; icon?: string; current?: boolean }) {
   if (icon && current) {
     return (
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-3" title={active ? label : undefined}>
         <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center ring-4 ring-primary/10 transition-all duration-700">
           <span className="material-symbols-outlined text-[12px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
         </div>
@@ -331,7 +323,7 @@ function TimelineStep({ label, active, icon, current }: { label: string; active:
     );
   }
   return (
-    <div className={cn("flex flex-col items-center gap-3", !active && "opacity-30")}>
+    <div className={cn("flex flex-col items-center gap-3", !active && "opacity-30")} title={active ? label : undefined}>
       <div className={cn(
         "rounded-full border-4 border-surface-container-lowest transition-all duration-700",
         active ? "bg-primary w-3 h-3" : "bg-transparent outline outline-1 outline-outline-variant/50 w-3 h-3"
