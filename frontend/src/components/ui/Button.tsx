@@ -66,7 +66,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         <span className={cn(
-          "flex items-center justify-center gap-3 transition-opacity duration-300",
+          "flex w-full items-center justify-center gap-3 transition-opacity duration-300",
           isLoading && "opacity-0"
         )}>
           {icon && iconPlacement === "start" && (

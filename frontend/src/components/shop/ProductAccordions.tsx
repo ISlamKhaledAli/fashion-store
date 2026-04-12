@@ -28,15 +28,17 @@ export const ProductAccordions = ({ items }: ProductAccordionsProps) => {
               variant="none"
               size="none"
               onClick={() => setExpanded(expanded === index ? null : index)}
-              className="w-full py-8 flex justify-between items-center group text-left"
+              className="w-full py-8 group text-left px-4"
             >
-              <h3 className="text-lg font-medium tracking-tight">{item.title}</h3>
-              <motion.span 
-                animate={{ rotate: expanded === index ? 45 : 0 }}
-                className="material-symbols-outlined transition-colors group-hover:text-primary"
-              >
-                add
-              </motion.span>
+              <div className="flex items-center justify-between w-full">
+                <h3 className="text-lg font-medium tracking-tight pr-4">{item.title}</h3>
+                <motion.span 
+                  animate={{ rotate: expanded === index ? 45 : 0 }}
+                  className="material-symbols-outlined transition-colors group-hover:text-primary shrink-0"
+                >
+                  add
+                </motion.span>
+              </div>
             </Button>
             <AnimatePresence initial={false}>
               {expanded === index && (

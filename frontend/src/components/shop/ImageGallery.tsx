@@ -18,7 +18,7 @@ export const ImageGallery = ({ images }: ImageGalleryProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="aspect-square bg-surface-container-low overflow-hidden group cursor-zoom-in relative">
+      <div className="w-full aspect-[3/4] max-h-[400px] lg:max-h-[520px] bg-surface-container-low overflow-hidden group cursor-zoom-in relative mx-auto">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeImage.id}
@@ -32,7 +32,7 @@ export const ImageGallery = ({ images }: ImageGalleryProps) => {
               src={activeImage.url}
               alt="Product View"
               fill
-              className="object-cover cinematic-reveal scale-[1.01] group-hover:scale-110 transition-transform duration-700"
+              className="object-contain cinematic-reveal scale-[1.01] group-hover:scale-105 transition-transform duration-700"
               priority
             />
           </motion.div>

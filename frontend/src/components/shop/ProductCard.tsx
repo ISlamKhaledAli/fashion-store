@@ -174,7 +174,7 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
               isActive={isFavorite}
               className={cn(
                 "absolute top-4 right-4 z-10 backdrop-blur-md rounded-full transition-all duration-300 group/fav",
-                isFavorite ? "bg-black !text-white" : "bg-black/40 !text-white hover:bg-black"
+                isFavorite ? "bg-black text-white!" : "bg-black/40 text-white! hover:bg-black"
               )}
               aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
               icon={
@@ -182,7 +182,7 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
                   size={20} 
                   className={cn(
                     "transition-all duration-300",
-                    isFavorite ? "!fill-white" : "group-hover/fav:!fill-white"
+                    isFavorite ? "fill-white!" : "group-hover/fav:fill-white!"
                   )}
                   strokeWidth={1.5}
                 />

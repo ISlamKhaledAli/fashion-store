@@ -103,7 +103,7 @@ export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductRev
                   <div className="space-y-1">
                     <p className="font-medium tracking-tight text-lg">{review.userName}</p>
                     {review.isVerified && (
-                      <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest flex items-center gap-1.5 text-zinc-400">
+                      <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest flex items-center gap-1.5">
                         <span className="material-symbols-outlined text-sm">verified</span>
                         Verified Buyer
                       </p>

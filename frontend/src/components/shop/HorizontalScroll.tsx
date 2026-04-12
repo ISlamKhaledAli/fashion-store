@@ -33,23 +33,25 @@ export const HorizontalScroll = ({ title, products }: HorizontalScrollProps) => 
           </div>
           <div className="hidden md:flex gap-4">
             <Button 
-              variant="outline"
+              variant="icon"
               size="icon"
               onClick={() => scroll("left")}
-              className="rounded-full flex items-center justify-center hover:bg-white transition-all active:scale-95 group"
+              className="rounded-full flex items-center justify-center hover:bg-white transition-all active:scale-95 group border border-outline-variant"
               aria-label="Scroll left"
-            >
-              <span className="material-symbols-outlined transition-transform group-hover:-translate-x-0.5">chevron_left</span>
-            </Button>
+              icon={
+                <span className="material-symbols-outlined transition-transform group-hover:-translate-x-0.5">chevron_left</span>
+              }
+            />
             <Button 
-              variant="outline"
+              variant="icon"
               size="icon"
               onClick={() => scroll("right")}
-              className="rounded-full flex items-center justify-center hover:bg-white transition-all active:scale-95 group"
+              className="rounded-full flex items-center justify-center hover:bg-white transition-all active:scale-95 group border border-outline-variant"
               aria-label="Scroll right"
-            >
-              <span className="material-symbols-outlined transition-transform group-hover:translate-x-0.5">chevron_right</span>
-            </Button>
+              icon={
+                <span className="material-symbols-outlined transition-transform group-hover:translate-x-0.5">chevron_right</span>
+              }
+            />
           </div>
         </div>
 

@@ -182,7 +182,7 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
           >
             <span className="material-symbols-outlined text-lg">remove</span>
           </Button>
-          <span className="mx-4 text-sm tabular-nums min-w-[1.5rem] text-center">{quantity}</span>
+          <span className="mx-4 text-sm tabular-nums min-w-1.5rem text-center">{quantity}</span>
           <Button 
             variant="ghost"
             size="none"
@@ -231,19 +231,19 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
         </Button>
 
         <Button
-          variant="outline"
+          variant="none"
           size="none"
           onClick={toggleWishlist}
           className={cn(
-            "p-4 border transition-colors flex items-center justify-center",
-            isFavorite ? "border-red-100 bg-red-50 text-red-600" : "border-outline-variant hover:bg-surface-container"
+            "p-4 border transition-colors flex items-center justify-center rounded-sm",
+            isFavorite ? "border-red-100 bg-red-50 text-red-600" : "border-outline-variant hover:bg-surface-container text-on-surface"
           )}
           aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
           icon={
             <motion.span 
               animate={{ scale: isFavorite ? [1, 1.2, 1] : 1 }}
               className={cn(
-                "material-symbols-outlined",
+                "material-symbols-outlined text-xl",
                 isFavorite && "fill-current"
               )}
               style={{ fontVariationSettings: `'FILL' ${isFavorite ? 1 : 0}` }}
