@@ -1,12 +1,13 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ShoppingBag, Trash2, Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { formatCurrency } from "@/lib/utils";
-import { Button } from "@/components/ui/Button";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect } from "react";
+import { cartApi } from "@/lib/api";
+import { Button } from "@/components/ui/Button";
 
 export const CartDrawer = () => {
   const { 
@@ -18,6 +19,20 @@ export const CartDrawer = () => {
     getTotalPrice 
   } = useCartStore();
 
+  // Sync cart with backend on open
+  useEffect(() => {
+    if (isOpen) {
+      const fetchCart = async () => {
+        try {
+          await cartApi.get();
+        } catch {
+          // Silently ignore — user may not be authenticated
+        }
+      };
+      fetchCart();
+    }
+  }, [isOpen]);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -28,7 +43,7 @@ export const CartDrawer = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => toggleDrawer(false)}
-            className="fixed inset-0 bg-on-surface/40 backdrop-blur-sm z-60"
+            className="fixed inset-0 bg-stone-950/40 backdrop-blur-sm z-[55] transition-opacity duration-700"
           />
 
           {/* Drawer */}
@@ -36,113 +51,147 @@ export const CartDrawer = () => {
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-full max-w-[480px] z-70 bg-surface-container-lowest shadow-2xl flex flex-col"
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed right-0 h-full w-full max-w-[450px] z-[60] bg-surface dark:bg-stone-950 shadow-[0_20px_50px_rgba(26,28,29,0.05)] flex flex-col"
           >
             {/* Header */}
             <div className="flex justify-between items-center p-8 border-b border-outline-variant/10">
               <div>
-                <h2 className="text-lg font-bold text-on-surface">Your Bag ({items.length})</h2>
+                <h2 className="text-lg font-bold text-on-surface dark:text-stone-50">
+                  Your Bag ({items.length})
+                </h2>
                 <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant mt-1">
                   Review your curated selection
                 </p>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
+              <Button 
+                variant="icon"
+                size="none"
                 onClick={() => toggleDrawer(false)}
-                className="hover:bg-surface-container-low rounded-full transition-colors group flex items-center justify-center p-0"
-                aria-label="Close cart"
+                className="p-2 hover:bg-surface-container-low dark:hover:bg-stone-900 rounded-full transition-colors group flex items-center justify-center h-10 w-10 shrink-0"
                 icon={
-                  <X size={20} className="text-on-surface group-hover:rotate-90 transition-transform duration-500" strokeWidth={1.5} />
+                  <span className="material-symbols-outlined text-on-surface dark:text-stone-50 group-hover:rotate-90 transition-transform duration-500">
+                    close
+                  </span>
                 }
               />
             </div>
 
-            {/* Item List */}
+            {/* Scrollable Item List */}
             <div className="flex-1 overflow-y-auto no-scrollbar px-8 py-6 space-y-8">
               {items.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
-                  <ShoppingBag size={48} className="text-outline-variant" strokeWidth={1} />
-                  <p className="text-sm font-medium text-on-surface-variant">Your bag is empty</p>
-                  <Button variant="outline" size="sm" onClick={() => toggleDrawer(false)}>
+                <div className="h-full flex flex-col items-center justify-center text-center space-y-6">
+                  <span className="material-symbols-outlined text-6xl text-outline-variant" style={{ fontVariationSettings: "'FILL' 0, 'wght' 200" }}>
+                    shopping_bag
+                  </span>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-on-surface-variant uppercase tracking-widest">Your bag is empty</p>
+                    <p className="text-xs text-on-surface-variant/60 lowercase italic">Quality takes time. Start curate yours.</p>
+                  </div>
+                  <Button 
+                    variant="primary"
+                    onClick={() => toggleDrawer(false)}
+                  >
                     Start Exploring
                   </Button>
                 </div>
               ) : (
-                items.map((item) => (
-                  <motion.div
-                    key={item.id}
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="flex gap-6 group"
-                  >
-                    <div className="relative w-24 h-32 shrink-0 bg-surface-container-low overflow-hidden rounded-sm">
-                      <Image
-                        src={item.image}
-                        alt={item.name}
-                        fill
-                        sizes="96px"
-                        className="object-cover transition-transform duration-700 group-hover:scale-110"
-                      />
-                    </div>
-                    <div className="flex flex-col justify-between flex-1">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-sm font-medium text-on-surface">{item.name}</h3>
-                          <p className="text-[10px] text-on-surface-variant mt-1 uppercase tracking-wider">
-                            {item.color} / {item.size}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeItem(item.id)}
-                          className="text-outline hover:text-error h-8 w-8"
-                        >
-                          <Trash2 size={16} strokeWidth={1.5} />
-                        </Button>
+                <AnimatePresence mode="popLayout">
+                  {items.map((item) => (
+                    <motion.div
+                      key={item.id}
+                      layout
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.4 }}
+                      className="flex gap-6 group"
+                    >
+                      <div className="w-20 h-[100px] flex-shrink-0 bg-surface-container-low dark:bg-stone-900 overflow-hidden rounded-sm relative">
+                        <Image 
+                          src={item.image} 
+                          alt={item.name}
+                          fill
+                          sizes="80px"
+                          className="object-cover transition-transform duration-700 group-hover:scale-110" 
+                        />
                       </div>
-                      <div className="flex justify-between items-end">
-                        <div className="flex items-center gap-4 bg-surface-container-low px-3 py-1.5 rounded-full">
-                          <Button
+                      <div className="flex flex-col justify-between flex-1 py-1">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="text-sm font-medium text-on-surface dark:text-stone-50 truncate max-w-[180px]">
+                              {item.name}
+                            </h3>
+                            <p className="text-[10px] text-on-surface-variant mt-1 uppercase tracking-wider">
+                              {item.color} / {item.size}
+                            </p>
+                          </div>
+                          <Button 
                             variant="ghost"
                             size="none"
-                            onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                            className="text-on-surface-variant hover:text-primary h-6 w-6"
-                          >
-                            <Minus size={14} strokeWidth={2} />
-                          </Button>
-                          <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
-                          <Button
-                            variant="ghost"
-                            size="none"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="text-on-surface-variant hover:text-primary h-6 w-6"
-                          >
-                            <Plus size={14} strokeWidth={2} />
-                          </Button>
+                            onClick={async () => {
+                              try {
+                                removeItem(item.id);
+                                await cartApi.removeItem(item.id);
+                              } catch (err) {
+                                console.error("Remove item failed:", err);
+                              }
+                            }}
+                            className="text-outline-variant hover:text-error transition-colors p-2"
+                            icon={
+                              <span className="material-symbols-outlined text-[18px]">delete</span>
+                            }
+                          />
                         </div>
-                        <span className="text-sm font-bold text-on-surface">
-                          {formatCurrency(item.price * item.quantity)}
-                        </span>
+                        <div className="flex justify-between items-end">
+                          <div className="flex items-center gap-4 bg-surface-container-low dark:bg-stone-900 px-3 py-1.5 rounded-full">
+                            <Button 
+                              variant="none"
+                              size="none"
+                              onClick={async () => {
+                                const newQty = Math.max(1, item.quantity - 1);
+                                if (newQty !== item.quantity) {
+                                  updateQuantity(item.id, newQty);
+                                  await cartApi.updateQuantity(item.id, newQty);
+                                }
+                              }}
+                              className="text-on-surface-variant hover:text-on-surface dark:hover:text-stone-50 transition-colors flex items-center justify-center h-6 w-6"
+                              icon={
+                                <span className="material-symbols-outlined text-xs">remove</span>
+                              }
+                            />
+                            <span className="text-xs font-medium w-4 text-center">{item.quantity}</span>
+                            <Button 
+                              variant="none"
+                              size="none"
+                              onClick={async () => {
+                                const newQty = item.quantity + 1;
+                                updateQuantity(item.id, newQty);
+                                await cartApi.updateQuantity(item.id, newQty);
+                              }}
+                              className="text-on-surface-variant hover:text-on-surface dark:hover:text-stone-50 transition-colors flex items-center justify-center h-6 w-6"
+                              icon={
+                                <span className="material-symbols-outlined text-xs">add</span>
+                              }
+                            />
+                          </div>
+                          <span className="text-sm font-medium text-on-surface dark:text-stone-50">
+                            {formatCurrency(item.price * item.quantity)}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               )}
             </div>
 
-            {/* Footer */}
+            {/* Footer Section */}
             {items.length > 0 && (
-              <div className="p-8 bg-surface-container-low space-y-6">
+              <div className="p-8 bg-surface-container-low dark:bg-stone-900 space-y-6">
                 <div className="flex justify-between items-baseline">
-                  <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">
-                    Subtotal
-                  </span>
-                  <span className="text-2xl font-bold tracking-tighter text-on-surface">
+                  <span className="text-[10px] uppercase tracking-widest text-on-surface-variant">Subtotal</span>
+                  <span className="text-2xl font-medium tracking-tight text-on-surface dark:text-stone-50">
                     {formatCurrency(getTotalPrice())}
                   </span>
                 </div>
@@ -150,11 +199,27 @@ export const CartDrawer = () => {
                   Shipping and taxes calculated at checkout
                 </p>
                 <div className="grid grid-cols-1 gap-3">
-                  <Button variant="outline" className="w-full" onClick={() => toggleDrawer(false)}>
-                    Continue Shopping
-                  </Button>
-                  <Link href="/checkout" onClick={() => toggleDrawer(false)}>
-                    <Button variant="primary" className="w-full">
+                  <Link 
+                    href="/cart" 
+                    onClick={() => toggleDrawer(false)}
+                    className="w-full"
+                  >
+                    <Button 
+                      variant="outline"
+                      className="w-full scale-100"
+                    >
+                      View Cart
+                    </Button>
+                  </Link>
+                  <Link 
+                    href="/checkout" 
+                    onClick={() => toggleDrawer(false)}
+                    className="w-full"
+                  >
+                    <Button 
+                      variant="primary"
+                      className="w-full scale-100"
+                    >
                       Checkout Now
                     </Button>
                   </Link>
@@ -167,3 +232,4 @@ export const CartDrawer = () => {
     </AnimatePresence>
   );
 };
+

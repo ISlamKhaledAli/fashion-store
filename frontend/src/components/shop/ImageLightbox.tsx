@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductImage } from "@/types";
+import { Button } from "@/components/ui/Button";
 
 interface ImageLightboxProps {
   images: ProductImage[];
@@ -60,16 +61,17 @@ export const ImageLightbox = ({
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 lg:p-12"
         onClick={onClose}
       >
-        <button
+        <Button
+          variant="none"
+          size="none"
           onClick={(e) => {
             e.stopPropagation();
             onNavigate((currentIndex - 1 + images.length) % images.length);
           }}
-          className="absolute left-4 lg:left-12 text-white p-4 hover:opacity-70 transition-opacity z-10"
+          className="absolute left-4 lg:left-12 text-white p-4 hover:opacity-70 transition-opacity z-10 scale-100"
           aria-label="Previous image"
-        >
-          <span className="material-symbols-outlined text-4xl">chevron_left</span>
-        </button>
+          icon={<span className="material-symbols-outlined text-4xl">chevron_left</span>}
+        />
 
         <motion.div
           initial={{ scale: 0.9 }}
@@ -88,24 +90,26 @@ export const ImageLightbox = ({
           />
         </motion.div>
 
-        <button
+        <Button
+          variant="none"
+          size="none"
           onClick={(e) => {
             e.stopPropagation();
             onNavigate((currentIndex + 1) % images.length);
           }}
-          className="absolute right-4 lg:right-12 text-white p-4 hover:opacity-70 transition-opacity z-10"
+          className="absolute right-4 lg:right-12 text-white p-4 hover:opacity-70 transition-opacity z-10 scale-100"
           aria-label="Next image"
-        >
-          <span className="material-symbols-outlined text-4xl">chevron_right</span>
-        </button>
+          icon={<span className="material-symbols-outlined text-4xl">chevron_right</span>}
+        />
 
-        <button
+        <Button
+          variant="none"
+          size="none"
           onClick={onClose}
-          className="absolute top-4 right-4 lg:top-8 lg:right-8 text-white p-4 hover:opacity-70 transition-opacity z-10"
+          className="absolute top-4 right-4 lg:top-8 lg:right-8 text-white p-4 hover:opacity-70 transition-opacity z-10 scale-100"
           aria-label="Close fullscreen"
-        >
-          <span className="material-symbols-outlined text-3xl">close</span>
-        </button>
+          icon={<span className="material-symbols-outlined text-3xl">close</span>}
+        />
       </motion.div>
     </AnimatePresence>
   );

@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from "react"
 import Image from 'next/image'
 import Link from 'next/link'
+import { Button } from "@/components/ui/Button"
 
 interface Props {
   excludeSlug: string
@@ -75,18 +76,24 @@ export const HorizontalScroll = ({ excludeSlug }: Props) => {
         <div className="flex justify-between items-end mb-12">
           <h2 className="text-4xl font-medium tracking-tight">Complete the Look</h2>
           <div className="flex gap-4">
-            <button 
+            <Button 
+              variant="outline"
+              size="none"
               onClick={() => scroll("left")}
-              className="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:bg-white transition-colors group"
-            >
-              <span className="material-symbols-outlined transition-transform group-hover:-translate-x-0.5">chevron_left</span>
-            </button>
-            <button 
+              className="w-12 h-12 rounded-full flex items-center justify-center group"
+              icon={
+                <span className="material-symbols-outlined transition-transform group-hover:-translate-x-0.5">chevron_left</span>
+              }
+            />
+            <Button 
+              variant="outline"
+              size="none"
               onClick={() => scroll("right")}
-              className="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:bg-white transition-colors group"
-            >
-              <span className="material-symbols-outlined transition-transform group-hover:translate-x-0.5">chevron_right</span>
-            </button>
+              className="w-12 h-12 rounded-full flex items-center justify-center group"
+              icon={
+                <span className="material-symbols-outlined transition-transform group-hover:translate-x-0.5">chevron_right</span>
+              }
+            />
           </div>
         </div>
         

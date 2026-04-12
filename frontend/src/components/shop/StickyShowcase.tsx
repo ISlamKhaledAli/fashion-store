@@ -50,7 +50,7 @@ export const StickyShowcase = ({ image, stories }: StickyShowcaseProps) => {
             className="min-h-screen flex items-center px-8 lg:px-16"
           >
             <div className="space-y-6 max-w-xl">
-              <span className="text-4xl text-primary font-serif">
+              <span className="material-symbols-outlined text-4xl text-primary">
                 {story.icon}
               </span>
               <h2 className="text-3xl font-medium tracking-tight">

@@ -41,12 +41,14 @@ export const categoryApi = {
 export const cartApi = {
   get: () => api.get<ApiResponse<unknown>>("/cart"),
   addItem: (variantId: string, quantity: number) => 
-    api.post<ApiResponse<unknown>>("/cart", { variantId, quantity }),
-  updateQuantity: (id: string, quantity: number) => 
-    api.put<ApiResponse<unknown>>(`/cart/${id}`, { quantity }),
+    api.post<ApiResponse<unknown>>("/cart/add", { variantId, quantity }),
+  updateQuantity: (cartItemId: string, quantity: number) => 
+    api.put<ApiResponse<unknown>>("/cart/update", { cartItemId, quantity }),
   removeItem: (id: string) => 
-    api.delete<ApiResponse<unknown>>(`/cart/${id}`),
-  clear: () => api.delete<ApiResponse<unknown>>("/cart"),
+    api.delete<ApiResponse<unknown>>(`/cart/remove/${id}`),
+  clear: () => api.delete<ApiResponse<unknown>>("/cart/clear"),
+  validatePromo: (code: string, orderTotal: number) => 
+    api.post<ApiResponse<{ valid: boolean; discountAmount: number; message?: string }>>("/discounts/validate", { code, orderTotal }),
 };
 
 export const orderApi = {

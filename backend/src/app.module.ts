@@ -19,6 +19,7 @@ import wishlistRoutes from "./routes/wishlist.routes";
 import addressRoutes from "./routes/address.routes";
 import uploadRoutes from "./routes/upload.routes";
 import adminRoutes from "./routes/admin.routes";
+import discountRoutes from "./routes/discount.routes";
 
 const app: Application = express();
 
@@ -58,6 +59,7 @@ app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/addresses", addressRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/discounts", discountRoutes);
 
 // Error handling middleware
 app.use(errorHandler);
