@@ -5,6 +5,7 @@ import {
   Category, 
   Order, 
   User, 
+  WishlistItem,
 } from "@/types";
 
 export const authApi = {
@@ -54,12 +55,20 @@ export const cartApi = {
 export const orderApi = {
   create: (data: Record<string, unknown>) => 
     api.post<ApiResponse<{ order: Order; clientSecret: string }>>("/orders", data),
-  getMine: (params: Record<string, unknown>) => 
-    api.get<ApiResponse<Order[]>>("/orders/my-orders", { params }),
+  getMine: (params?: Record<string, unknown>) => 
+    api.get<ApiResponse<Order[]>>("/orders", { params }),
   getById: (id: string) => 
     api.get<ApiResponse<Order>>(`/orders/${id}`),
   cancel: (id: string) => 
     api.put<ApiResponse<unknown>>(`/orders/${id}/cancel`),
+};
+
+export const wishlistApi = {
+  getAll: () => api.get<ApiResponse<WishlistItem[]>>("/wishlist"),
+  add: (productId: string) => 
+    api.post<ApiResponse<WishlistItem>>("/wishlist/add", { productId }),
+  remove: (productId: string) => 
+    api.delete<ApiResponse<unknown>>(`/wishlist/remove/${productId}`),
 };
 
 export const addressApi = {

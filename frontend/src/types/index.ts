@@ -85,6 +85,12 @@ export interface OrderItem {
   price: number;
 }
 
+export interface WishlistItem {
+  productId: string;
+  userId: string;
+  product: Product;
+}
+
 export interface Order {
   id: string;
   userId: string;
