@@ -7,6 +7,7 @@ import { ShoppingBag, User, Menu } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/Button";
 
 export const Navbar = () => {
   const { scrollY } = useScroll();
@@ -53,7 +54,7 @@ export const Navbar = () => {
       <div className="flex items-center gap-12">
         <Link 
           href="/" 
-          className="text-2xl font-semibold tracking-tighter text-on-surface"
+          className="text-2xl font-semibold tracking-tighter text-on-surface cursor-pointer hover:opacity-70 transition-opacity"
         >
           CURATOR
         </Link>
@@ -63,7 +64,7 @@ export const Navbar = () => {
             <Link
               key={link.name}
               href={link.href}
-              className="relative group py-2 text-on-surface/60 hover:text-on-surface transition-colors duration-300"
+              className="relative group py-2 text-on-surface/60 hover:text-on-surface transition-colors duration-300 cursor-pointer"
             >
               {link.name}
               <motion.span
@@ -78,9 +79,11 @@ export const Navbar = () => {
       </div>
 
       <div className="flex items-center gap-6">
-        <button
+        <Button
+          variant="icon"
+          size="icon"
           onClick={() => toggleDrawer(true)}
-          className="relative text-on-surface hover:scale-95 transition-all duration-500 ease-out flex items-center justify-center"
+          className="relative text-on-surface"
         >
           <ShoppingBag size={20} strokeWidth={1.5} />
           <AnimatePresence>
@@ -95,19 +98,21 @@ export const Navbar = () => {
               </motion.span>
             )}
           </AnimatePresence>
-        </button>
+        </Button>
 
         <Link
           href={isMounted && isAuthenticated ? "/account" : "/login"}
-          className="text-on-surface hover:scale-95 transition-all duration-500 ease-out flex items-center justify-center"
+          className="text-on-surface hover:scale-95 transition-all duration-500 ease-out flex items-center justify-center cursor-pointer"
         >
-          <User size={20} strokeWidth={1.5} />
+          <Button variant="icon" size="icon">
+            <User size={20} strokeWidth={1.5} />
+          </Button>
         </Link>
         
         {/* Mobile Menu Toggle */}
-        <button className="md:hidden text-on-surface flex items-center justify-center">
+        <Button variant="icon" size="icon" className="md:hidden text-on-surface">
           <Menu size={20} strokeWidth={1.5} />
-        </button>
+        </Button>
       </div>
     </motion.nav>
   );

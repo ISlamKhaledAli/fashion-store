@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { X, LayoutGrid, List } from "lucide-react";
+import { Button } from "../ui/Button";
 
 interface ProductGridHeaderProps {
   totalProducts?: number;
@@ -46,7 +47,7 @@ export const ProductGridHeader = ({
                 className="bg-surface-container-low px-3 py-1 flex items-center gap-2 rounded-full"
               >
                 {filter.label} 
-                <button onClick={() => removeFilter(filter.id)} className="hover:text-primary transition-colors flex items-center justify-center">
+                <button onClick={() => removeFilter(filter.id)} className="hover:text-primary transition-colors flex items-center justify-center cursor-pointer">
                   <X size={12} strokeWidth={2} />
                 </button>
               </span>
@@ -55,10 +56,10 @@ export const ProductGridHeader = ({
         </div>
       </div>
       
-      <div className="flex items-center gap-8 border-b border-outline-variant/30 pb-2 w-full md:w-auto overflow-x-auto">
+      <div className="flex flex-wrap items-center justify-between md:justify-end gap-x-8 gap-y-4 border-b border-outline-variant/30 pb-2 w-full md:w-auto">
         <div className="flex items-center gap-2 text-xs uppercase tracking-widest shrink-0">
           <span className="text-on-surface-variant">Sort:</span>
-          <select className="bg-transparent border-none focus:ring-0 p-0 pr-6 text-on-surface font-bold text-xs uppercase tracking-widest cursor-pointer outline-none">
+          <select className="bg-transparent border-none focus:ring-0 p-0 pr-6 text-on-surface font-bold text-xs uppercase tracking-widest cursor-pointer outline-none cursor-pointer">
             <option>Newest Arrivals</option>
             <option>Price Low-High</option>
             <option>Price High-Low</option>
@@ -67,20 +68,24 @@ export const ProductGridHeader = ({
         </div>
         
         <div className="flex items-center gap-4 shrink-0">
-          <button 
+          <Button 
+            variant="icon"
+            size="icon"
             onClick={() => onViewChange?.(true)}
-            className={`transition-colors flex items-center justify-center ${isGridView ? "text-primary opacity-100" : "text-on-surface-variant hover:text-primary"}`}
+            isActive={isGridView}
             aria-label="Grid view"
           >
             <LayoutGrid size={20} strokeWidth={1.5} />
-          </button>
-          <button 
+          </Button>
+          <Button 
+            variant="icon"
+            size="icon"
             onClick={() => onViewChange?.(false)}
-            className={`transition-colors flex items-center justify-center ${!isGridView ? "text-primary opacity-100" : "text-on-surface-variant hover:text-primary"}`}
+            isActive={!isGridView}
             aria-label="List view"
           >
             <List size={20} strokeWidth={1.5} />
-          </button>
+          </Button>
         </div>
       </div>
     </header>

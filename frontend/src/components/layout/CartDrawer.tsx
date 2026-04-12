@@ -92,28 +92,34 @@ export const CartDrawer = () => {
                             {item.color} / {item.size}
                           </p>
                         </div>
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => removeItem(item.id)}
-                          className="text-outline hover:text-error transition-colors flex items-center"
+                          className="text-outline hover:text-error h-8 w-8"
                         >
-                          <Trash2 size={18} strokeWidth={1.5} />
-                        </button>
+                          <Trash2 size={16} strokeWidth={1.5} />
+                        </Button>
                       </div>
                       <div className="flex justify-between items-end">
                         <div className="flex items-center gap-4 bg-surface-container-low px-3 py-1.5 rounded-full">
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="none"
                             onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                            className="text-on-surface-variant hover:text-primary transition-colors flex items-center"
+                            className="text-on-surface-variant hover:text-primary h-6 w-6"
                           >
                             <Minus size={14} strokeWidth={2} />
-                          </button>
+                          </Button>
                           <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="none"
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="text-on-surface-variant hover:text-primary transition-colors flex items-center"
+                            className="text-on-surface-variant hover:text-primary h-6 w-6"
                           >
                             <Plus size={14} strokeWidth={2} />
-                          </button>
+                          </Button>
                         </div>
                         <span className="text-sm font-bold text-on-surface">
                           {formatCurrency(item.price * item.quantity)}

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { categoryApi, productApi } from "@/lib/api";
 import { Category } from "@/types";
+import { Button } from "../ui/Button";
 
 export interface FilterState {
   category: string[];
@@ -122,7 +123,7 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
                 key={color.name}
                 onClick={() => dispatch({ type: "toggle_color", payload: color.name })}
                 className={cn(
-                  "w-6 h-6 rounded-full ring-1 transition-all hover:scale-110",
+                  "w-6 h-6 rounded-full ring-1 transition-all hover:scale-110 cursor-pointer",
                   state.color.includes(color.name) ? "ring-offset-2 ring-primary" : "ring-stone-200"
                 )}
                 style={{ backgroundColor: color.hex }}
@@ -133,12 +134,13 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
         </section>
       </div>
 
-      <button 
+      <Button 
+        variant="primary"
         onClick={onClose}
-        className="py-4 bg-primary text-on-primary text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-primary/90 transition-all active:scale-95"
+        className="w-full"
       >
         Show Results
-      </button>
+      </Button>
     </div>
   );
 

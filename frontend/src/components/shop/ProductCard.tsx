@@ -8,26 +8,26 @@ import { Star, Heart, Plus } from "lucide-react";
 import { Product } from "@/types";
 import { formatCurrency, cn } from "@/lib/utils";
 import { useCartStore } from "@/store/cartStore";
+import { Button } from "../ui/Button";
 
 interface ProductCardProps {
   product: Product;
   className?: string;
   delay?: number;
   variant?: "default" | "editorial";
+  isListView?: boolean;
 }
 
-export const ProductCard = ({ product, className, delay = 0, variant = "default" }: ProductCardProps) => {
+export const ProductCard = ({ product, className, delay = 0, variant = "default", isListView = false }: ProductCardProps) => {
   const { addItem, toggleDrawer } = useCartStore();
   const [isFavorite, setIsFavorite] = useState(false);
 
+  // ... (maintain handleAddToCart, toggleFavorite, renderStars logic)
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    // Simplification: pick first variant
     const productVariant = product.variants?.[0];
     if (!productVariant) return;
-    
     addItem({
       id: `${product.id}-${productVariant.id}`,
       productId: product.id,
@@ -71,6 +71,71 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
     );
   };
 
+  if (isListView) {
+    return (
+      <motion.article
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay }}
+        className={cn("group flex flex-col sm:flex-row gap-8 items-center bg-surface p-4 sm:p-0 border-b border-outline-variant/10 pb-12 sm:border-none sm:pb-0", className)}
+      >
+        <Link href={`/products/${product.slug}`} className="shrink-0 w-full sm:w-64 aspect-3/4 sm:aspect-square relative overflow-hidden bg-surface-container-low group-hover:-translate-y-1 transition-transform duration-500">
+          {product.images[0] && (
+            <Image
+              src={product.images.find(img => img.isMain)?.url || product.images[0].url}
+              alt={product.name}
+              fill
+              sizes="(max-width: 640px) 100vw, 256px"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+          )}
+          <button
+            onClick={toggleFavorite}
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-primary transition-all active:scale-90 z-10 cursor-pointer"
+          >
+            <Heart size={18} className={cn(isFavorite && "fill-current")} />
+          </button>
+        </Link>
+
+        <div className="flex-1 space-y-4 py-2">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant mb-2 font-bold">
+              {product.brand?.name || "THE CURATOR"}
+            </p>
+            <h3 className="text-xl sm:text-2xl font-medium tracking-tight group-hover:text-primary transition-colors">
+              <Link href={`/products/${product.slug}`}>{product.name}</Link>
+            </h3>
+          </div>
+
+          <p className="text-sm text-on-surface-variant line-clamp-2 max-w-xl leading-relaxed">
+            {product.description || "Experimental design meets sustainable craftsmanship in this signature piece from our latest collection."}
+          </p>
+
+          <div className="flex items-center gap-6">
+            <span className="text-xl font-bold tracking-tighter">{formatCurrency(product.price)}</span>
+            <div className="h-4 w-px bg-outline-variant" />
+            {renderStars(product.avgRating, product.reviewCount)}
+          </div>
+
+          <div className="flex flex-wrap gap-4 pt-4">
+            <button 
+              onClick={handleAddToCart}
+              className="px-8 py-3 bg-primary text-on-primary text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20 cursor-pointer"
+            >
+              Add to Collection
+            </button>
+            <Link 
+              href={`/products/${product.slug}`}
+              className="px-8 py-3 border border-outline text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-surface-container transition-all active:scale-95 cursor-pointer"
+            >
+              View Details
+            </Link>
+          </div>
+        </div>
+      </motion.article>
+    );
+  }
+
   if (variant === "editorial") {
     return (
       <article
@@ -89,26 +154,31 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
               />
             )}
             
-            <button
+            <Button
+              variant="icon"
+              size="icon"
               onClick={toggleFavorite}
-              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-primary transition-all active:scale-90 z-10 group/fav"
+              isActive={isFavorite}
+              className="absolute top-4 right-4 bg-white/20 backdrop-blur-md z-10 group/fav"
             >
               <Heart 
                 size={20} 
                 className={cn(
                   "transition-all duration-300",
-                  isFavorite ? "fill-current text-white group-hover/fav:text-primary" : "text-white group-hover/fav:text-primary"
+                  isFavorite ? "text-primary" : "text-white"
                 )}
                 strokeWidth={1.5}
               />
-            </button>
+            </Button>
             
-            <button
+            <Button
+              variant="primary"
               onClick={handleAddToCart}
-              className="absolute bottom-0 left-0 w-full py-4 bg-primary text-on-primary text-[10px] font-bold uppercase tracking-[0.2em] translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] z-10"
+              className="absolute bottom-0 left-0 w-full py-6 translate-y-full group-hover:translate-y-0 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] z-10"
+              size="none"
             >
               Quick Add
-            </button>
+            </Button>
           </div>
           
           <div className="space-y-1 mt-6">
@@ -149,7 +219,7 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
           
           <button
             onClick={handleAddToCart}
-            className="absolute bottom-6 right-6 w-12 h-12 bg-primary text-on-primary rounded-full flex items-center justify-center opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 delay-100 shadow-xl"
+            className="absolute bottom-6 right-6 w-12 h-12 bg-primary text-on-primary rounded-full flex items-center justify-center opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 delay-100 shadow-xl cursor-pointer"
           >
             <Plus size={24} strokeWidth={1.5} />
           </button>

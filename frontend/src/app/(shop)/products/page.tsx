@@ -9,7 +9,9 @@ import { ActiveFilters } from "@/components/shop/ActiveFilters";
 import { ProductSkeleton } from "@/components/shop/ProductSkeleton";
 import { productApi } from "@/lib/api";
 import { Product } from "@/types";
+import { cn } from "@/lib/utils";
 import { Filter, LayoutGrid, List, ArrowLeft, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 
 type Action =
   | { type: "toggle_category"; payload: string }
@@ -66,10 +68,11 @@ function ProductsContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const isInitialMount = React.useRef(true);
   const fetchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  // Single mount effect: sync URL → fetch once
+  // ... (maintain useEffects logic)
   useEffect(() => {
     const params: Partial<FilterState> = {};
     const cat = searchParams.get("category");
@@ -81,7 +84,6 @@ function ProductsContent() {
       dispatch({ type: "sync_from_url", payload: params });
     }
 
-    // Initial fetch using URL params directly
     const fetchInitial = async () => {
       setIsLoading(true);
       try {
@@ -103,30 +105,21 @@ function ProductsContent() {
     };
 
     fetchInitial().then(() => {
-      // Only after the first fetch completes, allow the debounced effect to run
       isInitialMount.current = false;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Debounced fetch on subsequent filter state changes only
   useEffect(() => {
     if (isInitialMount.current) return;
-
-    if (fetchTimeoutRef.current) {
-      clearTimeout(fetchTimeoutRef.current);
-    }
-
+    if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
     fetchTimeoutRef.current = setTimeout(async () => {
       setIsLoading(true);
-
       const params = new URLSearchParams();
       if (state.category.length) params.set("category", state.category.join(","));
       if (state.color.length) params.set("color", state.color.join(","));
       if (state.maxPrice < 2000) params.set("maxPrice", state.maxPrice.toString());
       params.set("sort", state.sort);
       router.replace(`/products?${params.toString()}`, { scroll: false });
-
       try {
         const res = await productApi.getAll({
           category: state.category.map(c => c.trim()).join(","),
@@ -135,29 +128,19 @@ function ProductsContent() {
           sort: state.sort,
           limit: 12,
         });
-        if (res.data.success) {
-          setProducts(res.data.data);
-        }
+        if (res.data.success) setProducts(res.data.data);
       } catch (error) {
         console.error("Fetch error:", error);
       } finally {
         setTimeout(() => setIsLoading(false), 300);
       }
     }, 150);
-
-    return () => {
-      if (fetchTimeoutRef.current) {
-        clearTimeout(fetchTimeoutRef.current);
-      }
-    };
+    return () => { if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current); };
   }, [state, router]);
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen">
-      {/* Sidebar - Desktop */}
       <FilterSidebar state={state} dispatch={dispatch} />
-      
-      {/* Sidebar - Mobile Drawer */}
       <FilterSidebar 
         state={state} 
         dispatch={dispatch} 
@@ -167,7 +150,6 @@ function ProductsContent() {
       />
 
       <section className="flex-1 p-8 lg:p-12">
-        {/* Header Tools */}
         <header className="flex flex-col md:flex-row justify-between items-end gap-6 mb-12">
           <div className="space-y-4 w-full">
             <h1 className="text-4xl lg:text-6xl font-medium tracking-tighter">
@@ -186,7 +168,7 @@ function ProductsContent() {
             </div>
           </div>
           
-          <div className="flex items-center gap-8 border-b border-outline-variant/30 pb-2 w-full md:w-auto overflow-x-auto">
+          <div className="flex flex-wrap items-center justify-between md:justify-end gap-x-8 gap-y-4 border-b border-outline-variant/30 pb-2 w-full md:w-auto">
             <div className="flex items-center gap-2 text-xs uppercase tracking-widest shrink-0">
               <span className="text-on-surface-variant">Sort:</span>
               <select 
@@ -201,21 +183,31 @@ function ProductsContent() {
               </select>
             </div>
             <div className="flex items-center gap-4 shrink-0">
-              <button className="text-primary flex items-center justify-center">
+              <Button 
+                variant="icon"
+                size="icon"
+                onClick={() => setViewMode("grid")}
+                isActive={viewMode === "grid"}
+                aria-label="Grid view"
+              >
                 <LayoutGrid size={20} strokeWidth={1.5} />
-              </button>
-              <button className="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center">
+              </Button>
+              <Button 
+                variant="icon"
+                size="icon"
+                onClick={() => setViewMode("list")}
+                isActive={viewMode === "list"}
+                aria-label="List view"
+              >
                 <List size={20} strokeWidth={1.5} />
-              </button>
+              </Button>
             </div>
           </div>
         </header>
 
-        {/* Active Filters Row */}
         <ActiveFilters state={state} dispatch={dispatch} />
 
-        {/* Animated Product Grid */}
-        <ProductGrid isLoading={isLoading}>
+        <ProductGrid isLoading={isLoading} viewMode={viewMode}>
           {isLoading ? (
             Array(6).fill(0).map((_, i) => (
               <ProductSkeleton key={i} />
@@ -226,7 +218,8 @@ function ProductsContent() {
                 key={product.id} 
                 product={product} 
                 variant="editorial" 
-                delay={index * 0.06} // Exactly 60ms stagger per item
+                isListView={viewMode === "list"}
+                delay={index * 0.06} 
               />
             ))
           ) : (
@@ -239,16 +232,29 @@ function ProductsContent() {
         {/* Simple Pagination Mock */}
         {products.length > 0 && (
           <footer className="mt-24 flex justify-center items-center gap-8 border-t border-outline-variant/20 pt-12">
-            <button className="text-xs uppercase tracking-widest text-on-surface-variant hover:text-primary flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="gap-2 text-on-surface-variant hover:text-primary">
               <ArrowLeft size={14} strokeWidth={1.5} /> Prev
-            </button>
+            </Button>
+            
             <div className="flex items-center gap-6 text-xs font-bold tracking-widest">
-              <span className="text-primary border-b border-primary pb-1">01</span>
-              <span className="text-on-surface-variant cursor-not-allowed opacity-50">02</span>
+              {[1, 2].map((page) => (
+                <button 
+                  key={page}
+                  className={cn(
+                    "pb-1 transition-all cursor-pointer",
+                    page === 1 
+                      ? "text-primary border-b border-primary" 
+                      : "text-on-surface-variant hover:text-primary opacity-50 hover:opacity-100"
+                  )}
+                >
+                  {page.toString().padStart(2, '0')}
+                </button>
+              ))}
             </div>
-            <button className="text-xs uppercase tracking-widest text-on-surface-variant hover:text-primary flex items-center gap-2">
+
+            <Button variant="ghost" size="sm" className="gap-2 text-on-surface-variant hover:text-primary">
               Next <ArrowRight size={14} strokeWidth={1.5} />
-            </button>
+            </Button>
           </footer>
         )}
       </section>
