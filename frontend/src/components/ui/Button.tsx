@@ -5,7 +5,7 @@ import { motion, HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface ButtonProps extends Omit<HTMLMotionProps<"button">, "ref" | "children"> {
-  variant?: "primary" | "secondary" | "outline" | "ghost" | "icon";
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "icon" | "surface";
   size?: "sm" | "md" | "lg" | "icon" | "none";
   isLoading?: boolean;
   isActive?: boolean;
@@ -19,6 +19,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       secondary: "bg-surface-container-low text-on-surface hover:bg-surface-container uppercase tracking-[0.1em] font-bold text-[10px]",
       outline: "border border-outline-variant hover:border-primary bg-transparent text-on-surface uppercase tracking-[0.1em] font-bold text-[10px]",
       ghost: "hover:bg-surface-container-low text-on-surface-variant transition-colors",
+      surface: "bg-white text-black hover:bg-stone-100 uppercase tracking-[0.2em] font-bold text-[10px] shadow-xl",
       icon: cn(
         "transition-all duration-300 flex items-center justify-center rounded-full",
         isActive 

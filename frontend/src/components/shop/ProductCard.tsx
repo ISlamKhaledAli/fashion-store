@@ -89,12 +89,24 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
               className="object-cover transition-transform duration-700 group-hover:scale-105"
             />
           )}
-          <button
+          <Button
+            variant="icon"
+            size="icon"
             onClick={toggleFavorite}
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-primary transition-all active:scale-90 z-10 cursor-pointer"
+            isActive={isFavorite}
+            className={cn(
+              "absolute top-4 right-4 z-10 backdrop-blur-md rounded-full transition-all duration-300 group/fav",
+              isFavorite ? "bg-black text-white!" : "bg-black/40 text-white! hover:bg-black"
+            )}
           >
-            <Heart size={18} className={cn(isFavorite && "fill-current")} />
-          </button>
+            <Heart 
+              size={18} 
+              className={cn(
+                "transition-all duration-300",
+                isFavorite ? "fill-white!" : "group-hover/fav:fill-white!"
+              )} 
+            />
+          </Button>
         </Link>
 
         <div className="flex-1 space-y-4 py-2">
@@ -159,13 +171,16 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
               size="icon"
               onClick={toggleFavorite}
               isActive={isFavorite}
-              className="absolute top-4 right-4 bg-white/20 backdrop-blur-md z-10 group/fav"
+              className={cn(
+                "absolute top-4 right-4 z-10 backdrop-blur-md rounded-full transition-all duration-300 group/fav",
+                isFavorite ? "bg-black text-white!" : "bg-black/40 text-white! hover:bg-black"
+              )}
             >
               <Heart 
                 size={20} 
                 className={cn(
                   "transition-all duration-300",
-                  isFavorite ? "text-primary" : "text-white"
+                  isFavorite ? "fill-white!" : "group-hover/fav:fill-white!"
                 )}
                 strokeWidth={1.5}
               />
