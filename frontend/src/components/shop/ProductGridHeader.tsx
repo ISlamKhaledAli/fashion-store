@@ -56,9 +56,15 @@ export const ProductGridHeader = ({
                 className="bg-surface-container-low px-3 py-1 flex items-center gap-2 rounded-full"
               >
                 {filter.label} 
-                <button onClick={() => removeFilter(filter.id)} className="hover:text-primary transition-colors flex items-center justify-center cursor-pointer">
+                <Button 
+                  variant="ghost"
+                  size="none"
+                  onClick={() => removeFilter(filter.id)} 
+                  className="hover:text-primary transition-colors flex items-center justify-center cursor-pointer p-0.5"
+                  aria-label={`Remove filter ${filter.label}`}
+                >
                   <X size={12} strokeWidth={2} />
-                </button>
+                </Button>
               </span>
             ))}
           </div>

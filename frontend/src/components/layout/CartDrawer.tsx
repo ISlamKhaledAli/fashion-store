@@ -47,12 +47,16 @@ export const CartDrawer = () => {
                   Review your curated selection
                 </p>
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => toggleDrawer(false)}
-                className="p-2 hover:bg-surface-container-low rounded-full transition-colors group flex items-center justify-center"
-              >
-                <X size={20} className="text-on-surface group-hover:rotate-90 transition-transform duration-500" strokeWidth={1.5} />
-              </button>
+                className="hover:bg-surface-container-low rounded-full transition-colors group flex items-center justify-center p-0"
+                aria-label="Close cart"
+                icon={
+                  <X size={20} className="text-on-surface group-hover:rotate-90 transition-transform duration-500" strokeWidth={1.5} />
+                }
+              />
             </div>
 
             {/* Item List */}

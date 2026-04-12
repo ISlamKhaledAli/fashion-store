@@ -35,7 +35,7 @@ interface FilterSidebarProps {
 
 export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: FilterSidebarProps) => {
   const [categories, setCategories] = useState<string[]>([]);
-  const [colors, setColors] = useState<{ name: string; class: string }[]>([]);
+  const [colors, setColors] = useState<{ name: string; class: string; hex: string }[]>([]);
   
   useEffect(() => {
     const fetchFilterData = async () => {
@@ -118,9 +118,11 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
         <section>
           <h3 className="text-[11px] font-bold uppercase tracking-widest mb-4">Colors</h3>
           <div className="flex flex-wrap gap-3">
-            {(colors as any[]).map((color) => (
-              <button 
+            {colors.map((color) => (
+              <Button 
                 key={color.name}
+                variant="none"
+                size="none"
                 onClick={() => dispatch({ type: "toggle_color", payload: color.name })}
                 className={cn(
                   "w-6 h-6 rounded-full ring-1 transition-all hover:scale-110 cursor-pointer",
@@ -128,6 +130,7 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
                 )}
                 style={{ backgroundColor: color.hex }}
                 title={color.name}
+                aria-label={`Filter by color ${color.name}`}
               />
             ))}
           </div>

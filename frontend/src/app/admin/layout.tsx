@@ -1,5 +1,6 @@
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { Bell } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 
 export default function AdminLayout({
   children,
@@ -25,9 +26,13 @@ export default function AdminLayout({
             </nav>
           </div>
           <div className="flex items-center gap-6">
-            <button className="text-on-surface-variant hover:opacity-70 transition-opacity flex items-center justify-center">
-              <Bell size={20} strokeWidth={1.5} />
-            </button>
+            <Button 
+              variant="none"
+              size="none"
+              className="text-on-surface-variant hover:opacity-70 transition-opacity flex items-center justify-center"
+              aria-label="Notifications"
+              icon={<Bell size={20} strokeWidth={1.5} />}
+            />
           </div>
         </header>
 

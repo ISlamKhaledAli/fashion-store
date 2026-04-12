@@ -6,12 +6,12 @@ import { ProductCard } from "@/components/shop/ProductCard";
 import { FilterSidebar, FilterState } from "@/components/shop/FilterSidebar";
 import { ProductGrid } from "@/components/shop/ProductGrid";
 import { ActiveFilters } from "@/components/shop/ActiveFilters";
+import { Button } from "@/components/ui/Button";
 import { ProductSkeleton } from "@/components/shop/ProductSkeleton";
 import { productApi } from "@/lib/api";
 import { Product } from "@/types";
 import { cn } from "@/lib/utils";
 import { Filter, LayoutGrid, List, ArrowLeft, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 
 const SORT_OPTIONS = [
@@ -115,7 +115,7 @@ function ProductsContent() {
     fetchInitial().then(() => {
       isInitialMount.current = false;
     });
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     if (isInitialMount.current) return;
@@ -166,13 +166,16 @@ function ProductsContent() {
             <div className="flex items-center gap-4 text-xs uppercase tracking-widest text-on-surface-variant">
               <span className="font-bold text-on-surface">{products.length} Products</span>
               <span className="w-8 h-1px bg-outline-variant"></span>
-              <button 
+              <Button 
+                variant="none"
+                size="none"
                 onClick={() => setIsSidebarOpen(true)}
                 className="lg:hidden flex items-center gap-2 font-bold text-primary"
+                aria-label="Open filters"
+                icon={<Filter size={14} strokeWidth={2} />}
               >
-                <Filter size={14} strokeWidth={2} />
                 Filters
-              </button>
+              </Button>
             </div>
           </div>
           
@@ -239,17 +242,20 @@ function ProductsContent() {
             
             <div className="flex items-center gap-6 text-xs font-bold tracking-widest">
               {[1, 2].map((page) => (
-                <button 
+                <Button 
                   key={page}
+                  variant="none"
+                  size="none"
                   className={cn(
                     "pb-1 transition-all cursor-pointer",
                     page === 1 
                       ? "text-primary border-b border-primary" 
                       : "text-on-surface-variant hover:text-primary opacity-50 hover:opacity-100"
                   )}
+                  aria-label={`Go to page ${page}`}
                 >
                   {page.toString().padStart(2, '0')}
-                </button>
+                </Button>
               ))}
             </div>
 

@@ -3,6 +3,7 @@
 import React from "react";
 import { X } from "lucide-react";
 import { FilterState, FilterAction } from "./FilterSidebar";
+import { Button } from "../ui/Button";
 
 interface ActiveFiltersProps {
   state: FilterState;
@@ -53,20 +54,25 @@ export const ActiveFilters = ({ state, dispatch }: ActiveFiltersProps) => {
           className="bg-surface-container-low px-3 py-1 flex items-center gap-2 rounded-full text-[10px] uppercase tracking-wider text-on-surface font-medium border border-outline-variant/10"
         >
           {item.label}
-          <button 
+          <Button 
+            variant="ghost"
+            size="none"
             onClick={item.onRemove} 
             className="hover:text-primary transition-colors flex items-center justify-center p-0.5"
+            aria-label={`Remove filter ${item.label}`}
           >
             <X size={10} strokeWidth={2.5} />
-          </button>
+          </Button>
         </span>
       ))}
-      <button 
+      <Button 
+        variant="ghost"
+        size="none"
         onClick={() => dispatch({ type: "reset" })}
         className="text-[10px] uppercase underline tracking-widest text-stone-400 hover:text-primary ml-2"
       >
         Clear All
-      </button>
+      </Button>
     </div>
   );
 };

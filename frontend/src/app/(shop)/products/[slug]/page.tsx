@@ -3,13 +3,13 @@
 import React, { useEffect, useState, use } from "react";
 import { productApi } from "@/lib/api";
 import { Product } from "@/types";
-import { ProductGallery } from "@/components/shop/pdp/ProductGallery";
-import { ProductInfo } from "@/components/shop/pdp/ProductInfo";
-import { ProductStorytelling } from "@/components/shop/pdp/ProductStorytelling";
-import { ProductAccordions } from "@/components/shop/pdp/ProductAccordions";
-import { ProductReviews } from "@/components/shop/pdp/ProductReviews";
+import { ImageGallery } from "@/components/shop/ImageGallery";
+import { ProductInfo } from "@/components/shop/ProductInfo";
+import { StickyShowcase } from "@/components/shop/StickyShowcase";
+import { ProductAccordions } from "@/components/shop/ProductAccordions";
+import { HorizontalScroll } from "@/components/shop/HorizontalScroll";
+import { ProductReviews } from "@/components/shop/ProductReviews";
 import { ProductCard } from "@/components/shop/ProductCard";
-import { Leaf, Compass, History, Snowflake, ArrowLeft, ArrowRight } from "lucide-react";
 import Skeleton from "@/components/ui/Skeleton";
 
 interface PageProps {
@@ -42,7 +42,8 @@ export default function ProductDetailPage({ params }: PageProps) {
       } catch (error) {
         console.error("Error fetching product:", error);
       } finally {
-        setTimeout(() => setIsLoading(false), 500); // 500ms delay for cinematic entry
+        // Smooth transition for entry
+        setTimeout(() => setIsLoading(false), 300);
       }
     };
 
@@ -51,7 +52,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   if (isLoading) {
     return (
-      <div className="max-w-[1440px] mx-auto px-12 py-32 space-y-16">
+      <div className="max-w-[1440px] mx-auto px-8 lg:px-12 py-32 space-y-16">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
           <Skeleton className="lg:col-span-7 aspect-square" />
           <div className="lg:col-span-5 space-y-8">
@@ -69,41 +70,62 @@ export default function ProductDetailPage({ params }: PageProps) {
     return (
       <div className="h-[60vh] flex items-center justify-center flex-col gap-4">
         <h1 className="text-4xl font-medium tracking-tighter">Product not found</h1>
-        <p className="text-on-surface-variant">The piece you&apos;re looking for might have moved.</p>
+        <p className="text-on-surface-variant text-sm uppercase tracking-widest font-bold">
+          The piece you&apos;re looking for might have moved.
+        </p>
       </div>
     );
   }
 
-  const stories = [
+  const storytellingItems = [
     {
-      icon: Leaf,
+      icon: "eco",
       title: "Virgin Wool Blend",
-      description: product.description || "Sourced from the finest Italian mills, maintaining natural lanolin for superior weather resistance and a soft hand-feel.",
+      description: "Sourced from the finest Italian mills, our virgin wool is processed without harsh chemicals, maintaining its natural lanolin for weather resistance."
     },
     {
-      icon: Compass,
+      icon: "architecture",
       title: "Anatomical Tailoring",
-      description: "Developed over eighteen months, our proprietary fit pattern follows the natural curvature of the spine and shoulders.",
+      description: "Developed over eighteen months, our fit pattern follows the natural curvature of the spine and shoulders, ensuring comfort and silhouette."
     },
     {
-      icon: History,
+      icon: "history",
       title: "Heirloom Quality",
-      description: "Every seam is reinforced with silk-wrapped thread. Designed to be passed down through generations.",
+      description: "Every seam is reinforced with silk-wrapped thread. Designed to be an investment piece passed down through generations."
     },
     {
-      icon: Snowflake,
+      icon: "ac_unit",
       title: "Thermal Regulation",
-      description: "The dense weave provides natural insulation for temperatures as low as -10°C while remaining breathable.",
+      description: "The dense weave provides natural insulation for temperatures as low as -10°C while remaining breathable for spring transitions."
+    }
+  ];
+
+  const accordionItems = [
+    {
+      title: "Description",
+      content: product.description || "A modern interpretation of the classic naval bridge coat. Features a double-breasted closure, oversized notched lapels, and hidden internal pockets."
     },
+    {
+      title: "Materials",
+      content: "100% Virgin Wool Exterior, 100% Cupro Silk Lining. Sustainably sourced in compliance with international environmental standards."
+    },
+    {
+      title: "Care",
+      content: "Professional dry clean only. Store on a wide-shouldered hanger to maintain internal structure. Brush gently with a natural garment brush after wear."
+    },
+    {
+      title: "Shipping & Returns",
+      content: "Complimentary Carbon-Neutral Shipping worldwide. Returns accepted within 14 days of delivery in original condition."
+    }
   ];
 
   return (
-    <div className="bg-surface min-h-screen">
-      {/* 1. PDP Header Section */}
-      <section className="max-w-[1440px] mx-auto px-12 py-16 grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24">
+    <main className="pt-24 min-h-screen">
+      {/* 1. Header Section: Image + Primary Info */}
+      <section className="max-w-[1440px] mx-auto px-8 lg:px-12 py-16 grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24">
         {/* Gallery Column */}
         <div className="lg:col-span-7">
-          <ProductGallery images={product.images} />
+          <ImageGallery images={product.images} />
         </div>
         
         {/* Info Column */}
@@ -113,48 +135,45 @@ export default function ProductDetailPage({ params }: PageProps) {
       </section>
 
       {/* 2. Scroll Storytelling Section */}
-      <ProductStorytelling 
+      <StickyShowcase 
         image={product.images.find(img => !img.isMain)?.url || product.images[0]?.url} 
-        stories={stories} 
+        stories={storytellingItems} 
       />
 
       {/* 3. Detailed Accordions */}
-      <ProductAccordions />
+      <ProductAccordions items={accordionItems} />
 
-      {/* 4. Complete the Look / You May Also Like */}
-      {relatedProducts.length > 0 && (
-        <section className="bg-surface-container-low py-32">
-          <div className="max-w-[1440px] mx-auto px-12">
-            <div className="flex justify-between items-end mb-16">
-              <div className="space-y-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant font-bold">Recommendations</p>
-                <h2 className="text-4xl font-medium tracking-tight">Complete the Look</h2>
-              </div>
-              <div className="hidden md:flex gap-4">
-                <button className="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:bg-white transition-all active:scale-95">
-                  <ArrowLeft size={20} strokeWidth={1.5} />
-                </button>
-                <button className="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:bg-white transition-all active:scale-95">
-                  <ArrowRight size={20} strokeWidth={1.5} />
-                </button>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {relatedProducts.map((p, idx) => (
-                <ProductCard 
-                  key={p.id} 
-                  product={p} 
-                  variant="editorial" 
-                  delay={idx * 0.1}
-                />
-              ))}
-            </div>
+      {/* 4. Complete the Look Horizontal Scroll */}
+      <HorizontalScroll 
+        title="Complete the Look" 
+        products={relatedProducts} 
+      />
+
+      {/* 5. Reviews Section */}
+      <ProductReviews 
+        productId={product.id} 
+        avgRating={product.avgRating} 
+        reviewCount={product.reviewCount} 
+      />
+
+      {/* 6. Related Products Grid */}
+      <section className="border-t border-surface-container py-24 lg:py-32">
+        <div className="max-w-[1440px] mx-auto px-8 lg:px-12">
+          <h2 className="text-xs tracking-[0.3em] uppercase text-zinc-400 mb-16 text-center font-bold">
+            You May Also Like
+          </h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {relatedProducts.map((p, idx) => (
+              <ProductCard 
+                key={p.id} 
+                product={p} 
+                variant="editorial" 
+                delay={idx * 0.1}
+              />
+            ))}
           </div>
-        </section>
-      )}
-
-      {/* 5. User Reviews Section */}
-      <ProductReviews />
-    </div>
+        </div>
+      </section>
+    </main>
   );
 }

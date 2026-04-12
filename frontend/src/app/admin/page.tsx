@@ -14,6 +14,7 @@ import {
 import { TrendingUp } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 
 const data = [
   { name: "Sep 25", revenue: 4000 },
@@ -121,7 +122,7 @@ export default function AdminDashboard() {
       <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden text-on-surface">
         <div className="px-8 py-6 border-b border-outline-variant/10 flex justify-between items-center">
           <h2 className="text-xl font-bold tracking-tight">Recent Orders</h2>
-          <button className="text-[10px] font-bold uppercase tracking-widest hover:underline">View All</button>
+          <Button variant="ghost" size="none" className="text-[10px] font-bold uppercase tracking-widest hover:underline">View All</Button>
         </div>
         <table className="w-full text-left">
           <thead className="bg-surface-container-low/50">

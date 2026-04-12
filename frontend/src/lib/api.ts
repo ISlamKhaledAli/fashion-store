@@ -27,6 +27,10 @@ export const productApi = {
     api.get<ApiResponse<Product[]>>("/products", { params: { featured: true } }),
   getFilters: () => 
     api.get<ApiResponse<{ colors: { name: string; hex: string }[] }>>("/products/filters"),
+  getReviews: (productId: string) => 
+    api.get<ApiResponse<unknown[]>>(`/reviews/product/${productId}`),
+  addToWishlist: (productId: string) => 
+    api.post<ApiResponse<unknown>>("/wishlist/add", { productId }),
 };
 
 export const categoryApi = {

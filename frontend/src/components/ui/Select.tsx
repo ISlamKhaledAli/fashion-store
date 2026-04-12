@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import { Button } from "./Button";
 
 interface Option {
   label: string;
@@ -29,9 +30,13 @@ export const Select = ({ options, value, onChange, className, labelPrefix }: Sel
 
   return (
     <div ref={containerRef} className={cn("relative inline-block", className)}>
-      <button
+      <Button
+        variant="none"
+        size="none"
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 text-xs uppercase tracking-widest text-on-surface font-bold cursor-pointer outline-none group"
+        aria-label={labelPrefix ? `${labelPrefix} ${selectedOption.label}` : selectedOption.label}
+        aria-expanded={isOpen}
       >
         <span className="text-on-surface-variant font-medium normal-case tracking-normal mr-1">
           {labelPrefix}
@@ -43,7 +48,7 @@ export const Select = ({ options, value, onChange, className, labelPrefix }: Sel
         >
           <ChevronDown size={14} className="text-on-surface-variant group-hover:text-primary transition-colors" />
         </motion.div>
-      </button>
+      </Button>
 
       <AnimatePresence>
         {isOpen && (
@@ -58,14 +63,16 @@ export const Select = ({ options, value, onChange, className, labelPrefix }: Sel
               {options.map((option) => {
                 const isActive = option.value === value;
                 return (
-                  <button
+                  <Button
                     key={option.value}
+                    variant="none"
+                    size="none"
                     onClick={() => {
                       onChange(option.value);
                       setIsOpen(false);
                     }}
                     className={cn(
-                      "flex items-center justify-between px-6 py-3 text-[10px] uppercase tracking-widest text-left transition-all cursor-pointer",
+                      "flex items-center justify-between px-6 py-3 text-[10px] uppercase tracking-widest text-left transition-all cursor-pointer w-full",
                       isActive 
                         ? "text-primary font-bold bg-surface-container-low" 
                         : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest font-medium"
@@ -78,7 +85,7 @@ export const Select = ({ options, value, onChange, className, labelPrefix }: Sel
                         className="w-1 h-1 bg-primary rounded-full"
                       />
                     )}
-                  </button>
+                  </Button>
                 );
               })}
             </div>

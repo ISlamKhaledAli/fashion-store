@@ -98,6 +98,7 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
               "absolute top-4 right-4 z-10 backdrop-blur-md rounded-full transition-all duration-300 group/fav",
               isFavorite ? "bg-black text-white!" : "bg-black/40 text-white! hover:bg-black"
             )}
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Heart 
               size={18} 
@@ -130,15 +131,15 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
           </div>
 
           <div className="flex flex-wrap gap-4 pt-4">
-            <button 
+            <Button 
               onClick={handleAddToCart}
               className="px-8 py-3 bg-primary text-on-primary text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20 cursor-pointer"
             >
               Add to Collection
-            </button>
+            </Button>
             <Link 
               href={`/products/${product.slug}`}
-              className="px-8 py-3 border border-outline text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-surface-container transition-all active:scale-95 cursor-pointer"
+              className="px-8 py-3 border border-outline text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-surface-container transition-all active:scale-95 flex items-center justify-center cursor-pointer"
             >
               View Details
             </Link>
@@ -173,18 +174,20 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
               isActive={isFavorite}
               className={cn(
                 "absolute top-4 right-4 z-10 backdrop-blur-md rounded-full transition-all duration-300 group/fav",
-                isFavorite ? "bg-black text-white!" : "bg-black/40 text-white! hover:bg-black"
+                isFavorite ? "bg-black !text-white" : "bg-black/40 !text-white hover:bg-black"
               )}
-            >
-              <Heart 
-                size={20} 
-                className={cn(
-                  "transition-all duration-300",
-                  isFavorite ? "fill-white!" : "group-hover/fav:fill-white!"
-                )}
-                strokeWidth={1.5}
-              />
-            </Button>
+              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+              icon={
+                <Heart 
+                  size={20} 
+                  className={cn(
+                    "transition-all duration-300",
+                    isFavorite ? "!fill-white" : "group-hover/fav:!fill-white"
+                  )}
+                  strokeWidth={1.5}
+                />
+              }
+            />
             
             <Button
               variant="primary"
@@ -232,12 +235,14 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
             />
           )}
           
-          <button
+          <Button
+            variant="primary"
+            size="icon"
             onClick={handleAddToCart}
             className="absolute bottom-6 right-6 w-12 h-12 bg-primary text-on-primary rounded-full flex items-center justify-center opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 delay-100 shadow-xl cursor-pointer"
-          >
-            <Plus size={24} strokeWidth={1.5} />
-          </button>
+            aria-label="Add to cart"
+            icon={<Plus size={24} strokeWidth={1.5} />}
+          />
         </div>
 
         <div className="flex justify-between items-start">
