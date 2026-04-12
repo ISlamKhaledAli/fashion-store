@@ -40,17 +40,24 @@ const consoleFormat = winston.format.combine(
   )
 );
 
-const transports = [
+const isVercel = process.env.VERCEL === "1";
+
+const transports: winston.transport[] = [
   new winston.transports.Console({
     format: consoleFormat,
   }),
-  new winston.transports.File({
-    filename: "logs/error.log",
-    level: "error",
-    format,
-  }),
-  new winston.transports.File({ filename: "logs/combined.log", format }),
 ];
+
+if (!isVercel) {
+  transports.push(
+    new winston.transports.File({
+      filename: "logs/error.log",
+      level: "error",
+      format,
+    }),
+    new winston.transports.File({ filename: "logs/combined.log", format })
+  );
+}
 
 const logger = winston.createLogger({
   level: level(),
