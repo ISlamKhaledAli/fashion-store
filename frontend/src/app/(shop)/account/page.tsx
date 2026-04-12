@@ -9,20 +9,16 @@ import { Order, WishlistItem } from "@/types";
 import { formatCurrency, cn } from "@/lib/utils";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { Button } from "@/components/ui/Button";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 export default function AccountPage() {
-  const router = useRouter();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user } = useAuthStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
-      return;
-    }
-
     const fetchData = async () => {
       try {
         const [ordersRes, wishlistRes] = await Promise.all([
@@ -40,21 +36,20 @@ export default function AccountPage() {
     };
 
     fetchData();
-  }, [isAuthenticated, router]);
-
-  if (!isAuthenticated || !user) return null;
+  }, []);
 
   return (
-    <div className="flex bg-surface min-h-screen">
-      <AccountSidebar />
-      
-      <main className="flex-1 p-12">
-        <header className="mb-12">
-          <h1 className="text-3xl font-medium text-on-surface tracking-tight">
-            Good morning, {user.name.split(" ")[0]}
-          </h1>
-          <p className="text-on-surface-variant mt-1">Everything you need to manage your boutique experience.</p>
-        </header>
+    <ProtectedRoute>
+      <div className="flex bg-surface min-h-screen">
+        <AccountSidebar />
+        
+        <main className="flex-1 p-12">
+          <header className="mb-12">
+            <h1 className="text-3xl font-medium text-on-surface tracking-tight">
+              Good morning, {user?.name.split(" ")[0]}
+            </h1>
+            <p className="text-on-surface-variant mt-1">Everything you need to manage your boutique experience.</p>
+          </header>
 
         {/* Metric Cards */}
         <section className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
@@ -164,6 +159,7 @@ export default function AccountPage() {
         </div>
       </main>
     </div>
+    </ProtectedRoute>
   );
 }
 
@@ -215,9 +211,9 @@ function QuickReorderItem({ name, price, image }: { name: string; price: number;
           <h4 className="text-sm font-semibold text-on-surface">{name}</h4>
           <p className="text-xs text-on-surface-variant">{formatCurrency(price)}</p>
         </div>
-        <button className="text-[9px] uppercase tracking-widest font-bold text-primary flex items-center gap-1 hover:gap-2 transition-all">
+        <Button variant="none" size="none" className="text-[9px] uppercase tracking-widest font-bold text-primary flex items-center gap-1 hover:gap-2 transition-all">
           Reorder <span className="material-symbols-outlined !text-[12px]">arrow_forward</span>
-        </button>
+        </Button>
       </div>
     </div>
   );

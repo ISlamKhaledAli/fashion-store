@@ -13,41 +13,18 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || "");
 
 import { orderApi, addressApi } from "@/lib/api";
 
 export default function CheckoutPage() {
-  const router = useRouter();
-  const { isAuthenticated, user, logout } = useAuthStore();
   const [currentStep, setCurrentStep] = useState(1);
   const [shippingData, setShippingData] = useState<any>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<{ id: string } | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  // Wait for store hydration from localStorage
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
-
-  // Protected route check - only run AFTER hydration
-  useEffect(() => {
-    if (isHydrated && !isAuthenticated) {
-      router.push("/login?redirect=/checkout");
-    }
-  }, [isHydrated, isAuthenticated, router]);
-
-  // Prevent flash or premature redirect
-  if (!isHydrated || !isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
 
   const handleShippingNext = async (data: any) => {
     try {
@@ -141,13 +118,14 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="bg-surface min-h-screen">
+    <ProtectedRoute>
+      <div className="bg-surface min-h-screen">
       {/* Header */}
       <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl border-b border-outline-variant/10">
         <div className="flex justify-between items-center h-20 px-8 max-w-[1440px] mx-auto">
           <Link href="/" className="text-xl font-medium tracking-tighter">THE EDITORIAL</Link>
           <div className="flex items-center gap-4">
-             <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-medium">Logged in as {user?.email}</span>
+             <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-medium">Checkout Experience</span>
           </div>
         </div>
       </header>
@@ -233,5 +211,6 @@ export default function CheckoutPage() {
         </div>
       </footer>
     </div>
+    </ProtectedRoute>
   );
 }

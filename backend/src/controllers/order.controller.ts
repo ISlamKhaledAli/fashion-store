@@ -9,7 +9,14 @@ export const getOrders = async (req: Request, res: Response, next: NextFunction)
   try {
     const orders = await prisma.order.findMany({
       where: { userId: req.user?.id },
-      include: { items: { include: { product: true } } },
+      include: { 
+        items: { 
+          include: { 
+            variant: true,
+            product: { include: { images: true } } 
+          } 
+        } 
+      },
       orderBy: { createdAt: "desc" },
     });
     return sendResponse({ res, status: 200, success: true, data: orders });

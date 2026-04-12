@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/Button";
 
 const menuItems = [
   {
@@ -23,7 +24,7 @@ const menuItems = [
     icon: "favorite",
   },
   {
-    label: "Addresses",
+    label: "Address Book",
     href: "/account/addresses",
     icon: "location_on",
   },
@@ -56,7 +57,7 @@ export const AccountSidebar = () => {
         </div>
         <h3 className="text-lg font-bold text-on-surface">{user?.name || "User"}</h3>
         <p className="text-xs text-on-surface-variant tracking-wide lowercase">{user?.email}</p>
-        <div className="mt-2 text-[10px] uppercase tracking-[0.2em] font-bold text-secondary opacity-80">Premium Member</div>
+        <div className="text-xs uppercase tracking-widest text-on-surface-variant mt-1">Premium Member</div>
       </div>
 
       <nav className="space-y-1">
@@ -89,13 +90,15 @@ export const AccountSidebar = () => {
       </nav>
 
       <div className="mt-auto pt-8">
-        <button 
+        <Button 
+          variant="none"
+          size="none"
           onClick={() => useAuthStore.getState().logout()}
-          className="flex items-center gap-3 px-4 py-3 text-error w-full hover:bg-error/5 transition-all duration-300 rounded-sm italic text-sm"
+          className="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all duration-300 rounded-md w-full"
         >
           <span className="material-symbols-outlined">logout</span>
-          <span>Sign Out</span>
-        </button>
+          <span className="text-sm text-left font-normal">Sign Out</span>
+        </Button>
       </div>
     </aside>
   );

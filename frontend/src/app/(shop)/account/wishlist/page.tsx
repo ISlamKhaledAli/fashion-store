@@ -11,20 +11,15 @@ import { formatCurrency } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/Button";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 export default function WishlistPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
   const { addItem } = useCartStore();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
-      return;
-    }
-
     const fetchWishlist = async () => {
       try {
         const res = await wishlistApi.getAll();
@@ -39,7 +34,7 @@ export default function WishlistPage() {
     };
 
     fetchWishlist();
-  }, [isAuthenticated, router]);
+  }, []);
 
   const handleRemove = async (productId: string) => {
     try {
@@ -71,13 +66,12 @@ export default function WishlistPage() {
     }
   };
 
-  if (!isAuthenticated) return null;
-
   return (
-    <div className="flex bg-surface min-h-screen">
-      <AccountSidebar />
-      
-      <main className="flex-1 px-16 py-12">
+    <ProtectedRoute>
+      <div className="flex bg-surface min-h-screen">
+        <AccountSidebar />
+        
+        <main className="flex-1 px-16 py-12">
         <header className="mb-16">
           <h1 className="text-4xl font-medium text-on-surface tracking-tighter mb-4">
             My Wishlist {!loading && `(${items.length} items)`}
@@ -109,19 +103,27 @@ export default function WishlistPage() {
                   transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                   className="group relative flex flex-col"
                 >
-                  <button 
+                  <Button 
+                    variant="none"
+                    size="none"
                     onClick={() => handleRemove(item.productId)}
                     className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center bg-surface-container-lowest/80 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-error hover:text-white"
                   >
                     <span className="material-symbols-outlined text-xs">close</span>
-                  </button>
+                  </Button>
                   
                   <div className="aspect-[3/4] overflow-hidden bg-surface-container-low mb-6 ring-1 ring-outline-variant/5">
-                    <img 
-                      src={item.product.images[0]?.url} 
-                      alt={item.product.name} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
-                    />
+                    {item?.product?.images?.[0]?.url ? (
+                      <img 
+                        src={item.product.images[0].url} 
+                        alt={item?.product?.name || "Product"} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-outline-variant bg-surface-container hover:scale-105 transition-transform duration-700 ease-out">
+                        <span className="material-symbols-outlined mb-2">image</span>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="space-y-1 mb-6">
@@ -159,5 +161,6 @@ export default function WishlistPage() {
         )}
       </main>
     </div>
+    </ProtectedRoute>
   );
 }

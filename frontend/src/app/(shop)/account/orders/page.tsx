@@ -8,25 +8,20 @@ import { orderApi } from "@/lib/api";
 import { Order } from "@/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { Button } from "@/components/ui/Button";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 const statuses = ["ALL", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"];
 
 export default function OrdersPage() {
-  const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("ALL");
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
-      return;
-    }
-
     const fetchOrders = async () => {
       try {
         const res = await orderApi.getMine();
@@ -41,30 +36,31 @@ export default function OrdersPage() {
     };
 
     fetchOrders();
-  }, [isAuthenticated, router]);
+  }, []);
 
   const filteredOrders = activeTab === "ALL" 
     ? orders 
     : orders.filter(o => o.status === activeTab);
 
-  if (!isAuthenticated) return null;
-
   return (
-    <div className="flex bg-surface min-h-screen">
-      <AccountSidebar />
-      
-      <main className="flex-1 p-12">
-        <header className="mb-12">
-          <h1 className="text-5xl font-medium tracking-tight text-on-surface mb-4">My Orders</h1>
-          <p className="text-on-surface-variant max-w-xl leading-relaxed">
-            Track your recent purchases, manage returns, and explore your history with the collection.
-          </p>
-        </header>
+    <ProtectedRoute>
+      <div className="flex bg-surface min-h-screen">
+        <AccountSidebar />
+        
+        <main className="flex-1 p-12">
+          <header className="mb-12">
+            <h1 className="text-5xl font-medium tracking-tight text-on-surface mb-4">My Orders</h1>
+            <p className="text-on-surface-variant max-w-xl leading-relaxed">
+              Track your recent purchases, manage returns, and explore your history with the collection.
+            </p>
+          </header>
 
         {/* Filter Tabs */}
         <div className="flex gap-x-10 mb-12 relative border-b border-outline-variant/15">
           {statuses.map((status) => (
-            <button
+            <Button
+              variant="none"
+              size="none"
               key={status}
               onClick={() => setActiveTab(status)}
               className={cn(
@@ -81,7 +77,7 @@ export default function OrdersPage() {
                   className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" 
                 />
               )}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -116,6 +112,7 @@ export default function OrdersPage() {
         </div>
       </main>
     </div>
+    </ProtectedRoute>
   );
 }
 
@@ -128,53 +125,82 @@ function OrderCard({ order, isExpanded, onToggle, onCancel }: {
   return (
     <section 
       className={cn(
-        " cinematic-transition rounded-xl p-8 group overflow-hidden border border-outline-variant/5",
-        isExpanded ? "bg-surface-container-lowest shadow-lg" : "bg-surface-container-low hover:bg-surface-container cursor-pointer"
+        "cinematic-transition rounded-xl p-8 group",
+        isExpanded ? "bg-surface-container-lowest shadow-lg shadow-black/5" : "bg-surface-container-low hover:bg-surface-container cursor-pointer"
       )}
       onClick={!isExpanded ? onToggle : undefined}
     >
-      <div className="flex flex-wrap justify-between items-center gap-4">
-        <div className="flex items-center gap-x-12">
-          <div className="space-y-1">
-            <span className="text-[10px] tracking-widest uppercase text-on-surface-variant font-bold">Order Reference</span>
-            <h3 className="text-xl font-semibold">#{order.id.slice(-4).toUpperCase()}</h3>
-          </div>
-          <div className="space-y-1">
-            <span className="text-[10px] tracking-widest uppercase text-on-surface-variant font-bold">Date</span>
-            <p className="text-sm font-medium">{formatDate(order.createdAt)}</p>
-          </div>
-          <div className="space-y-1">
-            <span className="text-[10px] tracking-widest uppercase text-on-surface-variant font-bold">Status</span>
-            <div className="flex items-center gap-2">
-              <span className={cn(
-                "w-1.5 h-1.5 rounded-full",
-                order.status === "SHIPPED" || order.status === "DELIVERED" ? "bg-secondary" : 
-                order.status === "CANCELLED" ? "bg-outline-variant" : "bg-primary"
-              )} />
-              <p className={cn(
-                "text-sm font-semibold capitalize",
-                order.status === "SHIPPED" ? "text-secondary" : "text-on-surface"
-              )}>
-                {order.status.toLowerCase()}
+      {!isExpanded ? (
+        // Collapsed Layout
+        <div className="flex flex-wrap justify-between items-center gap-4">
+          <div className="flex items-center gap-x-12">
+            <div className="space-y-1">
+              <span className="text-[10px] tracking-widest uppercase text-on-surface-variant">Order Reference</span>
+              <h3 className="text-xl font-semibold">#{order.id.slice(-4).toUpperCase()}</h3>
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] tracking-widest uppercase text-on-surface-variant">Date</span>
+              <p className="text-sm font-medium">{formatDate(order.createdAt)}</p>
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] tracking-widest uppercase text-on-surface-variant">Status</span>
+              <p className="text-sm font-semibold flex items-center gap-2">
+                <span className={cn(
+                  "w-1.5 h-1.5 rounded-full",
+                  order.status === 'PENDING' ? 'bg-primary' :
+                  order.status === 'PROCESSING' || order.status === 'SHIPPED' ? 'bg-secondary' : 
+                  order.status === 'DELIVERED' ? 'bg-outline-variant' : 'bg-error'
+                )} />
+                <span className={cn("capitalize", 
+                   order.status === 'PROCESSING' || order.status === 'SHIPPED' ? "text-secondary" : 
+                   order.status === 'DELIVERED' ? "text-on-surface" : "text-on-surface-variant"
+                )}>
+                  {order.status.toLowerCase()}
+                </span>
               </p>
             </div>
           </div>
+          <div className="flex items-center gap-x-8">
+            <p className="text-xl font-medium">{formatCurrency(order.total)}</p>
+            <span className="material-symbols-outlined text-on-surface-variant group-hover:translate-x-1 cinematic-transition">chevron_right</span>
+          </div>
         </div>
-        
-        <div className="flex items-center gap-x-8">
-          <p className="text-xl font-medium tracking-tighter">{formatCurrency(order.total)}</p>
-          {!isExpanded && (
-            <span className="material-symbols-outlined text-on-surface-variant group-hover:translate-x-1 cinematic-transition">
-              chevron_right
-            </span>
-          )}
-          {isExpanded && (
-            <button onClick={onToggle} className="p-2 rounded-full hover:bg-surface-container transition-colors">
-              <span className="material-symbols-outlined">expand_less</span>
-            </button>
-          )}
+      ) : (
+        // Expanded Header
+        <div className="flex flex-wrap justify-between items-start mb-8 gap-4">
+          <div className="space-y-1">
+            <span className="text-[10px] tracking-widest uppercase text-on-surface-variant">Order Reference</span>
+            <h3 className="text-xl font-semibold">#{order.id.slice(-4).toUpperCase()}</h3>
+          </div>
+          <div className="flex gap-x-12 relative">
+            <div className="space-y-1">
+              <span className="text-[10px] tracking-widest uppercase text-on-surface-variant">Date Placed</span>
+              <p className="text-sm font-medium">{formatDate(order.createdAt)}</p>
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] tracking-widest uppercase text-on-surface-variant">Total</span>
+              <p className="text-sm font-medium">{formatCurrency(order.total)}</p>
+            </div>
+            <div className="space-y-1 pr-12">
+              <span className="text-[10px] tracking-widest uppercase text-on-surface-variant">Status</span>
+              <p className={cn("flex items-center gap-2 text-sm font-semibold", 
+                order.status === 'PROCESSING' || order.status === 'SHIPPED' ? "text-secondary" : 
+                order.status === 'DELIVERED' ? "text-on-surface" : "text-on-surface-variant"
+              )}>
+                {order.status !== 'CANCELLED' && (
+                  <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", 
+                    order.status === 'PROCESSING' || order.status === 'SHIPPED' ? "bg-secondary" : "bg-primary"
+                  )}></span>
+                )}
+                <span className="capitalize">{order.status.toLowerCase()}</span>
+              </p>
+            </div>
+            <Button variant="none" size="none" onClick={onToggle} className="absolute right-0 text-on-surface-variant hover:text-on-surface p-2 rounded-full cursor-pointer hover:bg-surface-container transition-colors">
+              <span className="material-symbols-outlined">close</span>
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       <AnimatePresence>
         {isExpanded && (
@@ -183,76 +209,107 @@ function OrderCard({ order, isExpanded, onToggle, onCancel }: {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
           >
-            <div className="pt-12 mt-8 border-t border-outline-variant/10">
+            <div>
               {/* Tracking Timeline */}
-              <div className="mb-16 pt-4 max-w-3xl mx-auto">
-                <div className="relative flex justify-between items-center">
-                  <div className="absolute top-1/2 left-0 w-full h-[1px] bg-outline-variant/30 -translate-y-1/2 -z-10" />
+              <div className="mb-12 pt-4">
+                <div className="relative flex justify-between items-center px-4">
+                  <div className="absolute top-1/2 left-4 right-4 h-[1px] bg-outline-variant/30 -translate-y-1/2 -z-10" />
                   <div 
-                    className="absolute top-1/2 left-0 h-[1px] bg-primary -translate-y-1/2 -z-10 transition-all duration-1000" 
+                    className="absolute top-1/2 left-4 h-[1px] bg-primary -translate-y-1/2 -z-10 transition-all duration-1000" 
                     style={{ width: 
                       order.status === 'PENDING' ? '0%' : 
                       order.status === 'PROCESSING' ? '25%' : 
-                      order.status === 'SHIPPED' ? '75%' : 
-                      order.status === 'DELIVERED' ? '100%' : '0%' 
+                      order.status === 'SHIPPED' ? '50%' : 
+                      order.status === 'DELIVERED' ? 'calc(100% - 2rem)' : '0%' 
                     }}
                   />
                   
-                  <TimelineStep label="Placed" active={true} />
+                  <TimelineStep label="Order Placed" active={true} />
                   <TimelineStep label="Processing" active={order.status !== 'PENDING' && order.status !== 'CANCELLED'} />
                   <TimelineStep 
                     label="Shipped" 
                     active={order.status === 'SHIPPED' || order.status === 'DELIVERED'} 
-                    icon={order.status === 'SHIPPED' ? "local_shipping" : undefined}
+                    icon="local_shipping"
+                    current={order.status === 'SHIPPED'}
                   />
+                  <TimelineStep label="Out for Delivery" active={order.status === 'DELIVERED'} />
                   <TimelineStep label="Delivered" active={order.status === 'DELIVERED'} />
                 </div>
               </div>
 
-              {/* Items */}
-              <div className="space-y-8">
+              {/* Item List */}
+              <div className="space-y-0">
                 {order.items.map((item) => (
-                  <div key={item.id} className="flex gap-x-12 items-center py-6 first:pt-0 border-b last:border-0 border-outline-variant/5">
-                    <div className="w-24 h-32 bg-surface-container overflow-hidden rounded-sm ring-1 ring-outline-variant/10">
-                      <img 
-                        src={item.product.images[0]?.url} 
-                        alt={item.product.name} 
-                        className="w-full h-full object-cover" 
-                      />
+                  <div key={item.id} className="flex flex-col md:flex-row gap-8 md:gap-x-12 items-center py-8 border-t border-outline-variant/10">
+                    <div className="w-[100px] h-[120px] shrink-0 bg-surface-container overflow-hidden rounded-sm relative">
+                      {item?.product?.images?.[0]?.url ? (
+                        <img 
+                          src={item?.product?.images?.[0]?.url || ""} 
+                          alt={item?.product?.name || "Product"} 
+                          className="w-full h-full object-cover group-hover:scale-105 cinematic-transition" 
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-outline-variant bg-surface-container group-hover:scale-105 cinematic-transition">
+                          <span className="material-symbols-outlined mb-2 text-2xl">image</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex-1">
-                      <h4 className="text-lg font-medium">{item.product.name}</h4>
-                      <p className="text-sm text-on-surface-variant uppercase tracking-widest text-[10px] mt-1">
-                        {item.variant.color} / {item.variant.size}
-                      </p>
-                      <div className="mt-4 flex items-center gap-x-8 text-sm">
-                        <p><span className="text-on-surface-variant">Qty:</span> {item.quantity}</p>
-                        <p><span className="text-on-surface-variant">Price:</span> {formatCurrency(item.price)}</p>
+                    
+                    <div className="flex-1 space-y-4 w-full">
+                      <div>
+                        <h4 className="text-lg font-medium">{item?.product?.name || "Unknown Product"}</h4>
+                        <p className="text-sm text-on-surface-variant mt-1">
+                          {item.variant?.color || ""} / {item.variant?.size || ""}
+                        </p>
                       </div>
+                      <div className="flex items-center gap-x-8">
+                        <div className="text-sm">
+                          <span className="text-on-surface-variant">Qty:</span> {item.quantity}
+                        </div>
+                        <div className="text-sm">
+                          <span className="text-on-surface-variant">Price:</span> {formatCurrency(item.price)}
+                        </div>
+                      </div>
+                      <div className="pt-4 flex flex-wrap gap-4">
+                        {order.status === "PENDING" && (
+                          <Button 
+                            variant="none" size="none"
+                            onClick={(e: any) => { e.stopPropagation(); onCancel(); }}
+                            className="bg-transparent text-on-surface px-8 py-3 rounded-md text-sm font-medium outline outline-1 outline-outline-variant/30 hover:bg-surface-container-low transition-colors"
+                          >
+                            Cancel Order
+                          </Button>
+                        )}
+                        {order.status !== "PENDING" && order.status !== "CANCELLED" && (
+                          <Button 
+                            variant="none" size="none"
+                            onClick={(e: any) => e.stopPropagation()}
+                            className="bg-primary text-on-primary px-8 py-3 rounded-md text-sm font-medium hover:scale-[0.98] cinematic-transition"
+                          >
+                            Track Order
+                          </Button>
+                        )}
+                        {order.status === "DELIVERED" && (
+                          <Button 
+                            variant="none" size="none"
+                            onClick={(e: any) => e.stopPropagation()}
+                            className="bg-transparent text-on-surface px-8 py-3 rounded-md text-sm font-medium outline outline-1 outline-outline-variant/30 hover:bg-surface-container-low transition-colors"
+                          >
+                            Return
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="text-right space-y-2 shrink-0 md:self-start w-full md:w-auto text-left md:text-right pt-4 md:pt-0 border-t md:border-t-0 border-outline-variant/10">
+                      <p className="text-xs text-on-surface-variant uppercase tracking-widest hidden md:block">Tracking Number</p>
+                      <p className="font-mono text-sm leading-tight text-on-surface hidden md:block">ED-{order.id.slice(-4).toUpperCase()}-US</p>
+                      <p className="text-xs text-on-surface-variant uppercase tracking-widest md:hidden pb-1">Tracking # <span className="text-on-surface ml-2">ED-{order.id.slice(-4).toUpperCase()}-US</span></p>
                     </div>
                   </div>
                 ))}
-              </div>
-
-              {/* Actions */}
-              <div className="mt-12 flex justify-between items-center bg-surface-container-low/50 p-6 rounded-sm border border-outline-variant/10">
-                <div className="text-xs text-on-surface-variant uppercase tracking-widest font-bold">
-                  Reference: <span className="text-on-surface ml-2 font-mono uppercase">ED-9482-1049-US</span>
-                </div>
-                <div className="flex gap-4">
-                  {order.status === "PENDING" && (
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onCancel(); }}
-                      className="px-8 py-3 rounded-sm text-xs font-bold uppercase tracking-widest text-error border border-error/20 hover:bg-error/5 transition-colors"
-                    >
-                      Cancel Order
-                    </button>
-                  )}
-                  <button className="bg-primary text-on-primary px-8 py-3 rounded-sm text-xs font-bold uppercase tracking-widest hover:scale-[0.98] cinematic-transition">
-                    Track Package
-                  </button>
-                </div>
               </div>
             </div>
           </motion.div>
@@ -262,22 +319,27 @@ function OrderCard({ order, isExpanded, onToggle, onCancel }: {
   );
 }
 
-function TimelineStep({ label, active, icon }: { label: string; active: boolean; icon?: string }) {
+function TimelineStep({ label, active, icon, current }: { label: string; active: boolean; icon?: string; current?: boolean }) {
+  if (icon && current) {
+    return (
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center ring-4 ring-primary/10 transition-all duration-700">
+          <span className="material-symbols-outlined text-[12px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+        </div>
+        <span className="text-[10px] font-bold tracking-widest uppercase text-primary">{label}</span>
+      </div>
+    );
+  }
   return (
     <div className={cn("flex flex-col items-center gap-3", !active && "opacity-30")}>
       <div className={cn(
-        "rounded-full border-4 border-surface-container-lowest outline outline-1 transition-all duration-700",
-        active ? "bg-primary outline-primary" : "bg-outline-variant outline-outline-variant/30",
-        icon ? "w-6 h-6 flex items-center justify-center ring-4 ring-primary/10 -mt-1.5" : "w-3 h-3"
-      )}>
-        {icon && active && <span className="material-symbols-outlined text-[12px] text-white fill-1">{icon}</span>}
-      </div>
+        "rounded-full border-4 border-surface-container-lowest transition-all duration-700",
+        active ? "bg-primary w-3 h-3" : "bg-transparent outline outline-1 outline-outline-variant/50 w-3 h-3"
+      )}></div>
       <span className={cn(
-        "text-[9px] font-bold tracking-widest uppercase",
-        active ? "text-primary" : "text-on-surface-variant"
-      )}>
-        {label}
-      </span>
+        "text-[10px] font-bold tracking-widest uppercase",
+        active ? "text-on-surface" : "text-on-surface-variant"
+      )}>{label}</span>
     </div>
   );
 }
