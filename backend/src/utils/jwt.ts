@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { env } from "./validateEnv";
 
 export const generateAccessToken = (userId: string, role: string) => {
-  return jwt.sign({ id: userId, role }, env.JWT_SECRET, { expiresIn: "15m" });
+  return jwt.sign({ id: userId, role }, env.JWT_SECRET, { expiresIn: "1h" });
 };
 
 export const generateRefreshToken = (userId: string) => {

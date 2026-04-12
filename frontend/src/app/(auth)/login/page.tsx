@@ -21,7 +21,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const login = useAuthStore((state) => state.login);
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -38,7 +38,7 @@ export default function LoginPage() {
       const response = await authApi.login(data);
       if (response.data.success) {
         const { user, accessToken, refreshToken } = response.data.data;
-        setAuth(user, accessToken, refreshToken);
+        login({ user, accessToken, refreshToken });
         router.push("/");
       }
     } catch (err: unknown) {

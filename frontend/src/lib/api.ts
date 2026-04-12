@@ -62,6 +62,16 @@ export const orderApi = {
     api.put<ApiResponse<unknown>>(`/orders/${id}/cancel`),
 };
 
+export const addressApi = {
+  getAll: () => api.get<ApiResponse<any[]>>("/addresses"),
+  create: (data: Record<string, unknown>) => 
+    api.post<ApiResponse<any>>("/addresses", data),
+  update: (id: string, data: Record<string, unknown>) => 
+    api.put<ApiResponse<any>>(`/addresses/${id}`, data),
+  delete: (id: string) => 
+    api.delete<ApiResponse<unknown>>(`/addresses/${id}`),
+};
+
 export const adminApi = {
   getAnalytics: () => 
     api.get<ApiResponse<unknown>>("/admin/analytics/overview"),

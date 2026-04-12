@@ -4,87 +4,58 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useCartStore } from "@/store/cartStore";
 import { formatCurrency } from "@/lib/utils";
-import { useStripe, useElements } from "@stripe/react-stripe-js";
 import { orderApi } from "@/lib/api";
-
 interface ReviewStepProps {
   shippingData: any;
-  clientSecret: string;
+  paymentIntentId: string;
   onSuccess: (orderId: string) => void;
   onBack: () => void;
 }
 
-export const ReviewStep = ({ shippingData, clientSecret, onSuccess, onBack }: ReviewStepProps) => {
-  const stripe = useStripe();
-  const elements = useElements();
+export const ReviewStep = ({ shippingData, paymentIntentId, onSuccess, onBack }: ReviewStepProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const { clearCart } = useCartStore();
 
   const handlePlaceOrder = async () => {
-    if (!stripe || !elements) return;
-
     setLoading(true);
     setError(null);
 
     try {
-      // 1. Confirm the payment with Stripe
-      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/checkout/success`,
-          payment_method_data: {
-            billing_details: {
-              name: `${shippingData.firstName} ${shippingData.lastName}`,
-              email: shippingData.email,
-              address: {
-                line1: shippingData.address,
-                city: shippingData.city,
-                state: shippingData.state,
-                postal_code: shippingData.zipCode,
-                country: "US", // Default to US for now
-              },
-            },
-          },
-        },
-        redirect: "if_required",
-      });
+      // Create the order in our backend with the pre-authorized paymentIntentId
+      const { items } = useCartStore.getState();
+      const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+      const shipping = shippingData.shippingMethod === "standard" ? 0 : shippingData.shippingMethod === "express" ? 9.99 : 24.99;
+      const tax = subtotal * 0.1;
+      const total = subtotal + shipping + tax;
 
-      if (stripeError) {
-        setError(stripeError.message || "Payment confirmation failed");
-        setLoading(false);
-        return;
-      }
+      const orderData = {
+        addressId: shippingData.addressId,
+        stripePaymentId: paymentIntentId,
+        subtotal,
+        shipping,
+        tax,
+        total,
+        items: items.map(item => ({
+          variantId: item.variantId,
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        notes: "Created via checkout flow"
+      };
 
-      if (paymentIntent && paymentIntent.status === "succeeded") {
-        // 2. Create the order in our backend
-        const orderData = {
-          firstName: shippingData.firstName,
-          lastName: shippingData.lastName,
-          email: shippingData.email,
-          address: shippingData.address,
-          city: shippingData.city,
-          state: shippingData.state,
-          zipCode: shippingData.zipCode,
-          shippingMethod: shippingData.shippingMethod,
-          paymentIntentId: paymentIntent.id,
-          // items are fetched by backend from cart usually, 
-          // but we can send IDs if needed. 
-          // Current backend createOrder just finds by userId.
-        };
-
-        const res = await orderApi.create(orderData);
-        
-        if (res.data.success) {
-          clearCart();
-          onSuccess(res.data.data.order.id);
-        } else {
-          setError("Order created but failed to synchronize. Please contact support.");
-        }
+      const res = await orderApi.create(orderData);
+      
+      if (res.data.success) {
+        clearCart();
+        onSuccess(res.data.data.order.id);
+      } else {
+        setError("Order created but failed to synchronize. Please contact support.");
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "An unexpected error occurred.");
+      setError(err.response?.data?.message || "An unexpected error occurred during order creation.");
     } finally {
       setLoading(false);
     }

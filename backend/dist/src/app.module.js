@@ -23,6 +23,7 @@ const wishlist_routes_1 = __importDefault(require("./routes/wishlist.routes"));
 const address_routes_1 = __importDefault(require("./routes/address.routes"));
 const upload_routes_1 = __importDefault(require("./routes/upload.routes"));
 const admin_routes_1 = __importDefault(require("./routes/admin.routes"));
+const discount_routes_1 = __importDefault(require("./routes/discount.routes"));
 const app = (0, express_1.default)();
 // Security middleware
 app.use((0, helmet_1.default)());
@@ -31,7 +32,7 @@ app.use((0, cors_1.default)({
     origin: validateEnv_1.env.CLIENT_URL || "http://localhost:3000",
     credentials: true,
 }));
-// Payment routes BEFORE general json middleware to handle raw body if needed
+// Payment webhook needs raw body — mount BEFORE json middleware
 app.use("/api/payment", payment_routes_1.default);
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
@@ -53,6 +54,7 @@ app.use("/api/wishlist", wishlist_routes_1.default);
 app.use("/api/addresses", address_routes_1.default);
 app.use("/api/upload", upload_routes_1.default);
 app.use("/api/admin", admin_routes_1.default);
+app.use("/api/discounts", discount_routes_1.default);
 // Error handling middleware
 app.use(errorHandler_1.errorHandler);
 exports.default = app;

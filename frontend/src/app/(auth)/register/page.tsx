@@ -22,7 +22,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const login = useAuthStore((state) => state.login);
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -39,7 +39,7 @@ export default function RegisterPage() {
       const response = await authApi.register(data);
       if (response.data.success) {
         const { user, accessToken, refreshToken } = response.data.data;
-        setAuth(user, accessToken, refreshToken);
+        login({ user, accessToken, refreshToken });
         router.push("/");
       }
     } catch (err: unknown) {

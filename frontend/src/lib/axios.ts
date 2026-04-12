@@ -8,12 +8,21 @@ const api = axios.create({
   },
 });
 
+// Dedicated instance for token refresh to avoid catching interceptors
+const refreshAxios = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
 // Request Interceptor
 api.interceptors.request.use(
   (config) => {
-    const { accessToken } = useAuthStore.getState();
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
+    // Dynamically get the latest token from the store for every request
+    const token = useAuthStore.getState().accessToken;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -26,28 +35,41 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle 401 Unauthorized
+    // Handle 401 Unauthorized errors
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const { refreshToken, setTokens, logout } = useAuthStore.getState();
+      const { refreshToken, logout } = useAuthStore.getState();
 
       if (refreshToken) {
         try {
-          const response = await axios.post(`${api.defaults.baseURL}/auth/refresh`, {
+          // Attempt to refresh the tokens using the dedicated instance
+          const { data } = await refreshAxios.post("/auth/refresh", {
             refreshToken,
           });
 
-          const { accessToken, refreshToken: newRefreshToken } = response.data.data;
-          setTokens(accessToken, newRefreshToken);
+          // Backend returns success: true, data: { accessToken }
+          const newAccessToken = data.data.accessToken;
+          
+          // Update the store state directly
+          useAuthStore.setState({ accessToken: newAccessToken, isAuthenticated: true });
 
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          // Retry the original request with the new token
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           return api(originalRequest);
         } catch (refreshError) {
+          // If refresh fails, logout and redirect to login
           logout();
+          if (typeof window !== "undefined") {
+            window.location.href = "/login?redirect=" + encodeURIComponent(window.location.pathname);
+          }
           return Promise.reject(refreshError);
         }
       } else {
+        // No refresh token available
         logout();
+        if (typeof window !== "undefined") {
+          window.location.href = "/login?redirect=" + encodeURIComponent(window.location.pathname);
+        }
       }
     }
 

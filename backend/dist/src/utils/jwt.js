@@ -7,7 +7,7 @@ exports.verifyRefreshToken = exports.verifyAccessToken = exports.generateRefresh
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const validateEnv_1 = require("./validateEnv");
 const generateAccessToken = (userId, role) => {
-    return jsonwebtoken_1.default.sign({ id: userId, role }, validateEnv_1.env.JWT_SECRET, { expiresIn: "15m" });
+    return jsonwebtoken_1.default.sign({ id: userId, role }, validateEnv_1.env.JWT_SECRET, { expiresIn: "1h" });
 };
 exports.generateAccessToken = generateAccessToken;
 const generateRefreshToken = (userId) => {

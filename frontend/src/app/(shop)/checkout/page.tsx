@@ -16,30 +16,66 @@ import { Button } from "@/components/ui/Button";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || "");
 
+import { orderApi, addressApi } from "@/lib/api";
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { isAuthenticated, user, logout } = useAuthStore();
   const [currentStep, setCurrentStep] = useState(1);
   const [shippingData, setShippingData] = useState<any>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<{ id: string } | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  // Protected route check
+  // Wait for store hydration from localStorage
   useEffect(() => {
-    if (!isAuthenticated) {
+    setIsHydrated(true);
+  }, []);
+
+  // Protected route check - only run AFTER hydration
+  useEffect(() => {
+    if (isHydrated && !isAuthenticated) {
       router.push("/login?redirect=/checkout");
     }
-  }, [isAuthenticated, router]);
+  }, [isHydrated, isAuthenticated, router]);
 
-  if (!isAuthenticated) return null;
+  // Prevent flash or premature redirect
+  if (!isHydrated || !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
-  const handleShippingNext = (data: any) => {
-    setShippingData(data);
-    setCurrentStep(2);
+  const handleShippingNext = async (data: any) => {
+    try {
+      // Save address to backend to get an addressId
+      const addressRes = await addressApi.create({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        street: data.address,
+        city: data.city,
+        state: data.state,
+        zip: data.zipCode,
+        country: "US",
+        label: "Shipping Address"
+      });
+
+      if (addressRes.data.success) {
+        setShippingData({ ...data, addressId: addressRes.data.data.id });
+        setCurrentStep(2);
+      }
+    } catch (error) {
+      console.error("Failed to save address:", error);
+      // Fallback or show error
+    }
   };
 
-  const handlePaymentNext = (secret: string) => {
+  const handlePaymentNext = (secret: string, intentId: string) => {
     setClientSecret(secret);
+    setPaymentIntentId(intentId);
     setCurrentStep(3);
   };
 
@@ -84,15 +120,13 @@ export default function CheckoutPage() {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           >
-            {clientSecret ? (
-              <Elements stripe={stripePromise} options={{ clientSecret }}>
-                <ReviewStep 
-                  shippingData={shippingData} 
-                  clientSecret={clientSecret}
-                  onSuccess={(id) => setOrderSuccess({ id })}
-                  onBack={() => setCurrentStep(2)}
-                />
-              </Elements>
+            {clientSecret && paymentIntentId ? (
+              <ReviewStep 
+                shippingData={shippingData} 
+                paymentIntentId={paymentIntentId}
+                onSuccess={(id) => setOrderSuccess({ id })}
+                onBack={() => setCurrentStep(2)}
+              />
             ) : (
               <div className="text-center py-20">
                 <p>Payment information missing. Please go back.</p>

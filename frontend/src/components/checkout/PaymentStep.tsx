@@ -11,11 +11,12 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Button } from "@/components/ui/Button";
 import api from "@/lib/axios";
 import { useCartStore } from "@/store/cartStore";
+import { useAuthStore } from "@/store/authStore";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || "");
 
 interface PaymentStepProps {
-  onNext: (paymentIntentId: string) => void;
+  onNext: (clientSecret: string, paymentIntentId: string) => void;
   onBack: () => void;
 }
 
@@ -32,23 +33,41 @@ const CheckoutForm = ({ onNext, onBack }: PaymentStepProps) => {
     setLoading(true);
     setError(null);
 
-    // Instead of completing the payment here, we just validate the element
-    // and extract the intent ID. The actual confirmation happens at the final Review step 
-    // OR we confirm it now and then show review. 
-    // The user flow says: Shipping -> Payment -> Review -> Submit.
-    // Usually, you CONFIRM payment at the last step (Submit).
-    
-    // So here, we just ensure the payment element is valid.
-    const { error: submitError } = await elements.submit();
-    if (submitError) {
-      setError(submitError.message || "An error occurred.");
-      setLoading(false);
-      return;
-    }
+    try {
+      // 1. Trigger form validation and data collection
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        setError(submitError.message || "An error occurred.");
+        setLoading(false);
+        return;
+      }
 
-    // We can't easily "un-confirm" a payment, so for a 3-step Review flow,
-    // we usually just collect the intent and finalize later.
-    onNext("authenticated-intent-id"); // Placeholder as we'll use the secret from parent
+      // 2. Confirm the payment with Stripe immediately
+      const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        clientSecret: (stripe as any)._clientSecret, // elements.submit() ensures this is ready
+        confirmParams: {
+          return_url: `${window.location.origin}/checkout/review`,
+        },
+        redirect: "if_required",
+      });
+
+      if (confirmError) {
+        setError(confirmError.message || "Payment confirmation failed");
+        setLoading(false);
+        return;
+      }
+
+      if (paymentIntent && paymentIntent.status === "succeeded") {
+        // Success! Pass the payment intent ID up to the parent
+        // Note: we also pass the clientSecret (which is our onNext's first param historically)
+        onNext(paymentIntent.client_secret || "", paymentIntent.id);
+      }
+    } catch (err: any) {
+      setError("An unexpected error occurred during payment.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -105,18 +124,22 @@ export const PaymentStep = ({ onNext, onBack }: PaymentStepProps) => {
           setLoading(false);
           return;
         }
-        const res = await api.post("/payment/intent", { amount: subtotal });
+
+        const token = useAuthStore.getState().accessToken;
+
+
+        const res = await api.post(
+          "/payment/intent", 
+          { amount: subtotal },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
         if (res.data.success) {
           setClientSecret(res.data.data.clientSecret);
         }
       } catch (err: any) {
-        if (err.response?.status === 401) {
-          // Token expired — redirect to login
-          window.location.href = "/login?redirect=/checkout";
-          return;
-        }
         setError(err.response?.data?.message || "Failed to initialize payment. Please try again.");
-        console.error("Payment intent error:", err);
+
       } finally {
         setLoading(false);
       }
@@ -144,7 +167,7 @@ export const PaymentStep = ({ onNext, onBack }: PaymentStepProps) => {
 
   return (
     <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
-      <CheckoutForm onNext={() => onNext(clientSecret)} onBack={onBack} />
+      <CheckoutForm onNext={onNext} onBack={onBack} />
     </Elements>
   );
 };

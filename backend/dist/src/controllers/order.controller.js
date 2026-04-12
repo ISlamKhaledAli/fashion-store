@@ -41,44 +41,67 @@ const getOrderById = async (req, res, next) => {
 exports.getOrderById = getOrderById;
 const createOrder = async (req, res, next) => {
     try {
+        console.log('Order request body:', req.body);
         const userId = req.user?.id;
-        const { addressId, notes } = order_validator_1.createOrderSchema.parse(req.body);
-        // 1. Get cart items and validate
-        const cart = await prisma_1.prisma.cart.findUnique({
-            where: { userId },
-            include: {
-                items: {
-                    include: {
-                        variant: { include: { product: true } },
+        const { addressId, notes, stripePaymentId, items: inputItems } = order_validator_1.createOrderSchema.parse(req.body);
+        let orderItems = [];
+        // 1. Determine Source of Truth for items (Request Body has priority for Zustand/Local carts)
+        if (inputItems && inputItems.length > 0) {
+            orderItems = inputItems;
+        }
+        else {
+            // Fallback: Get from database cart
+            const cart = await prisma_1.prisma.cart.findUnique({
+                where: { userId },
+                include: {
+                    items: {
+                        include: {
+                            variant: { include: { product: true } },
+                        },
                     },
                 },
-            },
-        });
-        if (!cart || cart.items.length === 0) {
+            });
+            if (cart && cart.items.length > 0) {
+                orderItems = cart.items.map(item => ({
+                    variantId: item.variantId,
+                    productId: item.variant.productId,
+                    quantity: item.quantity,
+                    price: item.variant.product.price
+                }));
+            }
+        }
+        if (orderItems.length === 0) {
             throw new AppError_1.ValidationError("Cart is empty");
         }
-        // 2. Calculate totals
-        let subtotal = 0;
-        for (const item of cart.items) {
-            subtotal += item.variant.product.price * item.quantity;
-        }
-        const shipping = 10;
-        const tax = subtotal * 0.1;
-        const total = subtotal + shipping + tax;
-        // 3. Execute Checkout Transaction
+        // 2. Execute Checkout Transaction
         const order = await prisma_1.prisma.$transaction(async (tx) => {
-            // Step 1: Verify stock for ALL items
-            for (const item of cart.items) {
-                // Fetch fresh variant data to ensure stock is accurate at start of transaction
+            let subtotal = 0;
+            const finalizedItems = [];
+            // Step 1: Verify stock and fetch fresh prices for ALL items
+            for (const item of orderItems) {
                 const variant = await tx.variant.findUnique({
                     where: { id: item.variantId },
-                    select: { stock: true, product: { select: { name: true } } }
+                    include: { product: true }
                 });
-                if (!variant || variant.stock < item.quantity) {
-                    throw new AppError_1.ConflictError(`Insufficient stock for ${variant?.product.name || "item"}`);
+                if (!variant) {
+                    throw new AppError_1.NotFoundError(`Variant ${item.variantId} not found`);
                 }
+                if (variant.stock < item.quantity) {
+                    throw new AppError_1.ConflictError(`Insufficient stock for ${variant.product.name}`);
+                }
+                const itemPrice = variant.product.price;
+                subtotal += itemPrice * item.quantity;
+                finalizedItems.push({
+                    variantId: item.variantId,
+                    productId: variant.productId,
+                    quantity: item.quantity,
+                    price: itemPrice,
+                });
             }
-            // Step 2 & 3: Create Order and OrderItems
+            const shipping = 10;
+            const tax = subtotal * 0.1;
+            const total = subtotal + shipping + tax;
+            // Step 2: Create Order
             const newOrder = await tx.order.create({
                 data: {
                     userId,
@@ -88,38 +111,44 @@ const createOrder = async (req, res, next) => {
                     tax,
                     total,
                     notes,
+                    stripePaymentId,
+                    paymentStatus: stripePaymentId ? "PAID" : "UNPAID",
+                    status: stripePaymentId ? "PROCESSING" : "PENDING",
                     items: {
-                        create: cart.items.map((item) => ({
-                            variantId: item.variantId,
-                            productId: item.variant.productId,
-                            quantity: item.quantity,
-                            price: item.variant.product.price,
-                        })),
+                        create: finalizedItems
                     },
                 },
             });
-            // Step 4: Decrement stock
-            for (const item of cart.items) {
+            // Step 3: Decrement stock
+            for (const item of finalizedItems) {
                 await tx.variant.update({
                     where: { id: item.variantId },
                     data: { stock: { decrement: item.quantity } },
                 });
             }
-            // Step 5: Clear cart
-            await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+            // Step 4: Clear DB cart (if it exists)
+            await tx.cartItem.deleteMany({
+                where: {
+                    cart: { userId }
+                }
+            });
             return newOrder;
         }, {
-            timeout: 10000 // 10s timeout as requested
+            timeout: 10000
         });
-        // 4. Create Stripe payment intent
-        const paymentIntent = await (0, stripe_1.createPaymentIntent)(order.total, "usd", { orderId: order.id });
+        // 3. Handle Payment Intent
+        let clientSecret = null;
+        if (!stripePaymentId) {
+            const paymentIntent = await (0, stripe_1.createPaymentIntent)(order.total, "usd", { orderId: order.id });
+            clientSecret = paymentIntent.client_secret;
+        }
         return (0, apiResponse_1.sendResponse)({
             res,
             status: 201,
             success: true,
             data: {
                 order,
-                clientSecret: paymentIntent.client_secret,
+                clientSecret,
             },
         });
     }

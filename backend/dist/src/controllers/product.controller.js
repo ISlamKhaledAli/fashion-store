@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteProduct = exports.updateProduct = exports.createProduct = exports.getProductBySlug = exports.getProducts = void 0;
+exports.getProductFilters = exports.deleteProduct = exports.updateProduct = exports.createProduct = exports.getProductBySlug = exports.getProducts = void 0;
 const prisma_1 = require("../lib/prisma");
 const apiResponse_1 = require("../utils/apiResponse");
 const pagination_1 = require("../utils/pagination");
@@ -8,7 +8,8 @@ const product_validator_1 = require("../validators/product.validator");
 const AppError_1 = require("../utils/AppError");
 const getProducts = async (req, res, next) => {
     try {
-        const { category, brand, minPrice, maxPrice, search, sort, page, limit, featured } = req.query;
+        console.log("[DEBUG] Incoming Products Query:", req.query);
+        const { category, brand, minPrice, maxPrice, search, sort, page, limit, featured, color } = req.query;
         const { skip, limit: take, page: currentPage } = (0, pagination_1.getPagination)({
             page: Number(page),
             limit: Number(limit),
@@ -16,10 +17,26 @@ const getProducts = async (req, res, next) => {
         const where = {
             status: "ACTIVE",
         };
-        if (category)
-            where.category = { slug: String(category) };
-        if (brand)
-            where.brand = { slug: String(brand) };
+        if (category) {
+            const cats = String(category).split(",").map(c => c.trim());
+            // use OR with mode: insensitive to support multiple categories correctly
+            where.category = {
+                OR: cats.map(cat => ({
+                    name: {
+                        equals: cat,
+                        mode: "insensitive"
+                    }
+                }))
+            };
+        }
+        if (brand) {
+            where.brand = {
+                OR: [
+                    { slug: { equals: String(brand), mode: "insensitive" } },
+                    { name: { equals: String(brand), mode: "insensitive" } }
+                ]
+            };
+        }
         if (featured !== undefined) {
             where.featured = String(featured) === "true";
         }
@@ -36,6 +53,18 @@ const getProducts = async (req, res, next) => {
                 { description: { contains: String(search), mode: "insensitive" } },
             ];
         }
+        if (color) {
+            const colors = String(color).split(",").map(c => c.trim());
+            where.variants = {
+                some: {
+                    color: {
+                        in: colors,
+                        mode: "insensitive"
+                    }
+                }
+            };
+        }
+        console.log("[DEBUG] Prisma Where Clause:", JSON.stringify(where, null, 2));
         const orderBy = {};
         if (sort) {
             const [field, order] = String(sort).split(":");
@@ -58,6 +87,7 @@ const getProducts = async (req, res, next) => {
             }),
             prisma_1.prisma.product.count({ where }),
         ]);
+        console.log(`[DEBUG] Found ${products.length} products (Total: ${total})`);
         const pagination = (0, pagination_1.calculatePagination)(total, currentPage, take);
         return (0, apiResponse_1.sendResponse)({
             res,
@@ -190,3 +220,28 @@ const deleteProduct = async (req, res, next) => {
     }
 };
 exports.deleteProduct = deleteProduct;
+const getProductFilters = async (req, res, next) => {
+    try {
+        const variants = await prisma_1.prisma.variant.findMany({
+            distinct: ["color"],
+            select: {
+                color: true,
+                colorHex: true,
+            },
+        });
+        const colors = variants.map(v => ({
+            name: v.color,
+            hex: v.colorHex || "#000000"
+        }));
+        return (0, apiResponse_1.sendResponse)({
+            res,
+            status: 200,
+            success: true,
+            data: { colors },
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getProductFilters = getProductFilters;
