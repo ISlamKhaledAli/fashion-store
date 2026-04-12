@@ -1,29 +1,28 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.authMiddleware = void 0;
+exports.adminMiddleware = exports.authMiddleware = void 0;
 const jwt_1 = require("../utils/jwt");
-const apiResponse_1 = require("../utils/apiResponse");
+const AppError_1 = require("../utils/AppError");
 const authMiddleware = (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return (0, apiResponse_1.sendResponse)({
-            res,
-            status: 401,
-            success: false,
-            message: "Authorization token required",
-        });
+        throw new AppError_1.AuthError("Authorization token required");
     }
     const token = authHeader.split(" ")[1];
-    const decoded = (0, jwt_1.verifyAccessToken)(token);
-    if (!decoded) {
-        return (0, apiResponse_1.sendResponse)({
-            res,
-            status: 401,
-            success: false,
-            message: "Invalid or expired token",
-        });
+    try {
+        const decoded = (0, jwt_1.verifyAccessToken)(token);
+        req.user = decoded;
+        next();
     }
-    req.user = decoded;
-    next();
+    catch (error) {
+        throw new AppError_1.AuthError("Invalid or expired token");
+    }
 };
 exports.authMiddleware = authMiddleware;
+const adminMiddleware = (req, res, next) => {
+    if (req.user?.role !== "ADMIN") {
+        throw new AppError_1.AuthError("Admin resource. Access denied");
+    }
+    next();
+};
+exports.adminMiddleware = adminMiddleware;

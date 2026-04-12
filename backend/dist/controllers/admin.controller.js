@@ -1,10 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDiscounts = exports.createDiscount = exports.getInventory = exports.getTopProducts = exports.getRevenueAnalytics = exports.getAnalyticsOverview = exports.getCustomers = exports.updateOrderStatus = exports.getAdminOrders = void 0;
-const server_1 = require("../server");
+const prisma_1 = require("../lib/prisma");
 const apiResponse_1 = require("../utils/apiResponse");
 const pagination_1 = require("../utils/pagination");
 const common_validator_1 = require("../validators/common.validator");
+const AppError_1 = require("../utils/AppError");
 const getAdminOrders = async (req, res, next) => {
     try {
         const { status, page, limit } = req.query;
@@ -16,14 +17,14 @@ const getAdminOrders = async (req, res, next) => {
         if (status)
             where.status = status;
         const [orders, total] = await Promise.all([
-            server_1.prisma.order.findMany({
+            prisma_1.prisma.order.findMany({
                 where,
                 take,
                 skip,
                 include: { user: { select: { name: true, email: true } } },
                 orderBy: { createdAt: "desc" },
             }),
-            server_1.prisma.order.count({ where }),
+            prisma_1.prisma.order.count({ where }),
         ]);
         const pagination = (0, pagination_1.calculatePagination)(total, currentPage, take);
         return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data: orders, pagination });
@@ -37,20 +38,23 @@ const updateOrderStatus = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
-        const order = await server_1.prisma.order.update({
+        const order = await prisma_1.prisma.order.update({
             where: { id: String(id) },
             data: { status },
         });
         return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data: order });
     }
     catch (error) {
+        if (error instanceof Error && error.code === "P2025") {
+            throw new AppError_1.NotFoundError("Order not found");
+        }
         next(error);
     }
 };
 exports.updateOrderStatus = updateOrderStatus;
 const getCustomers = async (req, res, next) => {
     try {
-        const customers = await server_1.prisma.user.findMany({
+        const customers = await prisma_1.prisma.user.findMany({
             where: { role: "CUSTOMER" },
             include: {
                 _count: { select: { orders: true } },
@@ -76,20 +80,20 @@ const getCustomers = async (req, res, next) => {
 exports.getCustomers = getCustomers;
 const getAnalyticsOverview = async (req, res, next) => {
     try {
-        const totalRevenue = await server_1.prisma.order.aggregate({
+        const totalRevenue = await prisma_1.prisma.order.aggregate({
             where: { paymentStatus: "PAID" },
             _sum: { total: true },
         });
         const startOfToday = new Date();
         startOfToday.setHours(0, 0, 0, 0);
-        const todayRevenue = await server_1.prisma.order.aggregate({
+        const todayRevenue = await prisma_1.prisma.order.aggregate({
             where: { paymentStatus: "PAID", createdAt: { gte: startOfToday } },
             _sum: { total: true },
         });
-        const totalOrders = await server_1.prisma.order.count();
-        const totalCustomers = await server_1.prisma.user.count({ where: { role: "CUSTOMER" } });
+        const totalOrders = await prisma_1.prisma.order.count();
+        const totalCustomers = await prisma_1.prisma.user.count({ where: { role: "CUSTOMER" } });
         // Conversion rate: (paid orders / total customers) - naive but works for overview
-        const paidOrders = await server_1.prisma.order.count({ where: { paymentStatus: "PAID" } });
+        const paidOrders = await prisma_1.prisma.order.count({ where: { paymentStatus: "PAID" } });
         const conversionRate = totalCustomers > 0 ? (paidOrders / totalCustomers) * 100 : 0;
         return (0, apiResponse_1.sendResponse)({
             res,
@@ -113,7 +117,7 @@ const getRevenueAnalytics = async (req, res, next) => {
     try {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        const revenue = await server_1.prisma.order.groupBy({
+        const revenue = await prisma_1.prisma.order.groupBy({
             by: ["createdAt"],
             where: { paymentStatus: "PAID", createdAt: { gte: thirtyDaysAgo } },
             _sum: { total: true },
@@ -133,13 +137,13 @@ const getRevenueAnalytics = async (req, res, next) => {
 exports.getRevenueAnalytics = getRevenueAnalytics;
 const getTopProducts = async (req, res, next) => {
     try {
-        const topProducts = await server_1.prisma.orderItem.groupBy({
+        const topProducts = await prisma_1.prisma.orderItem.groupBy({
             by: ["productId"],
             _sum: { quantity: true, price: true },
             orderBy: { _sum: { quantity: "desc" } },
             take: 5,
         });
-        const products = await server_1.prisma.product.findMany({
+        const products = await prisma_1.prisma.product.findMany({
             where: { id: { in: topProducts.map(p => p.productId) } },
             select: { id: true, name: true, price: true },
         });
@@ -161,7 +165,7 @@ const getTopProducts = async (req, res, next) => {
 exports.getTopProducts = getTopProducts;
 const getInventory = async (req, res, next) => {
     try {
-        const lowStockVariants = await server_1.prisma.variant.findMany({
+        const lowStockVariants = await prisma_1.prisma.variant.findMany({
             where: { stock: { lt: 5 } },
             include: { product: { select: { name: true } } },
         });
@@ -175,7 +179,7 @@ exports.getInventory = getInventory;
 const createDiscount = async (req, res, next) => {
     try {
         const validatedData = common_validator_1.createDiscountSchema.parse(req.body);
-        const discount = await server_1.prisma.discount.create({ data: validatedData });
+        const discount = await prisma_1.prisma.discount.create({ data: validatedData });
         return (0, apiResponse_1.sendResponse)({ res, status: 201, success: true, data: discount });
     }
     catch (error) {
@@ -185,7 +189,7 @@ const createDiscount = async (req, res, next) => {
 exports.createDiscount = createDiscount;
 const getDiscounts = async (req, res, next) => {
     try {
-        const discounts = await server_1.prisma.discount.findMany();
+        const discounts = await prisma_1.prisma.discount.findMany();
         return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data: discounts });
     }
     catch (error) {

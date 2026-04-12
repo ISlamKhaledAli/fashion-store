@@ -35,7 +35,10 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importStar(require("express"));
 const payment_controller_1 = require("../controllers/payment.controller");
+const auth_1 = require("../middleware/auth");
 const router = (0, express_1.Router)();
 // Webhook needs raw body for signature verification
 router.post("/webhook", express_1.default.raw({ type: "application/json" }), payment_controller_1.stripeWebhook);
+// Intent needs parsed JSON body (payment routes are mounted before global express.json())
+router.post("/intent", express_1.default.json(), auth_1.authMiddleware, payment_controller_1.createIntent);
 exports.default = router;

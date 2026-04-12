@@ -5,31 +5,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.verifyRefreshToken = exports.verifyAccessToken = exports.generateRefreshToken = exports.generateAccessToken = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "default_refresh_secret";
+const validateEnv_1 = require("./validateEnv");
 const generateAccessToken = (userId, role) => {
-    return jsonwebtoken_1.default.sign({ id: userId, role }, JWT_SECRET, { expiresIn: "15m" });
+    return jsonwebtoken_1.default.sign({ id: userId, role }, validateEnv_1.env.JWT_SECRET, { expiresIn: "1h" });
 };
 exports.generateAccessToken = generateAccessToken;
 const generateRefreshToken = (userId) => {
-    return jsonwebtoken_1.default.sign({ id: userId }, JWT_REFRESH_SECRET, { expiresIn: "7d" });
+    return jsonwebtoken_1.default.sign({ id: userId }, validateEnv_1.env.JWT_REFRESH_SECRET, { expiresIn: "7d" });
 };
 exports.generateRefreshToken = generateRefreshToken;
 const verifyAccessToken = (token) => {
-    try {
-        return jsonwebtoken_1.default.verify(token, JWT_SECRET);
-    }
-    catch (error) {
-        return null;
-    }
+    return jsonwebtoken_1.default.verify(token, validateEnv_1.env.JWT_SECRET);
 };
 exports.verifyAccessToken = verifyAccessToken;
 const verifyRefreshToken = (token) => {
-    try {
-        return jsonwebtoken_1.default.verify(token, JWT_REFRESH_SECRET);
-    }
-    catch (error) {
-        return null;
-    }
+    return jsonwebtoken_1.default.verify(token, validateEnv_1.env.JWT_REFRESH_SECRET);
 };
 exports.verifyRefreshToken = verifyRefreshToken;

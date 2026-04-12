@@ -3,10 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteImage = exports.uploadImage = void 0;
 const apiResponse_1 = require("../utils/apiResponse");
 const cloudinary_1 = require("../services/cloudinary");
+const AppError_1 = require("../utils/AppError");
 const uploadImage = async (req, res, next) => {
     try {
         if (!req.file) {
-            return (0, apiResponse_1.sendResponse)({ res, status: 400, success: false, message: "No file uploaded" });
+            throw new AppError_1.ValidationError("No file uploaded");
         }
         const result = await (0, cloudinary_1.uploadToCloudinary)(req.file);
         return (0, apiResponse_1.sendResponse)({
@@ -28,7 +29,7 @@ const deleteImage = async (req, res, next) => {
     try {
         const { publicId } = req.body;
         if (!publicId) {
-            return (0, apiResponse_1.sendResponse)({ res, status: 400, success: false, message: "Public ID is required" });
+            throw new AppError_1.ValidationError("Public ID is required");
         }
         await (0, cloudinary_1.deleteFromCloudinary)(publicId);
         return (0, apiResponse_1.sendResponse)({
