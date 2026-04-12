@@ -58,7 +58,7 @@ export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductRev
   }, [productId]);
 
   return (
-    <section className="max-w-[1440px] mx-auto px-8 lg:px-12 py-24 lg:py-32">
+    <section className="bg-white max-w-[1440px] mx-auto px-8 lg:px-12 py-24 lg:py-32">
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-16">
         <div className="lg:col-span-1 space-y-6">
           <h2 className="text-3xl font-medium tracking-tight">User Reviews</h2>

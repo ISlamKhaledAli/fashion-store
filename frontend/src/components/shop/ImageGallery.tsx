@@ -24,7 +24,7 @@ export const ImageGallery = ({ images }: ImageGalleryProps) => {
       {/* Main Image Container */}
       <div 
         onClick={() => setIsLightboxOpen(true)}
-        className="w-full flex items-center justify-center bg-[#f8f8f6] aspect-3/4 max-h-[520px] overflow-hidden rounded-[4px] cursor-zoom-in relative group"
+        className="w-full flex items-center justify-center bg-[#f8f8f6] aspect-[3/4] max-h-[620px] overflow-hidden rounded-[4px] cursor-zoom-in relative group"
       >
         <AnimatePresence mode="wait">
           <motion.div

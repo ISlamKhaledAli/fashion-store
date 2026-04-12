@@ -17,7 +17,7 @@ export const ProductAccordions = ({ items }: ProductAccordionsProps) => {
   const [expanded, setExpanded] = useState<number | null>(0);
 
   return (
-    <section className="max-w-[1440px] mx-auto px-8 lg:px-12 py-24 lg:py-32 border-t border-surface-container">
+    <section className="bg-transparent max-w-[1440px] mx-auto px-8 lg:px-12 py-24 lg:py-32 border-t border-surface-container">
       <div className="max-w-3xl mx-auto">
         {items.map((item, index) => (
           <div 

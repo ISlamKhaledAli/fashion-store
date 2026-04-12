@@ -124,7 +124,7 @@ export default function ProductDetailPage({ params }: PageProps) {
   return (
     <main className="pt-24 min-h-screen">
       {/* 1. Header Section: Image + Primary Info */}
-      <section className="max-w-[1440px] mx-auto px-8 lg:px-12 py-16 grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24">
+      <section className="bg-transparent max-w-[1440px] mx-auto px-8 lg:px-12 py-16 grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24">
         {/* Gallery Column */}
         <div className="lg:col-span-7">
           <ImageGallery images={product.images} />
@@ -146,7 +146,7 @@ export default function ProductDetailPage({ params }: PageProps) {
       <ProductAccordions items={accordionItems} />
 
       {/* 4. Complete the Look Horizontal Scroll */}
-      <RelatedProducts slug={slug} />
+      <HorizontalScroll excludeSlug={product.slug} />
 
       {/* 5. Reviews Section */}
       <ProductReviews 
@@ -156,53 +156,8 @@ export default function ProductDetailPage({ params }: PageProps) {
       />
 
       {/* 6. You May Also Like Section */}
-      <YouMayAlsoLike categoryId={product.categoryId} />
+      {/* @ts-ignore - category is populated from backend even if type doesn't reflect it */}
+      <YouMayAlsoLike categorySlug={product.category?.slug} excludeSlug={product.slug} />
     </main>
   );
-}
-
-// Extracted component for dynamic fetching with precise loading/empty states
-function RelatedProducts({ slug }: { slug: string }) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchRelated = async () => {
-      setLoading(true);
-      try {
-        const queryParams: Record<string, any> = { limit: 4 };
-        
-        const res = await productApi.getAll(queryParams);
-        if (res.data.success && isMounted) {
-          // Filter out the current product just in case it appears in results
-          setProducts(res.data.data.filter(p => !slug.includes(p.slug) && p.id !== slug));
-        }
-      } catch (error) {
-        console.error("Failed to fetch products:", error);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-    fetchRelated();
-    
-    return () => { isMounted = false; };
-  }, [slug]);
-
-  if (loading) {
-    return (
-      <section className="py-24 overflow-hidden space-y-12 shrink-0">
-        <Skeleton className="h-10 w-48 mx-8 lg:mx-12" />
-        <div className="flex gap-4 px-8 lg:px-12 overflow-x-hidden">
-          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="w-[300px] h-[400px] shrink-0 aspect-3/4" />)}
-        </div>
-      </section>
-    );
-  }
-
-  if (products.length === 0) return null;
-
-  // Determine the layout formatting expected by HorizontalScroll
-  return <HorizontalScroll title="Complete the Look" products={products.slice(0, 4)} />;
 }
