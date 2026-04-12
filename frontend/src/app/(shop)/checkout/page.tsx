@@ -1,186 +1,203 @@
 "use client";
 
-import React, { useState } from "react";
-import { useCartStore } from "@/store/cartStore";
-import { formatCurrency } from "@/lib/utils";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { orderApi } from "@/lib/api";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAuthStore } from "@/store/authStore";
+import { StepProgress } from "@/components/checkout/StepProgress";
+import { ShippingStep } from "@/components/checkout/ShippingStep";
+import { PaymentStep } from "@/components/checkout/PaymentStep";
+import { ReviewStep } from "@/components/checkout/ReviewStep";
+import { CheckoutSummary } from "@/components/checkout/CheckoutSummary";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import Link from "next/link";
+import { Button } from "@/components/ui/Button";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || "");
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, getTotalPrice, clearCart } = useCartStore();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated, user, logout } = useAuthStore();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [shippingData, setShippingData] = useState<any>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [orderSuccess, setOrderSuccess] = useState<{ id: string } | null>(null);
 
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    address: "",
-    city: "",
-    zipCode: "",
-  });
+  // Protected route check
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/login?redirect=/checkout");
+    }
+  }, [isAuthenticated, router]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  if (!isAuthenticated) return null;
+
+  const handleShippingNext = (data: any) => {
+    setShippingData(data);
+    setCurrentStep(2);
   };
 
-  const handleCheckout = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsProcessing(true);
-    setError(null);
+  const handlePaymentNext = (secret: string) => {
+    setClientSecret(secret);
+    setCurrentStep(3);
+  };
 
-    try {
-      // Simplification: Direct order creation for demo
-      // In production, we'd handle Stripe clientSecret here
-      const response = await orderApi.create({
-        items: items.map(item => ({
-          productId: item.productId,
-          variantId: item.variantId,
-          quantity: item.quantity,
-        })),
-        shippingAddress: `${formData.address}, ${formData.city}, ${formData.zipCode}`,
-      });
-
-      if (response.data.success) {
-        clearCart();
-        router.push(`/order-success?id=${response.data.data.order.id}`);
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? (err as { response?: { data?: { message?: string } } }).response?.data?.message : "Checkout failed. Please check your details.";
-      setError(errorMessage || "Checkout failed. Please check your details.");
-    } finally {
-      setIsProcessing(false);
+  const renderCurrentStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <motion.div
+            key="shipping"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <ShippingStep 
+              onNext={handleShippingNext} 
+              initialData={shippingData} 
+            />
+          </motion.div>
+        );
+      case 2:
+        return (
+          <motion.div
+            key="payment"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <PaymentStep 
+              onNext={handlePaymentNext} 
+              onBack={() => setCurrentStep(1)} 
+            />
+          </motion.div>
+        );
+      case 3:
+        return (
+          <motion.div
+            key="review"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {clientSecret ? (
+              <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <ReviewStep 
+                  shippingData={shippingData} 
+                  clientSecret={clientSecret}
+                  onSuccess={(id) => setOrderSuccess({ id })}
+                  onBack={() => setCurrentStep(2)}
+                />
+              </Elements>
+            ) : (
+              <div className="text-center py-20">
+                <p>Payment information missing. Please go back.</p>
+                <Button variant="outline" onClick={() => setCurrentStep(2)}>Back to Payment</Button>
+              </div>
+            )}
+          </motion.div>
+        );
+      default:
+        return null;
     }
   };
 
-  if (items.length === 0) {
-    return (
-      <div className="pt-40 text-center space-y-8">
-        <h1 className="text-2xl font-bold tracking-tighter">Your bag is empty</h1>
-        <Button onClick={() => router.push("/products")}>Back to Shop</Button>
-      </div>
-    );
-  }
-
   return (
-    <div className="pt-40 pb-32 px-8 max-w-[1440px] mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-24">
-        {/* Left: Shipping Form */}
-        <div className="lg:col-span-7 space-y-16">
-          <div className="space-y-4">
-            <h1 className="text-4xl font-medium tracking-tighter">Shipping Details</h1>
-            <p className="text-on-surface-variant text-sm uppercase tracking-[0.2em] font-bold">
-              Where shall we send your curation?
-            </p>
-          </div>
-
-          <form onSubmit={handleCheckout} className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="md:col-span-2">
-              <Input 
-                name="name" 
-                label="Full Name" 
-                placeholder="Alex Curator" 
-                required 
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Input 
-                name="email" 
-                type="email" 
-                label="Email Address" 
-                placeholder="name@example.com" 
-                required
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Input 
-                name="address" 
-                label="Street Address" 
-                placeholder="123 Archive St." 
-                required
-                onChange={handleInputChange}
-              />
-            </div>
-            <Input 
-                name="city" 
-                label="City" 
-                placeholder="Paris" 
-                required
-                onChange={handleInputChange}
-            />
-            <Input 
-                name="zipCode" 
-                label="ZIP / Postal Code" 
-                placeholder="75001" 
-                required
-                onChange={handleInputChange}
-            />
-            
-            <div className="md:col-span-2 pt-8">
-              <Button 
-                type="submit" 
-                className="w-full" 
-                isLoading={isProcessing}
-              >
-                Place Order — {formatCurrency(getTotalPrice())}
-              </Button>
-              {error && (
-                <p className="text-error text-xs font-bold uppercase tracking-widest text-center mt-4">
-                  {error}
-                </p>
-              )}
-            </div>
-          </form>
-        </div>
-
-        {/* Right: Order Summary */}
-        <div className="lg:col-span-5">
-          <div className="bg-surface-container-low p-12 space-y-12 sticky top-32">
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em]">Order Summary</h3>
-            
-            <div className="space-y-8">
-              {items.map((item) => (
-                <div key={item.id} className="flex gap-6">
-                  <div className="w-16 h-20 relative bg-white overflow-hidden rounded-sm">
-                    <Image src={item.image} alt={item.name} fill sizes="64px" className="object-cover" />
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <h4 className="text-sm font-medium">{item.name}</h4>
-                    <p className="text-[10px] text-on-surface-variant uppercase tracking-widest">
-                      {item.color} / {item.size} × {item.quantity}
-                    </p>
-                    <p className="text-sm font-bold tracking-tighter">
-                      {formatCurrency(item.price * item.quantity)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="pt-8 border-t border-outline-variant/10 space-y-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-on-surface-variant font-medium">Subtotal</span>
-                <span className="font-bold">{formatCurrency(getTotalPrice())}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-on-surface-variant font-medium">Shipping</span>
-                <span className="font-bold">Complimentary</span>
-              </div>
-              <div className="flex justify-between items-baseline pt-4 border-t border-outline-variant/10">
-                <span className="text-xs font-extrabold uppercase tracking-widest">Total</span>
-                <span className="text-3xl font-bold tracking-tighter">
-                  {formatCurrency(getTotalPrice())}
-                </span>
-              </div>
-            </div>
+    <div className="bg-surface min-h-screen">
+      {/* Header */}
+      <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl border-b border-outline-variant/10">
+        <div className="flex justify-between items-center h-20 px-8 max-w-[1440px] mx-auto">
+          <Link href="/" className="text-xl font-medium tracking-tighter">THE EDITORIAL</Link>
+          <div className="flex items-center gap-4">
+             <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-medium">Logged in as {user?.email}</span>
           </div>
         </div>
-      </div>
+      </header>
+
+      <main className="pt-32 pb-24 max-w-[1440px] mx-auto px-6 lg:px-12">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-16 xl:gap-32 items-start">
+          
+          <div className="space-y-12">
+            <StepProgress currentStep={currentStep} />
+            
+            <AnimatePresence mode="wait">
+              {renderCurrentStep()}
+            </AnimatePresence>
+          </div>
+
+          <CheckoutSummary />
+        </div>
+      </main>
+
+      {/* Success Overlay */}
+      <AnimatePresence>
+        {orderSuccess && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 text-center"
+          >
+            <div className="w-24 h-24 mb-8">
+              <svg className="w-full h-full" viewBox="0 0 52 52">
+                <motion.circle 
+                  cx="26" cy="26" r="25" 
+                  fill="none" 
+                  stroke="#030304" 
+                  strokeWidth="2" 
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                />
+                <motion.path 
+                  fill="none" 
+                  stroke="#030304" 
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M14.1 27.2l7.1 7.2 16.7-16.8" 
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 0.5, delay: 0.5, ease: "easeInOut" }}
+                />
+              </svg>
+            </div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1 }}
+              className="space-y-6 max-w-sm"
+            >
+              <h2 className="text-4xl font-medium tracking-tight">Order Confirmed!</h2>
+              <p className="text-on-surface-variant leading-relaxed">
+                Thank you for your purchase. Your order <span className="text-primary font-medium">#{orderSuccess.id.slice(-8).toUpperCase()}</span> has been placed successfully.
+              </p>
+              <div className="pt-8">
+                <Link href="/products">
+                  <Button variant="primary" className="w-full py-5">
+                    Continue Shopping
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Footer */}
+      <footer className="w-full py-12 px-12 border-t border-outline-variant/10">
+        <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+          <span className="text-[10px] font-medium tracking-widest uppercase text-zinc-400">© 2024 THE EDITORIAL. ALL RIGHTS RESERVED.</span>
+          <div className="flex gap-8">
+            <Link href="/" className="text-[10px] font-medium tracking-widest uppercase text-zinc-400 hover:text-primary transition-colors">Privacy</Link>
+            <Link href="/" className="text-[10px] font-medium tracking-widest uppercase text-zinc-400 hover:text-primary transition-colors">Terms</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

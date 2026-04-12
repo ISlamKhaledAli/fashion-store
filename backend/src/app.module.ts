@@ -33,7 +33,7 @@ app.use(
   })
 );
 
-// Payment routes BEFORE general json middleware to handle raw body if needed
+// Payment webhook needs raw body — mount BEFORE json middleware
 app.use("/api/payment", paymentRoutes);
 
 app.use(express.json());

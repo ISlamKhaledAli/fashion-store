@@ -139,20 +139,20 @@ export default function CartPage() {
                               const newQty = Math.max(1, item.quantity - 1);
                               if (newQty !== item.quantity) {
                                 updateQuantity(item.id, newQty);
-                                cartApi.updateQuantity(item.id, newQty);
+                                cartApi.updateQuantity(item.id, newQty).catch(() => {});
                               }
                             }}
                             className="text-on-surface-variant hover:text-on-surface transition-colors flex items-center justify-center p-2"
                             icon={<span className="material-symbols-outlined text-sm">remove</span>}
                           />
-                          <span className="text-sm font-medium w-4 text-center">{item.quantity}</span>
+                          <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
                           <Button 
                             variant="none"
                             size="none"
                             onClick={() => {
                               const newQty = item.quantity + 1;
                               updateQuantity(item.id, newQty);
-                              cartApi.updateQuantity(item.id, newQty);
+                              cartApi.updateQuantity(item.id, newQty).catch(() => {});
                             }}
                             className="text-on-surface-variant hover:text-on-surface transition-colors flex items-center justify-center p-2"
                             icon={<span className="material-symbols-outlined text-sm">add</span>}
@@ -171,9 +171,9 @@ export default function CartPage() {
                         <Button 
                           variant="ghost"
                           size="none"
-                          onClick={async () => {
+                          onClick={() => {
                             removeItem(item.id);
-                            await cartApi.removeItem(item.id);
+                            cartApi.removeItem(item.id).catch(() => {});
                           }}
                           className="mt-6 text-on-surface-variant hover:text-error transition-colors duration-300 group/del p-2"
                           icon={<span className="material-symbols-outlined group-hover/del:scale-110 transition-transform" data-icon="delete">delete</span>}
@@ -254,7 +254,7 @@ export default function CartPage() {
                         value={promoCode}
                         onChange={(e) => setPromoCode(e.target.value)}
                         placeholder="Enter code"
-                        className="flex-1 bg-surface-container-low border-none px-4 py-3 text-xs uppercase tracking-widest focus:ring-1 focus:ring-primary outline-none"
+                        className="flex-1 bg-surface-container-low border-none rounded-md px-4 py-3 text-xs uppercase tracking-widest focus:ring-1 focus:ring-primary outline-none transition-all"
                       />
                       <Button 
                         variant="primary"

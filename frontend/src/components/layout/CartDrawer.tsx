@@ -129,13 +129,9 @@ export const CartDrawer = () => {
                           <Button 
                             variant="ghost"
                             size="none"
-                            onClick={async () => {
-                              try {
-                                removeItem(item.id);
-                                await cartApi.removeItem(item.id);
-                              } catch (err) {
-                                console.error("Remove item failed:", err);
-                              }
+                            onClick={() => {
+                              removeItem(item.id);
+                              cartApi.removeItem(item.id).catch(() => {});
                             }}
                             className="text-outline-variant hover:text-error transition-colors p-2"
                             icon={
@@ -148,11 +144,11 @@ export const CartDrawer = () => {
                             <Button 
                               variant="none"
                               size="none"
-                              onClick={async () => {
+                              onClick={() => {
                                 const newQty = Math.max(1, item.quantity - 1);
                                 if (newQty !== item.quantity) {
                                   updateQuantity(item.id, newQty);
-                                  await cartApi.updateQuantity(item.id, newQty);
+                                  cartApi.updateQuantity(item.id, newQty).catch(() => {});
                                 }
                               }}
                               className="text-on-surface-variant hover:text-on-surface dark:hover:text-stone-50 transition-colors flex items-center justify-center h-6 w-6"
@@ -160,14 +156,14 @@ export const CartDrawer = () => {
                                 <span className="material-symbols-outlined text-xs">remove</span>
                               }
                             />
-                            <span className="text-xs font-medium w-4 text-center">{item.quantity}</span>
+                            <span className="text-xs font-medium w-8 text-center">{item.quantity}</span>
                             <Button 
                               variant="none"
                               size="none"
-                              onClick={async () => {
+                              onClick={() => {
                                 const newQty = item.quantity + 1;
                                 updateQuantity(item.id, newQty);
-                                await cartApi.updateQuantity(item.id, newQty);
+                                cartApi.updateQuantity(item.id, newQty).catch(() => {});
                               }}
                               className="text-on-surface-variant hover:text-on-surface dark:hover:text-stone-50 transition-colors flex items-center justify-center h-6 w-6"
                               icon={
