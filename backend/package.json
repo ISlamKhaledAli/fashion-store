@@ -4,8 +4,9 @@
   "description": "",
   "main": "dist/server.js",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "nodemon --exec ts-node --files src/server.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "start": "node dist/server.js",
     "test:prepare": "node tests/scripts/prepare-test-db.js",
     "test": "npm run test:prepare && jest --runInBand",
