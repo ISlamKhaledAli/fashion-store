@@ -17,28 +17,40 @@ interface StickyShowcaseProps {
 
 export const StickyShowcase = ({ image, stories }: StickyShowcaseProps) => {
   return (
-    <section className="relative bg-surface-container-lowest overflow-hidden">
-      <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-2 lg:min-h-[1024px]">
-        <div className="lg:sticky lg:top-0 lg:h-screen hidden lg:block overflow-hidden">
-          <Image
-            src={image}
-            alt="Editorial Storytelling"
-            fill
-            className="w-full h-full object-cover"
-          />
+    <section 
+      className="relative bg-surface-container-lowest w-full max-w-[1440px] mx-auto flex items-start"
+      style={{ height: `${stories.length * 100}vh` }}
+    >
+      {/* LEFT — sticky image */}
+      <div 
+        className="w-1/2 hidden lg:block"
+        style={{ position: 'sticky', top: '100px', height: 'fit-content' }}
+      >
+        <div className="relative w-full h-[calc(100vh-100px)]">
+          {image && (
+            <Image
+              src={image}
+              alt="Editorial Storytelling"
+              fill
+              className="object-cover"
+            />
+          )}
         </div>
+      </div>
 
-        <div className="py-24 px-8 lg:py-48 lg:px-24 space-y-32 lg:space-y-64">
-          {stories.map((story, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-20%" }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="space-y-6 max-w-xl"
-            >
-              <span className="material-symbols-outlined text-4xl text-primary">
+      {/* RIGHT — scrolling features */}
+      <div className="w-full lg:w-1/2 flex flex-col">
+        {stories.map((story, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-20% 0px" }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="min-h-screen flex items-center px-8 lg:px-16"
+          >
+            <div className="space-y-6 max-w-xl">
+              <span className="text-4xl text-primary font-serif">
                 {story.icon}
               </span>
               <h2 className="text-3xl font-medium tracking-tight">
@@ -47,9 +59,9 @@ export const StickyShowcase = ({ image, stories }: StickyShowcaseProps) => {
               <p className="text-on-surface-variant leading-relaxed text-lg lg:text-xl">
                 {story.description}
               </p>
-            </motion.div>
-          ))}
-        </div>
+            </div>
+          </motion.div>
+        ))}
       </div>
     </section>
   );

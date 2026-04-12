@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, use } from "react";
+import { motion } from "framer-motion";
 import { productApi } from "@/lib/api";
 import { Product } from "@/types";
 import { ImageGallery } from "@/components/shop/ImageGallery";
@@ -11,6 +12,7 @@ import { HorizontalScroll } from "@/components/shop/HorizontalScroll";
 import { ProductReviews } from "@/components/shop/ProductReviews";
 import { ProductCard } from "@/components/shop/ProductCard";
 import Skeleton from "@/components/ui/Skeleton";
+import { YouMayAlsoLike } from "@/components/shop/YouMayAlsoLike";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -77,7 +79,7 @@ export default function ProductDetailPage({ params }: PageProps) {
     );
   }
 
-  const storytellingItems = [
+  const features = [
     {
       icon: "eco",
       title: "Virgin Wool Blend",
@@ -136,18 +138,15 @@ export default function ProductDetailPage({ params }: PageProps) {
 
       {/* 2. Scroll Storytelling Section */}
       <StickyShowcase 
-        image={product.images.find(img => !img.isMain)?.url || product.images[0]?.url} 
-        stories={storytellingItems} 
+        image={product.images[0]?.url} 
+        stories={features} 
       />
 
       {/* 3. Detailed Accordions */}
       <ProductAccordions items={accordionItems} />
 
       {/* 4. Complete the Look Horizontal Scroll */}
-      <HorizontalScroll 
-        title="Complete the Look" 
-        products={relatedProducts} 
-      />
+      <RelatedProducts slug={slug} />
 
       {/* 5. Reviews Section */}
       <ProductReviews 
@@ -156,24 +155,54 @@ export default function ProductDetailPage({ params }: PageProps) {
         reviewCount={product.reviewCount} 
       />
 
-      {/* 6. Related Products Grid */}
-      <section className="border-t border-surface-container py-24 lg:py-32">
-        <div className="max-w-[1440px] mx-auto px-8 lg:px-12">
-          <h2 className="text-xs tracking-[0.3em] uppercase text-zinc-400 mb-16 text-center font-bold">
-            You May Also Like
-          </h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {relatedProducts.map((p, idx) => (
-              <ProductCard 
-                key={p.id} 
-                product={p} 
-                variant="editorial" 
-                delay={idx * 0.1}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* 6. You May Also Like Section */}
+      <YouMayAlsoLike categoryId={product.categoryId} />
     </main>
   );
+}
+
+// Extracted component for dynamic fetching with precise loading/empty states
+function RelatedProducts({ slug }: { slug: string }) {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchRelated = async () => {
+      setLoading(true);
+      try {
+        const queryParams: Record<string, any> = { limit: 4 };
+        
+        const res = await productApi.getAll(queryParams);
+        if (res.data.success && isMounted) {
+          // Filter out the current product just in case it appears in results
+          setProducts(res.data.data.filter(p => !slug.includes(p.slug) && p.id !== slug));
+        }
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    fetchRelated();
+    
+    return () => { isMounted = false; };
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <section className="py-24 overflow-hidden space-y-12 shrink-0">
+        <Skeleton className="h-10 w-48 mx-8 lg:mx-12" />
+        <div className="flex gap-4 px-8 lg:px-12 overflow-x-hidden">
+          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="w-[300px] h-[400px] shrink-0 aspect-3/4" />)}
+        </div>
+      </section>
+    );
+  }
+
+  if (products.length === 0) return null;
+
+  // Determine the layout formatting expected by HorizontalScroll
+  return <HorizontalScroll title="Complete the Look" products={products.slice(0, 4)} />;
 }
