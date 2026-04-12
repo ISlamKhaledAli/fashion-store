@@ -28,7 +28,17 @@ app.use(helmet());
 app.use(httpLogger); // Request logging
 app.use(
   cors({
-    origin: env.CLIENT_URL || "http://localhost:3000",
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        env.CLIENT_URL,
+        "http://localhost:3000",
+      ];
+      if (!origin || allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
