@@ -12,6 +12,14 @@ import { Product } from "@/types";
 import { cn } from "@/lib/utils";
 import { Filter, LayoutGrid, List, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Select } from "@/components/ui/Select";
+
+const SORT_OPTIONS = [
+  { label: "Newest Arrivals", value: "createdAt:desc" },
+  { label: "Price Low-High", value: "price:asc" },
+  { label: "Price High-Low", value: "price:desc" },
+  { label: "Oldest First", value: "createdAt:asc" },
+];
 
 type Action =
   | { type: "toggle_category"; payload: string }
@@ -169,19 +177,12 @@ function ProductsContent() {
           </div>
           
           <div className="flex flex-wrap items-center justify-between md:justify-end gap-x-8 gap-y-4 border-b border-outline-variant/30 pb-2 w-full md:w-auto">
-            <div className="flex items-center gap-2 text-xs uppercase tracking-widest shrink-0">
-              <span className="text-on-surface-variant">Sort:</span>
-              <select 
-                value={state.sort}
-                onChange={(e) => dispatch({ type: "set_sort", payload: e.target.value })}
-                className="bg-transparent border-none focus:ring-0 p-0 pr-6 text-on-surface font-bold text-xs uppercase tracking-widest cursor-pointer outline-none"
-              >
-                <option value="createdAt:desc">Newest Arrivals</option>
-                <option value="price:asc">Price Low-High</option>
-                <option value="price:desc">Price High-Low</option>
-                <option value="createdAt:asc">Oldest First</option>
-              </select>
-            </div>
+            <Select 
+              labelPrefix="Sort:"
+              options={SORT_OPTIONS}
+              value={state.sort}
+              onChange={(val) => dispatch({ type: "set_sort", payload: val })}
+            />
             <div className="flex items-center gap-4 shrink-0">
               <Button 
                 variant="icon"

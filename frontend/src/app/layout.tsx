@@ -31,7 +31,7 @@ export default function RootLayout({
       <body className="bg-surface text-on-surface" suppressHydrationWarning>
         <Navbar />
         <CartDrawer />
-        <main className="min-h-screen">
+        <main className="min-h-screen pt-[70px]">
           {children}
         </main>
         <Footer />

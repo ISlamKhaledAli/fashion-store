@@ -4,6 +4,14 @@ import React, { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { X, LayoutGrid, List } from "lucide-react";
 import { Button } from "../ui/Button";
+import { Select } from "../ui/Select";
+
+const SORT_OPTIONS = [
+  { label: "Newest Arrivals", value: "createdAt:desc" },
+  { label: "Price Low-High", value: "price:asc" },
+  { label: "Price High-Low", value: "price:desc" },
+  { label: "Best Rated", value: "rating:desc" },
+];
 
 interface ProductGridHeaderProps {
   totalProducts?: number;
@@ -20,6 +28,7 @@ export const ProductGridHeader = ({
 }: ProductGridHeaderProps) => {
   const searchParams = useSearchParams();
   const maxPrice = searchParams.get('maxPrice');
+  const [currentSort, setCurrentSort] = useState("createdAt:desc");
   
   const [activeFilters, setActiveFilters] = useState([
     { id: "1", label: "Clothing" },
@@ -57,15 +66,12 @@ export const ProductGridHeader = ({
       </div>
       
       <div className="flex flex-wrap items-center justify-between md:justify-end gap-x-8 gap-y-4 border-b border-outline-variant/30 pb-2 w-full md:w-auto">
-        <div className="flex items-center gap-2 text-xs uppercase tracking-widest shrink-0">
-          <span className="text-on-surface-variant">Sort:</span>
-          <select className="bg-transparent border-none focus:ring-0 p-0 pr-6 text-on-surface font-bold text-xs uppercase tracking-widest cursor-pointer outline-none cursor-pointer">
-            <option>Newest Arrivals</option>
-            <option>Price Low-High</option>
-            <option>Price High-Low</option>
-            <option>Best Rated</option>
-          </select>
-        </div>
+        <Select 
+          labelPrefix="Sort:"
+          options={SORT_OPTIONS}
+          value={currentSort}
+          onChange={setCurrentSort}
+        />
         
         <div className="flex items-center gap-4 shrink-0">
           <Button 
