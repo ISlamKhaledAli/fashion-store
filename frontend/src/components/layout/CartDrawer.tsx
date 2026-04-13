@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/store/cartStore";
+import { useAuthStore } from "@/store/authStore";
 import { formatCurrency } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
@@ -16,22 +17,17 @@ export const CartDrawer = () => {
     toggleDrawer, 
     removeItem, 
     updateQuantity, 
-    getTotalPrice 
+    getTotalPrice,
+    fetchCart
   } = useCartStore();
+  const { isAuthenticated } = useAuthStore();
 
   // Sync cart with backend on open
   useEffect(() => {
     if (isOpen) {
-      const fetchCart = async () => {
-        try {
-          await cartApi.get();
-        } catch {
-          // Silently ignore — user may not be authenticated
-        }
-      };
       fetchCart();
     }
-  }, [isOpen]);
+  }, [isOpen, fetchCart]);
 
   return (
     <AnimatePresence>
@@ -85,15 +81,27 @@ export const CartDrawer = () => {
                     shopping_bag
                   </span>
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-on-surface-variant uppercase tracking-widest">Your bag is empty</p>
-                    <p className="text-xs text-on-surface-variant/60 lowercase italic">Quality takes time. Start curate yours.</p>
+                    <p className="text-sm font-medium text-on-surface-variant uppercase tracking-widest">
+                      {isAuthenticated ? "Your bag is empty" : "Sign in to view your bag"}
+                    </p>
+                    <p className="text-xs text-on-surface-variant/60 lowercase italic">
+                      {isAuthenticated ? "Quality takes time. Start curate yours." : "Login to sync your curated selection across devices."}
+                    </p>
                   </div>
-                  <Button 
-                    variant="primary"
-                    onClick={() => toggleDrawer(false)}
-                  >
-                    Start Exploring
-                  </Button>
+                  {isAuthenticated ? (
+                    <Button 
+                      variant="primary"
+                      onClick={() => toggleDrawer(false)}
+                    >
+                      Start Exploring
+                    </Button>
+                  ) : (
+                    <Link href="/login" onClick={() => toggleDrawer(false)} className="w-full">
+                      <Button variant="primary" className="w-full">
+                        Sign In Now
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               ) : (
                 <AnimatePresence mode="popLayout">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/store/cartStore";
+import { useAuthStore } from "@/store/authStore";
 import { formatCurrency } from "@/lib/utils";
 import { cartApi } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
@@ -15,8 +16,10 @@ export default function CartPage() {
     removeItem, 
     updateQuantity, 
     getTotalPrice, 
-    getTotalItems 
+    getTotalItems,
+    fetchCart
   } = useCartStore();
+  const { isAuthenticated } = useAuthStore();
   
   const [isPromoOpen, setIsPromoOpen] = useState(false);
   const [promoCode, setPromoCode] = useState("");
@@ -27,16 +30,8 @@ export default function CartPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    // Sync with backend on mount
-    const syncCart = async () => {
-      try {
-        await cartApi.get();
-      } catch {
-        // Silently ignore — user may not be authenticated
-      }
-    };
-    syncCart();
-  }, []);
+    fetchCart();
+  }, [fetchCart]);
 
   const handleApplyPromo = async () => {
     if (!promoCode) return;
@@ -65,16 +60,29 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <main className="pt-32 pb-24 px-8 max-w-[1440px] mx-auto min-h-[60vh] flex flex-col items-center justify-center">
-        <h1 className="text-4xl md:text-5xl font-medium tracking-tighter mb-6">Your Bag is Empty</h1>
+      <main className="pt-32 pb-24 px-8 max-w-[1440px] mx-auto min-h-[60vh] flex flex-col items-center justify-center text-center">
+        <h1 className="text-4xl md:text-5xl font-medium tracking-tighter mb-6">
+          {isAuthenticated ? "Your Bag is Empty" : "Your Bag is Waiting"}
+        </h1>
         <p className="text-on-surface-variant text-sm font-label uppercase tracking-widest mb-12">
-          Curate your collection with our latest arrivals
+          {isAuthenticated 
+            ? "Curate your collection with our latest arrivals" 
+            : "Sign in to view your bag and sync your curator selection"}
         </p>
-        <Link href="/products">
-          <Button variant="primary" size="lg">
-            Explore All Products
-          </Button>
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Link href="/products">
+            <Button variant="outline" size="lg">
+              Explore All Products
+            </Button>
+          </Link>
+          {!isAuthenticated && (
+            <Link href="/login">
+              <Button variant="primary" size="lg">
+                Sign In Now
+              </Button>
+            </Link>
+          )}
+        </div>
       </main>
     );
   }

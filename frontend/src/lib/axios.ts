@@ -39,6 +39,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       const { refreshToken, logout } = useAuthStore.getState();
+      const isCartRequest = originalRequest.url?.includes("/cart");
 
       if (refreshToken) {
         try {
@@ -59,7 +60,7 @@ api.interceptors.response.use(
         } catch (refreshError) {
           // If refresh fails, logout and redirect to login
           logout();
-          if (typeof window !== "undefined") {
+          if (typeof window !== "undefined" && !isCartRequest) {
             window.location.href = "/login?redirect=" + encodeURIComponent(window.location.pathname);
           }
           return Promise.reject(refreshError);
@@ -67,7 +68,7 @@ api.interceptors.response.use(
       } else {
         // No refresh token available
         logout();
-        if (typeof window !== "undefined") {
+        if (typeof window !== "undefined" && !isCartRequest) {
           window.location.href = "/login?redirect=" + encodeURIComponent(window.location.pathname);
         }
       }
