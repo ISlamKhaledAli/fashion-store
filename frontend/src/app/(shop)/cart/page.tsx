@@ -16,8 +16,7 @@ export default function CartPage() {
     removeItem, 
     updateQuantity, 
     getTotalPrice, 
-    getTotalItems,
-    fetchCart
+    getTotalItems 
   } = useCartStore();
   const { isAuthenticated } = useAuthStore();
   
@@ -30,10 +29,17 @@ export default function CartPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    if (isAuthenticated) {
-      fetchCart();
-    }
-  }, [isAuthenticated, fetchCart]);
+    // Sync with backend on mount
+    const syncCart = async () => {
+      if (!isAuthenticated) return; // Only sync if authenticated
+      try {
+        await cartApi.get();
+      } catch {
+        // Silently ignore — user may not be authenticated
+      }
+    };
+    syncCart();
+  }, []);
 
   const handleApplyPromo = async () => {
     if (!promoCode) return;
@@ -62,29 +68,16 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <main className="pt-32 pb-24 px-8 max-w-[1440px] mx-auto min-h-[60vh] flex flex-col items-center justify-center text-center">
-        <h1 className="text-4xl md:text-5xl font-medium tracking-tighter mb-6">
-          {isAuthenticated ? "Your Bag is Empty" : "Your Bag is Waiting"}
-        </h1>
+      <main className="pt-32 pb-24 px-8 max-w-[1440px] mx-auto min-h-[60vh] flex flex-col items-center justify-center">
+        <h1 className="text-4xl md:text-5xl font-medium tracking-tighter mb-6">Your Bag is Empty</h1>
         <p className="text-on-surface-variant text-sm font-label uppercase tracking-widest mb-12">
-          {isAuthenticated 
-            ? "Curate your collection with our latest arrivals" 
-            : "Sign in to view your bag and sync your curator selection"}
+          Curate your collection with our latest arrivals
         </p>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Link href="/products">
-            <Button variant="outline" size="lg">
-              Explore All Products
-            </Button>
-          </Link>
-          {!isAuthenticated && (
-            <Link href="/login">
-              <Button variant="primary" size="lg">
-                Sign In Now
-              </Button>
-            </Link>
-          )}
-        </div>
+        <Link href="/products">
+          <Button variant="primary" size="lg">
+            Explore All Products
+          </Button>
+        </Link>
       </main>
     );
   }

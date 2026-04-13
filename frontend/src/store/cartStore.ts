@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { CartItem, ApiResponse } from "@/types";
-import { cartApi } from "@/lib/api";
+import { CartItem } from "@/types";
 
 interface CartState {
   items: CartItem[];
@@ -13,8 +12,6 @@ interface CartState {
   toggleDrawer: (open?: boolean) => void;
   getTotalItems: () => number;
   getTotalPrice: () => number;
-  setItems: (items: CartItem[]) => void;
-  fetchCart: () => Promise<void>;
 }
 
 export const useCartStore = create<CartState>()(
@@ -54,20 +51,6 @@ export const useCartStore = create<CartState>()(
       getTotalItems: () => get().items.reduce((total, item) => total + item.quantity, 0),
       getTotalPrice: () =>
         get().items.reduce((total, item) => total + item.price * item.quantity, 0),
-      setItems: (items) => set({ items }),
-      fetchCart: async () => {
-        try {
-          const res = await cartApi.get();
-          if (res.data.success) {
-            // Note: res.data.data.items should match CartItem type
-            set({ items: (res.data.data as any).items || [] });
-          }
-        } catch (error: any) {
-          if (error.response?.status === 401) {
-            get().clearCart();
-          }
-        }
-      },
     }),
     {
       name: "cart-storage",
