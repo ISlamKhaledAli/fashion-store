@@ -27,11 +27,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ...props 
   }, ref) => {
     const variants = {
-      primary: "bg-primary text-on-primary hover:bg-primary/90 uppercase tracking-[0.2em] font-bold text-[10px] shadow-lg shadow-primary/10",
-      secondary: "bg-surface-container-low text-on-surface hover:bg-surface-container uppercase tracking-[0.1em] font-bold text-[10px]",
-      outline: "border border-outline-variant hover:border-primary bg-transparent text-on-surface uppercase tracking-[0.1em] font-bold text-[10px]",
+      primary: "bg-primary text-on-primary hover:bg-primary/90 uppercase tracking-widest font-bold text-[13px] shadow-lg shadow-primary/10",
+      secondary: "bg-surface-container-low text-on-surface hover:bg-surface-container uppercase tracking-wide font-bold text-[13px]",
+      outline: "border border-outline-variant hover:border-primary bg-transparent text-on-surface uppercase tracking-wide font-bold text-[13px]",
       ghost: "hover:bg-surface-container-low text-on-surface-variant transition-colors",
-      surface: "bg-white text-black hover:bg-stone-100 uppercase tracking-[0.2em] font-bold text-[10px] shadow-xl",
+      surface: "bg-white text-black hover:bg-stone-100 uppercase tracking-widest font-bold text-[13px] shadow-xl",
       none: "",
       icon: cn(
         "transition-all duration-300 flex items-center justify-center rounded-full",

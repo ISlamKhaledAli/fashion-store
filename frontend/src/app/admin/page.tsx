@@ -1,159 +1,154 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  AreaChart,
-  Area 
-} from "recharts";
-import { TrendingUp } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
-
-const data = [
-  { name: "Sep 25", revenue: 4000 },
-  { name: "Oct 01", revenue: 3000 },
-  { name: "Oct 05", revenue: 5000 },
-  { name: "Oct 10", revenue: 4500 },
-  { name: "Oct 15", revenue: 6000 },
-  { name: "Oct 20", revenue: 5500 },
-  { name: "Oct 24", revenue: 7000 },
-];
+import { MetricCard } from "@/components/admin/MetricCard";
+import { RevenueChart } from "@/components/admin/RevenueChart";
+import { OrdersDonut } from "@/components/admin/OrdersDonut";
+import { RecentOrdersTable } from "@/components/admin/RecentOrdersTable";
+import { adminApi } from "@/lib/api";
+import { Order } from "@/types";
+import { Package, TrendingUp } from "lucide-react";
 
 export default function AdminDashboard() {
-  const [metrics] = useState({
-    totalRevenue: 124500,
-    ordersToday: 84,
-    newCustomers: 12,
-    conversionRate: 3.4,
+  const [loading, setLoading] = useState(true);
+  const [metrics, setMetrics] = useState({
+    totalRevenue: 0,
+    revenueTrend: 0,
+    ordersToday: 0,
+    ordersTrend: 0,
+    newCustomers: 0,
+    customersTrend: 0,
+    conversionRate: 0,
+    conversionTrend: 0,
   });
+  
+  const [revenueData, setRevenueData] = useState<any[]>([]);
+  const [ordersStatusData, setOrdersStatusData] = useState<any[]>([]);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [customersData, setCustomersData] = useState<any[]>([]);
 
-  const recentOrders = [
-    { id: "#1024", customer: "Sarah Jenkins", date: "Oct 24, 2023", total: 450, status: "PROCESSING" },
-    { id: "#1023", customer: "Marcus Chen", date: "Oct 23, 2023", total: 1200, status: "SHIPPED" },
-    { id: "#1022", customer: "Elena Rodriguez", date: "Oct 23, 2023", total: 840, status: "DELIVERED" },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [analyticsRes, revenueRes, ordersRes, customersRes] = await Promise.all([
+          adminApi.getAnalytics(),
+          adminApi.getRevenue(),
+          adminApi.getOrders({ limit: 5 }),
+          adminApi.getCustomers({ limit: 3 })
+        ]);
+
+        if (analyticsRes.data.success) {
+          const data = analyticsRes.data.data as any;
+          setMetrics({
+            totalRevenue: data.totalRevenue || 0,
+            revenueTrend: data.revenueTrend || 0,
+            ordersToday: data.ordersToday || 0,
+            ordersTrend: data.ordersTrend || 0,
+            newCustomers: data.newCustomers || 0,
+            customersTrend: data.customersTrend || 0,
+            conversionRate: data.conversionRate || 0,
+            conversionTrend: data.conversionTrend || 0,
+          });
+          
+          if (data.statusCounts) {
+            setOrdersStatusData(Object.entries(data.statusCounts).map(([name, value]) => ({ 
+              name, 
+              value: value as number 
+            })));
+          }
+        }
+
+        if (revenueRes.data.success) {
+          setRevenueData(revenueRes.data.data as any[]);
+        }
+
+        if (ordersRes.data.success) {
+          setRecentOrders(ordersRes.data.data);
+        }
+
+        if (customersRes.data.success) {
+          setCustomersData(customersRes.data.data as any[]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch admin dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
-    <ProtectedRoute adminOnly={true}>
-      <div className="p-8 space-y-12 max-w-[1600px]">
-        {/* Metric Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            { label: "Total Revenue", value: formatCurrency(metrics.totalRevenue), trend: "+12%" },
-            { label: "Orders Today", value: metrics.ordersToday, trend: "+5%" },
-            { label: "New Customers", value: metrics.newCustomers, trend: "+2%" },
-            { label: "Conversion Rate", value: `${metrics.conversionRate}%`, trend: "+0.5%" },
-          ].map((metric, i) => (
-            <motion.div
-              key={metric.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 shadow-sm space-y-2"
-            >
-              <div className="flex justify-between items-start">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-                  {metric.label}
-                </span>
-                <span className="text-green-600 text-[10px] font-bold flex items-center">
-                  {metric.trend}
-                  <TrendingUp size={12} className="ml-0.5" strokeWidth={2} />
-                </span>
-              </div>
-              <div className="text-3xl font-bold tracking-tighter text-on-surface">
-                {metric.value}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Chart Section */}
-        <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/10 shadow-sm">
-          <div className="flex justify-between items-center mb-12">
-            <div>
-              <h2 className="text-xl font-bold tracking-tight">Revenue Trajectory</h2>
-              <p className="text-sm text-on-surface-variant">Real-time performance metrics</p>
-            </div>
-          </div>
-          <div className="h-[400px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#030304" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#030304" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 10, fontWeight: 700, fill: "#46464a" }}
+    <div className="space-y-10 animate-in fade-in duration-700">
+      {/* Metric Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard 
+          title="Total Revenue" 
+          value={metrics.totalRevenue} 
+          prefix="$" 
+          trend={metrics.revenueTrend}
+          sparkline={
+            <svg className="w-full h-full text-zinc-900 fill-none stroke-current stroke-[1.5]" viewBox="0 0 100 20">
+              <path 
+                d={revenueData.length > 1 
+                  ? `M 0 ${20 - (revenueData[revenueData.length-7]?.amount / Math.max(...revenueData.map(d => d.amount)) * 15 || 15)} ${revenueData.slice(-6).map((d, i) => `T ${(i+1)*20} ${20 - (d.amount / Math.max(...revenueData.map(d => d.amount)) * 15 || 10)}`).join(' ')}`
+                  : "M0 15 Q 10 5, 20 12 T 40 8 T 60 14 T 80 5 T 100 10"
+                } 
+                strokeLinecap="round" 
+              />
+            </svg>
+          }
+        />
+        <MetricCard 
+          title="Orders Today" 
+          value={metrics.ordersToday} 
+          trend={metrics.ordersTrend}
+          sparkline={
+            <div className="flex items-end gap-1 h-full opacity-30">
+              {(revenueData.length > 0 ? revenueData.slice(-7) : [40, 60, 30, 80, 50, 90, 70]).map((d, i) => (
+                <div 
+                  key={i} 
+                  className="bg-zinc-900 w-full rounded-sm" 
+                  style={{ height: `${typeof d === 'object' ? (d.amount / Math.max(...revenueData.map(val => val.amount)) * 100) : d}%` }} 
                 />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 10, fontWeight: 700, fill: "#46464a" }}
-                />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="#030304" 
-                  strokeWidth={3}
-                  fillOpacity={1} 
-                  fill="url(#colorRevenue)" 
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Recent Orders */}
-        <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm overflow-hidden text-on-surface">
-          <div className="px-8 py-6 border-b border-outline-variant/10 flex justify-between items-center">
-            <h2 className="text-xl font-bold tracking-tight">Recent Orders</h2>
-            <Button variant="ghost" size="none" className="text-[10px] font-bold uppercase tracking-widest hover:underline">View All</Button>
-          </div>
-          <table className="w-full text-left">
-            <thead className="bg-surface-container-low/50">
-              <tr>
-                <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">ID</th>
-                <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Customer</th>
-                <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Date</th>
-                <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Total</th>
-                <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant/10">
-              {recentOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-surface-container-low transition-colors group cursor-pointer">
-                  <td className="px-8 py-5 text-sm font-bold tracking-tight">{order.id}</td>
-                  <td className="px-8 py-5 text-sm font-medium">{order.customer}</td>
-                  <td className="px-8 py-5 text-sm text-on-surface-variant">{order.date}</td>
-                  <td className="px-8 py-5 text-sm font-bold">{formatCurrency(order.total)}</td>
-                  <td className="px-8 py-5">
-                    <Badge variant={order.status === "DELIVERED" ? "secondary" : "surface"}>
-                      {order.status}
-                    </Badge>
-                  </td>
-                </tr>
               ))}
-            </tbody>
-          </table>
+            </div>
+          }
+        />
+        <MetricCard 
+          title="New Customers" 
+          value={metrics.newCustomers} 
+          trend={metrics.customersTrend}
+          avatars={customersData.map(c => ({
+            name: c.name,
+            avatar: c.avatar
+          }))}
+        />
+        <MetricCard 
+          title="Conversion Rate" 
+          value={metrics.conversionRate} 
+          suffix="%" 
+          trend={metrics.conversionTrend}
+          progressBar={metrics.conversionRate > 0 ? metrics.conversionRate * 10 : 0}
+        />
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          <RevenueChart data={revenueData} isLoading={loading} />
+        </div>
+        <div>
+          <OrdersDonut data={ordersStatusData} isLoading={loading} />
         </div>
       </div>
-    </ProtectedRoute>
+
+      {/* Recent Orders Section */}
+      <RecentOrdersTable orders={recentOrders} isLoading={loading} />
+    </div>
   );
 }
+

@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
-import { CartDrawer } from "@/components/layout/CartDrawer";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -33,12 +30,7 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-surface text-on-surface" suppressHydrationWarning>
-        <Navbar />
-        <CartDrawer />
-        <main className="min-h-screen pt-[70px]">
-          {children}
-        </main>
-        <Footer />
+        {children}
       </body>
     </html>
   );

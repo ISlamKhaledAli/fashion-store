@@ -91,13 +91,28 @@ export interface WishlistItem {
   product: Product;
 }
 
+export interface Address {
+  id: string;
+  firstName: string;
+  lastName: string;
+  street: string;
+  apartment?: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+  phone?: string;
+}
+
 export interface Order {
   id: string;
   userId: string;
   user?: {
     name: string;
     email: string;
+    avatar?: string;
   };
+  address?: Address;
   status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
   paymentStatus: 'UNPAID' | 'PAID' | 'FAILED' | 'REFUNDED';
   subtotal: number;

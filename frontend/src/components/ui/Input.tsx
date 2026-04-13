@@ -7,14 +7,25 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   variant?: "default" | "floating";
+  icon?: React.ReactNode;
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, variant = "default", id, placeholder, ...props }, ref) => {
+  ({ className, label, error, variant = "default", id, placeholder, icon, ...props }, ref) => {
     if (variant === "floating") {
       return (
         <div className="w-full space-y-1">
           <div className="relative group">
+            {icon && (
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant peer-focus:text-primary transition-colors pointer-events-none flex items-center justify-center">
+                {React.isValidElement(icon) 
+                  ? React.cloneElement(icon as React.ReactElement, { 
+                      size: 18, 
+                      strokeWidth: 1.5 
+                    } as any)
+                  : icon}
+              </div>
+            )}
             <input
               id={id}
               ref={ref}
@@ -22,6 +33,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
               className={cn(
                 "w-full bg-surface-container-lowest border border-outline-variant/30 rounded-md pt-6 pb-2 px-4 focus:ring-0 focus:border-primary transition-all text-sm peer",
                 error && "border-error/50",
+                icon && "pl-11",
                 className
               )}
               {...props}
@@ -58,6 +70,16 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           </label>
         )}
         <div className="relative group">
+          {icon && (
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors pointer-events-none flex items-center justify-center">
+              {React.isValidElement(icon) 
+                ? React.cloneElement(icon as React.ReactElement, { 
+                    size: 18, 
+                    strokeWidth: 1.5 
+                  } as any)
+                : icon}
+            </div>
+          )}
           <input
             id={id}
             ref={ref}
@@ -65,6 +87,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             className={cn(
               "w-full bg-surface-container-lowest border border-outline-variant/30 rounded-md py-3 px-4 focus:ring-0 focus:border-primary transition-all text-sm placeholder:text-outline-variant placeholder:font-light",
               error && "border-error",
+              icon && "pl-11",
               className
             )}
             {...props}

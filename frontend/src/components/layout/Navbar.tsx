@@ -8,6 +8,9 @@ import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { Search } from "lucide-react";
+import { useSearchStore } from "@/store/searchStore";
+import { SearchOverlay } from "./SearchOverlay";
 
 export const Navbar = () => {
   const { scrollY } = useScroll();
@@ -15,6 +18,7 @@ export const Navbar = () => {
   const [isMounted, setIsMounted] = useState(false);
   const { toggleDrawer, getTotalItems } = useCartStore();
   const { isAuthenticated } = useAuthStore();
+  const { onOpen: onSearchOpen } = useSearchStore();
 
   const height = useTransform(scrollY, [0, 80], ["70px", "56px"]);
   const backgroundColor = useTransform(
@@ -82,6 +86,15 @@ export const Navbar = () => {
         <Button
           variant="icon"
           size="icon"
+          onClick={onSearchOpen}
+          className="text-on-surface"
+        >
+          <Search size={20} strokeWidth={1.5} />
+        </Button>
+
+        <Button
+          variant="icon"
+          size="icon"
           onClick={() => toggleDrawer(true)}
           className="relative text-on-surface"
         >
@@ -114,6 +127,7 @@ export const Navbar = () => {
           <Menu size={20} strokeWidth={1.5} />
         </Button>
       </div>
+      <SearchOverlay />
     </motion.nav>
   );
 };

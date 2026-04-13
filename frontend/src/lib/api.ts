@@ -89,7 +89,7 @@ export const adminApi = {
   getOrders: (params: Record<string, unknown>) => 
     api.get<ApiResponse<Order[]>>("/admin/orders", { params }),
   updateOrderStatus: (id: string, status: string) => 
-    api.put<ApiResponse<Order>>(`/admin/orders/${id}/status`, { status }),
-  getCustomers: () => 
-    api.get<ApiResponse<unknown[]>>("/admin/customers"),
+    api.put<ApiResponse<Order>>(`/admin/orders/${id}`, { status }),
+  getCustomers: (params?: Record<string, unknown>) => 
+    api.get<ApiResponse<unknown[]>>("/admin/customers", { params }),
 };

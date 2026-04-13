@@ -21,7 +21,18 @@ export const getAdminOrders = async (req: Request, res: Response, next: NextFunc
         where,
         take,
         skip,
-        include: { user: { select: { name: true, email: true } } },
+        include: { 
+          user: { select: { name: true, email: true, avatar: true } },
+          address: true,
+          items: {
+            include: {
+              product: {
+                include: { images: true }
+              },
+              variant: true
+            }
+          }
+        },
         orderBy: { createdAt: "desc" },
       }),
       prisma.order.count({ where }),
