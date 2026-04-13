@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { CartItem } from "@/types";
 import { cartApi } from "@/lib/api";
+import { useAuthStore } from "./authStore";
 
 interface CartState {
   items: CartItem[];
@@ -10,6 +11,7 @@ interface CartState {
   setItems: (items: CartItem[]) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
+  syncFromServer: (serverCart: any) => void;
   clearCart: () => void;
   toggleDrawer: (open?: boolean) => void;
   getTotalItems: () => number;
@@ -23,58 +25,94 @@ export const useCartStore = create<CartState>()(
       isOpen: false,
       addItem: async (newItem) => {
         const { items } = get();
+        const { isAuthenticated } = useAuthStore.getState();
+        
+        // 1. Always update local state first (Optimistic)
         const existingItem = items.find((item) => item.variantId === newItem.variantId);
+        let updatedItems;
 
         if (existingItem) {
-          set({
-            items: items.map((item) =>
-              item.variantId === newItem.variantId
-                ? { ...item, quantity: item.quantity + newItem.quantity }
-                : item
-            ),
-          });
+          updatedItems = items.map((item) =>
+            item.variantId === newItem.variantId
+              ? { ...item, id: item.id || `guest-${Date.now()}`, quantity: item.quantity + newItem.quantity }
+              : item
+          );
         } else {
-          set({ items: [...items, newItem] });
+          updatedItems = [...items, { ...newItem, id: newItem.id || `guest-${Date.now()}-${Math.random().toString(36).slice(2)}` }];
         }
+        
+        set({ items: updatedItems });
 
-        try {
-          // 2. Save to server immediately to prevent optimistic wipes
-          await cartApi.addItem(newItem.variantId, newItem.quantity);
-          
-          // 3. Sync local state with authoritative server IDs
-          const serverCart = await cartApi.get();
-          const serverData = serverCart.data.data as any;
-          
-          if (serverCart.data.success && serverData?.items) {
-            const mappedItems = serverData.items.map((i: any) => ({
-              id: i.id,
-              cartItemId: i.id,
-              variantId: i.variantId,
-              productId: i.variant.product.id,
-              name: i.variant.product.name,
-              image: i.variant.product.images?.[0]?.url || "",
-              price: i.variant.product.price,
-              size: i.variant.size,
-              color: i.variant.color,
-              quantity: i.quantity,
-              stock: i.variant.stock || 10,
-            }));
-            set({ items: mappedItems });
+        // 2. Only sync with server if logged in
+        if (isAuthenticated) {
+          try {
+            await cartApi.addItem(newItem.variantId, newItem.quantity);
+            
+            // Sync with server to get official IDs
+            const serverCart = await cartApi.get();
+            if (serverCart.data.success) {
+              get().syncFromServer(serverCart.data.data);
+            }
+          } catch (err) {
+            console.error("Failed to sync cart with server:", err);
           }
-        } catch (err) {
-          console.error("Failed to sync cart with server:", err);
         }
       },
       setItems: (items) => set({ items }),
-      removeItem: (id) => {
-        set({ items: get().items.filter((item) => item.id !== id) });
+      syncFromServer: (serverData) => {
+        if (!serverData?.items) return;
+        
+        const mappedItems = serverData.items.map((i: any) => ({
+          id: i.id,
+          cartItemId: i.id,
+          variantId: i.variantId,
+          productId: i.variant.product.id,
+          name: i.variant.product.name,
+          image: i.variant.product.images?.[0]?.url || "",
+          price: i.variant.product.price,
+          size: i.variant.size,
+          color: i.variant.color,
+          quantity: i.quantity,
+          stock: i.variant.stock || 10,
+        }));
+        
+        set({ items: mappedItems });
       },
-      updateQuantity: (id, quantity) => {
+      removeItem: async (id) => {
+        const { isAuthenticated } = useAuthStore.getState();
+        const item = get().items.find(i => i.id === id);
+        
+        // Update locally
+        set({ items: get().items.filter((i) => i.id !== id) });
+        
+        // Sync server
+        if (isAuthenticated && item?.cartItemId) {
+          try {
+            await cartApi.removeItem(item.cartItemId);
+          } catch (err) {
+            console.error("Failed to remove item from server:", err);
+          }
+        }
+      },
+      updateQuantity: async (id, quantity) => {
+        const { isAuthenticated } = useAuthStore.getState();
+        const item = get().items.find(i => i.id === id);
+        
+        // Update locally
         set({
-          items: get().items.map((item) =>
-            item.id === id ? { ...item, quantity } : item
+          items: get().items.map((i) =>
+            i.id === id ? { ...i, quantity } : i
           ),
         });
+        
+        // Sync server
+        if (isAuthenticated && item?.cartItemId) {
+          try {
+            await cartApi.updateQuantity(item.cartItemId, quantity);
+          } catch (err) {
+            console.error("Failed to update quantity on server:", err);
+          }
+        }
       },
       clearCart: () => set({ items: [] }),
       toggleDrawer: (open) =>

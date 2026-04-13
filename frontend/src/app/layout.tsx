@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -11,6 +12,8 @@ export const metadata: Metadata = {
   title: "THE CURATOR | Premium Fashion",
   description: "Experience modern utility and timeless aesthetics with The Curator.",
 };
+
+import { NavigationObserver } from "@/components/layout/NavigationObserver";
 
 export default function RootLayout({
   children,
@@ -30,7 +33,9 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-surface text-on-surface" suppressHydrationWarning>
+        <NavigationObserver />
         {children}
+        <Toaster position="bottom-right" richColors />
       </body>
     </html>
   );

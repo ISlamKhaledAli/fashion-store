@@ -36,6 +36,7 @@ export interface Variant {
   color: string;
   colorHex: string;
   stock: number;
+  sku?: string;
 }
 
 export interface Product {
@@ -123,6 +124,7 @@ export interface Order {
   discount: number;
   total: number;
   items: OrderItem[];
+  trackingNumber?: string;
   createdAt: string;
 }
 

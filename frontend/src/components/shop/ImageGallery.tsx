@@ -36,6 +36,7 @@ export const ImageGallery = ({ images }: ImageGalleryProps) => {
             className="w-full h-full p-4"
           >
             <Image
+              id="pdp-main-image"
               src={activeImage.url}
               alt="Product View"
               fill

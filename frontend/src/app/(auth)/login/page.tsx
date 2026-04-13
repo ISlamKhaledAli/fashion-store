@@ -1,7 +1,7 @@
 "use client";
-
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+ 
+import React, { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,8 +19,12 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect");
+  const isFromCheckout = redirect === "/checkout";
+  
   const login = useAuthStore((state) => state.login);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +43,7 @@ export default function LoginPage() {
       if (response.data.success) {
         const { user, accessToken, refreshToken } = response.data.data;
         login({ user, accessToken, refreshToken });
-        router.push("/");
+        router.push(redirect || "/");
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? (err as { response?: { data?: { message?: string } } }).response?.data?.message : "Invalid credentials. Please try again.";
@@ -60,7 +64,7 @@ export default function LoginPage() {
             Welcome Back
           </h1>
           <p className="text-on-surface-variant text-sm uppercase tracking-[0.2em] font-bold">
-            Access your curated artifacts
+            {isFromCheckout ? "Please sign in to complete your purchase" : "Access your curated artifacts"}
           </p>
         </div>
 
@@ -108,5 +112,17 @@ export default function LoginPage() {
         </form>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-surface">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -1,12 +1,33 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Globe, Share2 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
+import { cn } from "@/lib/utils";
 
 export const Footer = () => {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !email.includes('@')) return;
+    
+    setStatus('loading');
+    try {
+      // For now: just simulate success (no backend endpoint yet)
+      await new Promise(r => setTimeout(r, 800));
+      setStatus('success');
+      setEmail('');
+      setTimeout(() => setStatus('idle'), 3000);
+    } catch {
+      setStatus('error');
+      setTimeout(() => setStatus('idle'), 3000);
+    }
+  };
+
   const footerLinks = {
     Navigation: [
       { name: "Collections", href: "/products" },
@@ -42,9 +63,56 @@ export const Footer = () => {
             <p className="text-on-surface-variant text-sm tracking-wide leading-relaxed">
               A multi-disciplinary studio focusing on the intersection of modern utility and timeless aesthetics.
             </p>
-            <div className="w-full max-w-[280px]">
-              <Input placeholder="Subscribe to Editorial" />
-            </div>
+            <form onSubmit={handleSubscribe} className="w-full max-w-[320px] space-y-3">
+              <div className="relative group">
+                <Input 
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Subscribe to Editorial" 
+                  className="bg-white/50 focus:bg-white transition-colors duration-300 pr-12"
+                  disabled={status === 'loading' || status === 'success'}
+                />
+                <button
+                  type="submit"
+                  disabled={status !== 'idle' || !email.includes('@')}
+                  className={cn(
+                    "absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
+                    status === 'idle' ? "bg-primary text-on-primary hover:scale-110" : "bg-surface-container-highest text-on-surface-variant"
+                  )}
+                >
+                  {status === 'loading' ? (
+                    <div className="w-4 h-4 border-2 border-on-surface-variant/30 border-t-on-surface-variant rounded-full animate-spin" />
+                  ) : status === 'success' ? (
+                    <span className="material-symbols-outlined text-sm text-green-600">check</span>
+                  ) : (
+                    <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                  )}
+                </button>
+              </div>
+              <AnimatePresence>
+                {status === 'success' && (
+                  <motion.p 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="text-[10px] font-bold text-green-600 uppercase tracking-widest pl-1"
+                  >
+                    ✓ Subscribed!
+                  </motion.p>
+                )}
+                {status === 'error' && (
+                  <motion.p 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="text-[10px] font-bold text-red-600 uppercase tracking-widest pl-1"
+                  >
+                    Try again
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </form>
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-16 md:gap-24">

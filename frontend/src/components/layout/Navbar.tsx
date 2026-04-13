@@ -101,6 +101,7 @@ export const Navbar = () => {
         </Button>
 
         <Button
+          id="cart-icon"
           variant="icon"
           size="icon"
           onClick={() => toggleDrawer(true)}

@@ -30,6 +30,8 @@
   --color-outline-variant: #c7c6ca;
   
   --color-error: #ba1a1a;
+  --color-success: #15803d;
+  --color-on-success: #ffffff;
   
   /* Radii */
   --radius-default: 0.125rem;
@@ -76,4 +78,14 @@ html {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+@keyframes cart-bounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+
+.cart-bounce {
+  animation: cart-bounce 0.3s ease-out;
 }

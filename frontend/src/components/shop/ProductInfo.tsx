@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Product } from "@/types";
 import { formatCurrency, cn } from "@/lib/utils";
 import { useCartStore } from "@/store/cartStore";
@@ -10,6 +10,8 @@ import { useAuthStore } from "@/store/authStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useRouter } from "next/navigation";
 import { Button } from "../ui/Button";
+import { flyToCart } from "@/lib/animations";
+import { toast } from "sonner";
 
 interface ProductInfoProps {
   product: Product;
@@ -30,6 +32,7 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
   );
   const [quantity, setQuantity] = useState(1);
   const [buttonState, setButtonState] = useState<ButtonState>("idle");
+  const isAnimating = useRef(false);
   const { isAuthenticated } = useAuthStore();
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
   const router = useRouter();
@@ -46,14 +49,21 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
 
   const colors = Array.from(new Set(product.variants.map((v) => v.color)));
 
-  const handleAddToCart = async () => {
-    if (!currentVariant) return;
+  const handleAddToCart = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!currentVariant || isAnimating.current) return;
+    isAnimating.current = true;
 
+    const start = Date.now();
     setButtonState("loading");
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    addItem({
-      id: `${product.id}-${currentVariant.id}`,
+    
+    await addItem({
+      id: '', // Server handles IDs
+      cartItemId: '',
       productId: product.id,
       variantId: currentVariant.id,
       name: product.name,
@@ -65,17 +75,28 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
       stock: currentVariant.stock,
     });
 
+    // Ensure minimum 600ms loading state
+    const elapsed = Date.now() - start;
+    if (elapsed < 600) {
+      await new Promise(r => setTimeout(r, 600 - elapsed));
+    }
+
     setButtonState("success");
+    
+    // Trigger fly animation immediately
+    const mainImg = document.getElementById('pdp-main-image');
+    flyToCart(mainImg);
 
     setTimeout(() => {
-      setButtonState("idle");
       toggleDrawer(true);
-    }, 2000);
+      setButtonState("idle");
+      isAnimating.current = false;
+    }, 800);
   };
 
   const toggleWishlist = async () => {
     if (!isAuthenticated) {
-      router.push("/login");
+      toast.info("Please sign in to save items to your wishlist");
       return;
     }
     
@@ -126,23 +147,23 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
           Color / <span className="text-primary">{selectedColor}</span>
         </p>
         <div className="flex gap-3">
-          {Array.from(new Map(product.variants.map(v => [v.color, v])).values()).map((variant) => (
-            <Button
-              key={variant.color}
-              variant="none"
-              size="none"
-              onClick={() => setSelectedColor(variant.color)}
-              className={cn(
-                "w-8 h-8 rounded-full border transition-all duration-300",
-                selectedColor === variant.color 
-                  ? "border-primary ring-2 ring-surface ring-offset-0 scale-110" 
-                  : "border-outline-variant hover:scale-110"
-              )}
-              style={{ backgroundColor: variant.colorHex || '#ccc' }}
-              title={variant.color}
-              aria-label={`Select color ${variant.color}`}
-            />
-          ))}
+          {product.variants
+            .filter((v, i, arr) => arr.findIndex(x => x.color === v.color) === i) // unique colors
+            .map((variant) => (
+              <button
+                key={variant.color}
+                onClick={() => setSelectedColor(variant.color)}
+                style={{ backgroundColor: variant.colorHex || '#ccc' }}
+                className={cn(
+                  "w-7 h-7 rounded-full border-2 transition-all",
+                  selectedColor === variant.color 
+                    ? 'border-primary scale-110' 
+                    : 'border-transparent hover:border-outline-variant'
+                )}
+                title={variant.color}
+                aria-label={`Select color ${variant.color}`}
+              />
+            ))}
         </div>
       </div>
 
@@ -214,9 +235,10 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
             {buttonState === "idle" && (
               <motion.span
                 key="idle"
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.2 }}
                 className="flex items-center justify-center gap-2"
               >
                 Add to Cart
@@ -225,13 +247,22 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
             {buttonState === "success" && (
               <motion.span
                 key="success"
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.2 }}
                 className="flex items-center justify-center gap-2"
               >
-                <span className="material-symbols-outlined text-xl">check</span>
-                Added
+                <div className="flex items-center gap-2">
+                  <motion.span 
+                    initial={{ scale: 0.5 }}
+                    animate={{ scale: 1 }}
+                    className="material-symbols-outlined text-xl"
+                  >
+                    check
+                  </motion.span>
+                  Added
+                </div>
               </motion.span>
             )}
           </AnimatePresence>

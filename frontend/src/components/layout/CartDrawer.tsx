@@ -6,8 +6,6 @@ import { useAuthStore } from "@/store/authStore";
 import { formatCurrency } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect } from "react";
-import { cartApi } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 
 export const CartDrawer = () => {
@@ -21,59 +19,7 @@ export const CartDrawer = () => {
   } = useCartStore();
   const { isAuthenticated } = useAuthStore();
 
-  // Sync cart with backend on open
-  useEffect(() => {
-    // Only sync if drawer is open AND user is authenticated
-    // Avoid syncing on login/register pages to prevent redirect loops
-    const isAuthPage = typeof window !== "undefined" && 
-      (window.location.pathname === "/login" || window.location.pathname === "/register");
-
-    if (isOpen && isAuthenticated && !isAuthPage) {
-      const fetchCart = async () => {
-        try {
-          const res = await cartApi.get();
-          const serverCart = res.data.data as any;
-          if (serverCart?.items) {
-            const mappedItems = serverCart.items.map((item: any) => ({
-              id: item.id,
-              cartItemId: item.id,
-              variantId: item.variantId,
-              productId: item.variant.product.id,
-              name: item.variant.product.name,
-              image: item.variant.product.images?.[0]?.url || "",
-              price: item.variant.product.price,
-              size: item.variant.size,
-              color: item.variant.color,
-              quantity: item.quantity,
-              stock: item.variant.stock || 10,
-            }));
-            
-            const currentItems = useCartStore.getState().items;
-            
-            // 1. Link matching items with their server cartItemId
-            const mergedItems = currentItems.map((localItem) => {
-               const serverMatch = mappedItems.find((m: any) => m.variantId === localItem.variantId);
-               if (serverMatch && !localItem.cartItemId) {
-                  return { ...localItem, cartItemId: serverMatch.cartItemId };
-               }
-               return localItem;
-            });
-            
-            // 2. Add brand new items from server that we don't have locally
-            mappedItems.forEach((mItem: any) => {
-              const exists = mergedItems.find((i) => i.variantId === mItem.variantId);
-              if (!exists) mergedItems.push(mItem);
-            });
-            
-            useCartStore.getState().setItems(mergedItems);
-          }
-        } catch {
-          // Errors are handled by axios interceptor or silently ignored
-        }
-      };
-      fetchCart();
-    }
-  }, [isOpen, isAuthenticated]);
+  const shouldAnimate = items.length <= 5;
 
   return (
     <AnimatePresence>
@@ -93,7 +39,11 @@ export const CartDrawer = () => {
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ 
+              type: "tween",
+              duration: 0.35, 
+              ease: [0.16, 1, 0.3, 1] 
+            }}
             className="fixed right-0 h-full w-full max-w-[450px] z-[60] bg-surface dark:bg-stone-950 shadow-[0_20px_50px_rgba(26,28,29,0.05)] flex flex-col"
           >
             {/* Header */}
@@ -141,9 +91,9 @@ export const CartDrawer = () => {
                 <AnimatePresence mode="popLayout">
                   {items.map((item) => (
                     <motion.div
-                      key={item.id}
+                      key={item.id || item.variantId || `cart-item-${Math.random()}`}
                       layout
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ duration: 0.4 }}
@@ -171,12 +121,7 @@ export const CartDrawer = () => {
                           <Button 
                             variant="ghost"
                             size="none"
-                            onClick={() => {
-                              removeItem(item.id);
-                              if (item.cartItemId) {
-                                cartApi.removeItem(item.cartItemId).catch(() => {});
-                              }
-                            }}
+                            onClick={() => removeItem(item.id)}
                             className="text-outline-variant hover:text-error transition-colors p-2"
                             icon={
                               <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -192,9 +137,6 @@ export const CartDrawer = () => {
                                 const newQty = Math.max(1, item.quantity - 1);
                                 if (newQty !== item.quantity) {
                                   updateQuantity(item.id, newQty);
-                                  if (item.cartItemId) {
-                                    cartApi.updateQuantity(item.cartItemId, newQty).catch(() => {});
-                                  }
                                 }
                               }}
                               className="text-on-surface-variant hover:text-on-surface dark:hover:text-stone-50 transition-colors flex items-center justify-center h-6 w-6"
@@ -209,9 +151,6 @@ export const CartDrawer = () => {
                               onClick={() => {
                                 const newQty = item.quantity + 1;
                                 updateQuantity(item.id, newQty);
-                                if (item.cartItemId) {
-                                  cartApi.updateQuantity(item.cartItemId, newQty).catch(() => {});
-                                }
                               }}
                               className="text-on-surface-variant hover:text-on-surface dark:hover:text-stone-50 transition-colors flex items-center justify-center h-6 w-6"
                               icon={

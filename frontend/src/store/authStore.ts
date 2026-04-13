@@ -25,13 +25,39 @@ export const useAuthStore = create<AuthState>()(
           accessToken,
           refreshToken,
         }),
-      login: (data) =>
+      login: async (data) => {
         set({
           user: data.user,
           accessToken: data.accessToken,
           refreshToken: data.refreshToken,
           isAuthenticated: true,
-        }),
+        });
+
+        // Merge guest cart with server cart
+        try {
+          const { items, syncFromServer } = (await import("./cartStore")).useCartStore.getState();
+          const { cartApi } = await import("@/lib/api");
+          
+          if (items.length > 0) {
+            // Push each local item to server
+            for (const item of items) {
+              try {
+                await cartApi.addItem(item.variantId, item.quantity);
+              } catch (err) {
+                // Silently ignore sync errors (likely duplicates on server)
+              }
+            }
+            
+            // Fetch the final merged cart from server
+            const serverCart = await cartApi.get();
+            if (serverCart.data.success) {
+              syncFromServer(serverCart.data.data);
+            }
+          }
+        } catch (err) {
+          console.error("Cart merge failed during login:", err);
+        }
+      },
       setUser: (user) => set({ user }),
       logout: () =>
         set({

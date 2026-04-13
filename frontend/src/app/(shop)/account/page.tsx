@@ -11,6 +11,7 @@ import Link from "next/link";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { useCartStore } from "@/store/cartStore";
 
 export default function AccountPage() {
   const { user } = useAuthStore();
@@ -37,6 +38,34 @@ export default function AccountPage() {
 
     fetchData();
   }, []);
+
+  const handleReorder = async (order: Order) => {
+    // Add each order item back to cart
+    for (const item of order.items) {
+      const variant = item.variant;
+      if (!variant) continue;
+      
+      await useCartStore.getState().addItem({
+        id: '', // Server handles IDs
+        cartItemId: '',
+        variantId: item.variantId,
+        productId: item.productId,
+        name: item.product?.name || '',
+        image: item.product?.images?.[0]?.url || '',
+        price: item.price,
+        size: variant.size,
+        color: variant.color,
+        quantity: item.quantity,
+        stock: 99, // Fallback for reorder
+      });
+    }
+    
+    // Open cart drawer
+    useCartStore.getState().toggleDrawer();
+    
+    // Show toast
+    import("sonner").then(({ toast }) => toast.success("Items added to bag for reorder"));
+  };
 
   return (
     <ProtectedRoute>
@@ -140,19 +169,34 @@ export default function AccountPage() {
                     </div>
                   </div>
                 ))
+              ) : orders.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-surface-container-low rounded-sm border border-outline-variant/10 mb-6">
+                    <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">From Your Last Order</p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">#{orders[0].id.slice(-4).toUpperCase()}</span>
+                      <Button 
+                        variant="none" 
+                        size="none" 
+                        onClick={() => handleReorder(orders[0])}
+                        className="text-xs font-bold text-primary hover:underline underline-offset-4"
+                      >
+                        Reorder All
+                      </Button>
+                    </div>
+                  </div>
+                  {orders[0].items.slice(0, 2).map((item) => (
+                    <QuickReorderItem 
+                      key={item.id}
+                      name={item.product?.name || "Product"} 
+                      price={item.price} 
+                      image={item.product?.images?.[0]?.url || ""} 
+                      onReorder={() => handleReorder({ ...orders[0], items: [item] })}
+                    />
+                  ))}
+                </div>
               ) : (
-                <>
-                  <QuickReorderItem 
-                    name="Nomos Tangente" 
-                    price={2100} 
-                    image="https://lh3.googleusercontent.com/aida-public/AB6AXuCRab_RDaSp8C0SS_oDEb9sl9j5IjY15QOwPgFnYPHqZBwL9pV_RUzpi0GbQEcnv8Kxgk4OX76wbmheB9SZOTAWyVdhqrE6PBwlmMkxYeHozfMaL22ye-XPrKVc1yFv6pnouxUFZ5iH-FwBqHbupwN2k8_SBpVGIYVOenovGMKzYVrdXyPFj8IOXgsjFHOvXOQcJpI0GtOJHMvweC_BjKypoUlfrL-AGZ9Ns-rCu-Wp6PCsjManzOfQYJzoMsXcHrvbmijS-plETBE" 
-                  />
-                  <QuickReorderItem 
-                    name="Archive Wool Coat" 
-                    price={850} 
-                    image="https://lh3.googleusercontent.com/aida-public/AB6AXuDIPNjZHBtcCgBj22jcKYKnHNtRc8il2752j9rNxFxTgLg3GC4V_mU2LkwvwnpsexcyC71K4E_UckVoZvj5P1j5byG1runga0JhXRt30M7--qmh98RTnAdj9rGBpuIBRRGCDuOx8UWHuimqJeZ-MGUfAzPnBDyfbYm3A51u8Prfyv-LvNRAQuiATdgVeDLJc7gr1dwEHyVYpXwjCZQbgkqpqmxVTknl6acmFgpq9NtOgb5_dh1laMUWlDuIGf1W9GRxXVmsvWv4bU0" 
-                  />
-                </>
+                <p className="text-sm text-on-surface-variant italic">Start your collection to enable quick reordering.</p>
               )}
             </div>
           </div>
@@ -200,9 +244,12 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function QuickReorderItem({ name, price, image }: { name: string; price: number; image: string }) {
+function QuickReorderItem({ name, price, image, onReorder }: { name: string; price: number; image: string; onReorder: () => void }) {
   return (
-    <div className="group bg-surface-container-lowest p-4 rounded-sm flex gap-4 transition-all duration-500 hover:bg-surface-container-low border border-outline-variant/5 cursor-pointer">
+    <div 
+      onClick={onReorder}
+      className="group bg-surface-container-lowest p-4 rounded-sm flex gap-4 transition-all duration-500 hover:bg-surface-container-low border border-outline-variant/5 cursor-pointer"
+    >
       <div className="w-20 h-20 bg-surface-container overflow-hidden rounded-sm ring-1 ring-outline-variant/10">
         <img src={image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={name} />
       </div>
@@ -211,7 +258,12 @@ function QuickReorderItem({ name, price, image }: { name: string; price: number;
           <h4 className="text-sm font-semibold text-on-surface">{name}</h4>
           <p className="text-xs text-on-surface-variant">{formatCurrency(price)}</p>
         </div>
-        <Button variant="none" size="none" className="text-[9px] uppercase tracking-widest font-bold text-primary flex items-center gap-1 hover:gap-2 transition-all">
+        <Button 
+          variant="none" 
+          size="none" 
+          onClick={(e) => { e.stopPropagation(); onReorder(); }}
+          className="text-[9px] uppercase tracking-widest font-bold text-primary flex items-center gap-1 hover:gap-2 transition-all"
+        >
           Reorder <span className="material-symbols-outlined !text-[12px]">arrow_forward</span>
         </Button>
       </div>

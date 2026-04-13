@@ -114,9 +114,9 @@ function ProductsContent() {
         const res = await productApi.getAll({
           category: cat || "",
           brand: brand || "",
-          color: "",
+          color: searchParams.get("color") || "",
           maxPrice: max ? parseInt(max) : 2000,
-          sort: "createdAt:desc",
+          sort: searchParams.get("sort") || "createdAt:desc",
           limit: 12,
           page: 1,
         });

@@ -35,7 +35,7 @@ interface FilterSidebarProps {
 
 export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: FilterSidebarProps) => {
   const [categories, setCategories] = useState<string[]>([]);
-  const [brands, setBrands] = useState<string[]>([]);
+  const [brands, setBrands] = useState<{ id: string; name: string; slug: string }[]>([]);
   const [colors, setColors] = useState<{ name: string; class: string; hex: string }[]>([]);
   
   useEffect(() => {
@@ -50,7 +50,7 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
         // Fetch Brands
         const brandRes = await brandApi.getAll();
         if (brandRes.data.success) {
-          setBrands(brandRes.data.data.map((b: any) => b.name));
+          setBrands(brandRes.data.data);
         }
 
         // Fetch Product Filters (Colors)
@@ -105,27 +105,29 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
         </section>
 
         {/* Brands */}
-        <section>
-          <h3 className="text-[11px] font-bold uppercase tracking-widest mb-4">Brands</h3>
-          <div className="flex flex-col gap-3">
-            {brands.map((brand) => (
-              <label key={brand} className="flex items-center gap-3 cursor-pointer group">
-                <input 
-                  type="checkbox" 
-                  checked={state.brand.includes(brand)}
-                  onChange={() => dispatch({ type: "toggle_brand", payload: brand })}
-                  className="w-4 h-4 border-outline-variant text-primary focus:ring-primary rounded-sm bg-transparent"
-                />
-                <span className={cn(
-                  "text-xs uppercase tracking-wider transition-colors",
-                  state.brand.includes(brand) ? "text-stone-900 dark:text-stone-50" : "text-stone-400 group-hover:text-stone-900"
-                )}>
-                  {brand}
-                </span>
-              </label>
-            ))}
-          </div>
-        </section>
+        {brands.length > 0 && (
+          <section>
+            <h3 className="text-[11px] font-bold uppercase tracking-widest mb-4">Brands</h3>
+            <div className="flex flex-col gap-3">
+              {brands.map((brand) => (
+                <label key={brand.id} className="flex items-center gap-3 cursor-pointer group">
+                  <input 
+                    type="checkbox" 
+                    checked={state.brand.includes(brand.slug)}
+                    onChange={() => dispatch({ type: "toggle_brand", payload: brand.slug })}
+                    className="w-4 h-4 border-outline-variant text-primary focus:ring-primary rounded-sm bg-transparent"
+                  />
+                  <span className={cn(
+                    "text-xs uppercase tracking-wider transition-colors",
+                    state.brand.includes(brand.slug) ? "text-stone-900 dark:text-stone-50" : "text-stone-400 group-hover:text-stone-900"
+                  )}>
+                    {brand.name}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Price Range */}
         <section>

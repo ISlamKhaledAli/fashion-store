@@ -1,18 +1,17 @@
-"use client";
-
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { motion } from "framer-motion";
-import { Star, Heart, Plus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Star, Heart, Plus, Check } from "lucide-react";
 import { Product } from "@/types";
+import { toast } from "sonner";
 import { formatCurrency, cn } from "@/lib/utils";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { useWishlistStore } from "@/store/wishlistStore";
-import { wishlistApi } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { Button } from "../ui/Button";
+import { flyToCart } from "@/lib/animations";
+
 
 interface ProductCardProps {
   product: Product;
@@ -22,40 +21,69 @@ interface ProductCardProps {
   isListView?: boolean;
 }
 
+
+
 export const ProductCard = ({ product, className, delay = 0, variant = "default", isListView = false }: ProductCardProps) => {
   const { addItem, toggleDrawer } = useCartStore();
   const { isAuthenticated } = useAuthStore();
   const { items: wishlistItems, addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
   const router = useRouter();
+  const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
+  const isAnimating = useRef(false);
+  const imageRef = useRef<HTMLImageElement>(null);
   
   const isFavorite = isInWishlist(product.id);
 
-  // ... (maintain handleAddToCart, toggleFavorite, renderStars logic)
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const defaultVariant = product.variants?.[0];
-    if (!defaultVariant) return;
-    addItem({
-      id: `${product.id}-${defaultVariant.id}`,
+    
+    if (isAnimating.current) return;
+    isAnimating.current = true;
+    
+    const productVariant = product.variants?.[0];
+    if (!productVariant) return;
+    
+    const start = Date.now();
+    setStatus("loading");
+    flyToCart(imageRef);
+    
+    await addItem({
+      id: '', // Server handles IDs
+      cartItemId: '',
       productId: product.id,
-      variantId: defaultVariant.id,
+      variantId: productVariant.id,
       name: product.name,
       image: product.images.find(img => img.isMain)?.url || product.images[0]?.url || "",
       price: product.price,
-      size: defaultVariant.size,
-      color: defaultVariant.color,
+      size: productVariant.size,
+      color: productVariant.color,
       quantity: 1,
-      stock: defaultVariant.stock,
+      stock: productVariant.stock || 10,
     });
-    toggleDrawer(true);
+    
+    // Ensure minimum 600ms loading state
+    const elapsed = Date.now() - start;
+    if (elapsed < 600) {
+      await new Promise(r => setTimeout(r, 600 - elapsed));
+    }
+    
+    
+    setStatus("success");
+    flyToCart(imageRef);
+    
+    setTimeout(() => {
+      toggleDrawer(true);
+      setStatus("idle");
+      isAnimating.current = false;
+    }, 800);
   };
 
   const toggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!isAuthenticated) { 
-      router.push('/login'); 
+      toast.info("Please sign in to save items to your wishlist"); 
       return; 
     }
   
@@ -102,12 +130,11 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
       >
         <Link href={`/products/${product.slug}`} className="shrink-0 w-full sm:w-64 aspect-3/4 sm:aspect-square relative overflow-hidden bg-surface-container-low group-hover:-translate-y-1 transition-transform duration-500">
           {product.images[0] && (
-            <Image
+            <img
+              ref={imageRef}
               src={product.images.find(img => img.isMain)?.url || product.images[0].url}
               alt={product.name}
-              fill
-              sizes="(max-width: 640px) 100vw, 256px"
-              className="object-cover transition-transform duration-700 group-hover:scale-105"
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
           )}
           <Button
@@ -154,10 +181,46 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
           <div className="flex flex-wrap gap-4 pt-4">
             {product.variants?.[0] && (
               <Button 
+                variant={status === "success" ? "success" : "primary"}
                 onClick={handleAddToCart}
-                className="px-8 py-3 bg-primary text-on-primary text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20 cursor-pointer"
+                disabled={status !== "idle"}
+                className="px-8 py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all active:scale-95 shadow-lg cursor-pointer min-w-[160px]"
               >
-                Add to Collection
+                <AnimatePresence mode="wait">
+                  {status === "idle" && (
+                    <motion.span
+                      key="idle"
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      Add to Collection
+                    </motion.span>
+                  )}
+                  {status === "loading" && (
+                    <motion.span
+                      key="loading"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex items-center justify-center font-bold"
+                    >
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    </motion.span>
+                  )}
+                  {status === "success" && (
+                    <motion.span
+                      key="success"
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      className="flex items-center gap-2"
+                    >
+                      <Check size={16} /> Added
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </Button>
             )}
             <Link 
@@ -181,12 +244,11 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
         <Link href={`/products/${product.slug}`} className="block">
           <div className="relative overflow-hidden aspect-3/4 bg-surface-container-low mb-6">
             {product.images[0] && (
-              <Image
+              <img
+                ref={imageRef}
                 src={product.images.find(img => img.isMain)?.url || product.images[0].url}
                 alt={product.name}
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
             )}
             
@@ -214,12 +276,47 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
             
             {product.variants?.[0] && (
               <Button
-                variant="primary"
+                variant={status === "success" ? "success" : "primary"}
                 onClick={handleAddToCart}
+                disabled={status !== "idle"}
                 className="absolute bottom-0 left-0 w-full py-6 translate-y-full group-hover:translate-y-0 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] z-10"
                 size="none"
               >
-                Quick Add
+                <AnimatePresence mode="wait">
+                  {status === "idle" && (
+                    <motion.span
+                      key="idle"
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      Quick Add
+                    </motion.span>
+                  )}
+                  {status === "loading" && (
+                    <motion.span
+                      key="loading"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex items-center justify-center"
+                    >
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    </motion.span>
+                  )}
+                  {status === "success" && (
+                    <motion.span
+                      key="success"
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      className="flex items-center gap-2"
+                    >
+                      <Check size={18} /> Added
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </Button>
             )}
           </div>
@@ -251,24 +348,56 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
       <Link href={`/products/${product.slug}`} className="block">
         <div className="relative aspect-4/5 bg-surface-container-low overflow-hidden mb-6 cinematic-ease duration-500 group-hover:-translate-y-2">
           {product.images[0] && (
-            <Image
+            <img
+              ref={imageRef}
               src={product.images.find(img => img.isMain)?.url || product.images[0].url}
               alt={product.name}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-              className="object-cover cinematic-ease duration-[0.8s] group-hover:scale-110"
+              className="w-full h-full object-cover cinematic-ease duration-[0.8s] group-hover:scale-110"
             />
           )}
           
           {product.variants?.[0] && (
             <Button
-              variant="primary"
+              variant={status === "success" ? "success" : "primary"}
               size="icon"
               onClick={handleAddToCart}
+              disabled={status !== "idle"}
               className="absolute bottom-6 right-6 w-12 h-12 bg-primary text-on-primary rounded-full flex items-center justify-center opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 delay-100 shadow-xl cursor-pointer"
               aria-label="Add to cart"
-              icon={<Plus size={24} strokeWidth={1.5} />}
-            />
+            >
+              <AnimatePresence mode="wait">
+                {status === "idle" && (
+                  <motion.span
+                    key="idle"
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.5 }}
+                  >
+                    <Plus size={24} strokeWidth={1.5} />
+                  </motion.span>
+                )}
+                {status === "loading" && (
+                  <motion.span
+                    key="loading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  </motion.span>
+                )}
+                {status === "success" && (
+                  <motion.span
+                    key="success"
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.5 }}
+                  >
+                    <Check size={24} />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </Button>
           )}
         </div>
 

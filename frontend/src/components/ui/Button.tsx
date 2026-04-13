@@ -5,7 +5,7 @@ import { motion, HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface ButtonProps extends Omit<HTMLMotionProps<"button">, "ref" | "children"> {
-  variant?: "primary" | "secondary" | "outline" | "ghost" | "icon" | "surface" | "none";
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "icon" | "surface" | "none" | "success";
   size?: "sm" | "md" | "lg" | "icon" | "none";
   isLoading?: boolean;
   isActive?: boolean;
@@ -39,6 +39,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           ? "text-primary opacity-100 scale-110 bg-surface-container-low" 
           : "text-on-surface-variant hover:text-primary hover:bg-surface-container-lowest"
       ),
+      success: "bg-success text-on-success uppercase tracking-widest font-bold text-[13px] shadow-lg shadow-success/10",
     };
 
     const sizes = {

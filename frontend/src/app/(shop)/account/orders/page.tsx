@@ -15,6 +15,8 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 const statuses = ["ALL", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"];
 
+import { toast } from "sonner";
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +39,27 @@ export default function OrdersPage() {
 
     fetchOrders();
   }, []);
+
+  const handleTrackOrder = (e: React.MouseEvent, order: Order) => {
+    e.stopPropagation();
+    // If order has tracking number, open tracking URL
+    // Otherwise show toast with order status
+    if (order.trackingNumber) {
+      window.open(`https://track.aftership.com/${order.trackingNumber}`, '_blank');
+    } else {
+      toast.info(`Order #${order.id.slice(-4).toUpperCase()} is currently ${order.status.toLowerCase()}`, {
+        description: "A tracking number will be provided once the order has shipped."
+      });
+    }
+  };
+
+  const handleReturn = (e: React.MouseEvent, order: Order) => {
+    e.stopPropagation();
+    // Show a simple return modal or toast for now
+    toast.info('To initiate a return, please contact support@store.com', {
+      description: "Returns are accepted within 14 days of delivery in original condition."
+    });
+  };
 
   const filteredOrders = activeTab === "ALL" 
     ? orders 
@@ -93,6 +116,8 @@ export default function OrdersPage() {
                 order={order} 
                 isExpanded={expandedOrder === order.id}
                 onToggle={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
+                onTrack={(e) => handleTrackOrder(e, order)}
+                onReturn={(e) => handleReturn(e, order)}
                 onCancel={async () => {
                   if (confirm("Are you sure you want to cancel this order?")) {
                     const res = await orderApi.cancel(order.id);
@@ -116,10 +141,12 @@ export default function OrdersPage() {
   );
 }
 
-function OrderCard({ order, isExpanded, onToggle, onCancel }: { 
+function OrderCard({ order, isExpanded, onToggle, onCancel, onTrack, onReturn }: { 
   order: Order; 
   isExpanded: boolean; 
   onToggle: () => void;
+  onTrack: (e: React.MouseEvent) => void;
+  onReturn: (e: React.MouseEvent) => void;
   onCancel: () => Promise<void>;
 }) {
   return (
@@ -275,22 +302,20 @@ function OrderCard({ order, isExpanded, onToggle, onCancel }: {
                           </Button>
                         )}
                         {order.status !== "PENDING" && order.status !== "CANCELLED" && (
-                          <Button 
-                            variant="none" size="none"
-                            onClick={(e: any) => e.stopPropagation()}
+                          <button 
+                            onClick={(e) => onTrack(e)}
                             className="bg-primary text-on-primary px-8 py-3 rounded-md text-sm font-medium hover:opacity-80 transition"
                           >
                             Track Order
-                          </Button>
+                          </button>
                         )}
                         {order.status === "DELIVERED" && (
-                          <Button 
-                            variant="none" size="none"
-                            onClick={(e: any) => e.stopPropagation()}
+                          <button 
+                            onClick={(e) => onReturn(e)}
                             className="bg-transparent text-on-surface px-8 py-3 rounded-md text-sm font-medium outline outline-1 outline-outline-variant/30 hover:bg-surface-container-low transition-colors"
                           >
                             Return
-                          </Button>
+                          </button>
                         )}
                       </div>
                     </div>

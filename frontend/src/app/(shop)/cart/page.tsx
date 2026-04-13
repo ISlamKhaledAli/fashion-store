@@ -29,48 +29,16 @@ export default function CartPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    // Sync with backend on mount
-    const syncCart = async () => {
-      if (!isAuthenticated) return; // Only sync if authenticated
-      try {
-        const res = await cartApi.get();
-        const serverCart = res.data.data as any;
-        if (serverCart?.items) {
-          const mappedItems = serverCart.items.map((item: any) => ({
-            id: item.id,
-            cartItemId: item.id,
-            variantId: item.variantId,
-            productId: item.variant.product.id,
-            name: item.variant.product.name,
-            image: item.variant.product.images?.[0]?.url || "",
-            price: item.variant.product.price,
-            size: item.variant.size,
-            color: item.variant.color,
-            quantity: item.quantity,
-            stock: item.variant.stock || 10,
-          }));
-          
-          const currentItems = useCartStore.getState().items;
-          const mergedItems = currentItems.map((localItem) => {
-             const serverMatch = mappedItems.find((m: any) => m.variantId === localItem.variantId);
-             if (serverMatch && !localItem.cartItemId) {
-                return { ...localItem, cartItemId: serverMatch.cartItemId };
-             }
-             return localItem;
-          });
-          
-          mappedItems.forEach((mItem: any) => {
-            const exists = mergedItems.find((i) => i.variantId === mItem.variantId);
-            if (!exists) mergedItems.push(mItem);
-          });
-          
-          useCartStore.getState().setItems(mergedItems);
-        }
-      } catch {
-        // Silently ignore — user may not be authenticated
+    
+    // Background sync — non-blocking, only for authenticated users
+    const { isAuthenticated } = useAuthStore.getState();
+    if (!isAuthenticated) return;
+    
+    cartApi.get().then(res => {
+      if (res.data.success) {
+        useCartStore.getState().syncFromServer(res.data.data);
       }
-    };
-    syncCart();
+    }).catch(() => {}); // silent fail
   }, []);
 
   const handleApplyPromo = async () => {
@@ -135,7 +103,7 @@ export default function CartPage() {
             <AnimatePresence mode="popLayout">
               {items.map((item) => (
                 <motion.div
-                  key={item.id}
+                  key={item.id || item.variantId || `cart-item-${Math.random()}`}
                   layout
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
