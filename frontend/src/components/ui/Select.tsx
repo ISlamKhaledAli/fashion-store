@@ -26,7 +26,7 @@ export const Select = ({ options, value, onChange, className, labelPrefix }: Sel
   
   useClickOutside(containerRef, () => setIsOpen(false));
 
-  const selectedOption = options.find((opt) => opt.value === value) || options[0];
+  const selectedOption = options.find((opt) => opt.value === value) || options[0] || { label: "Select...", value: "" };
 
   return (
     <div ref={containerRef} className={cn("relative inline-block", className)}>

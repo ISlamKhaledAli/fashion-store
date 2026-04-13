@@ -103,4 +103,17 @@ export const adminApi = {
     api.put<ApiResponse<Order>>(`/admin/orders/${id}`, { status }),
   getCustomers: (params?: Record<string, unknown>) => 
     api.get<ApiResponse<unknown[]>>("/admin/customers", { params }),
+  createProduct: (data: Record<string, unknown>) => 
+    api.post<ApiResponse<Product>>("/products", data),
+  updateProduct: (id: string, data: Record<string, unknown>) => 
+    api.put<ApiResponse<Product>>(`/products/${id}`, data),
+  deleteProduct: (id: string) => 
+    api.delete<ApiResponse<unknown>>(`/products/${id}`),
+  uploadMedia: (file: File) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    return api.post<ApiResponse<{ url: string; publicId: string }>>("/upload/image", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
 };
