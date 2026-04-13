@@ -24,10 +24,10 @@ export const CartDrawer = () => {
 
   // Sync cart with backend on open
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && isAuthenticated) {
       fetchCart();
     }
-  }, [isOpen, fetchCart]);
+  }, [isOpen, isAuthenticated, fetchCart]);
 
   return (
     <AnimatePresence>

@@ -30,8 +30,10 @@ export default function CartPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    fetchCart();
-  }, [fetchCart]);
+    if (isAuthenticated) {
+      fetchCart();
+    }
+  }, [isAuthenticated, fetchCart]);
 
   const handleApplyPromo = async () => {
     if (!promoCode) return;
