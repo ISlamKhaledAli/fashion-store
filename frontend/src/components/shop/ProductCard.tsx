@@ -8,6 +8,10 @@ import { Star, Heart, Plus } from "lucide-react";
 import { Product } from "@/types";
 import { formatCurrency, cn } from "@/lib/utils";
 import { useCartStore } from "@/store/cartStore";
+import { useAuthStore } from "@/store/authStore";
+import { useWishlistStore } from "@/store/wishlistStore";
+import { wishlistApi } from "@/lib/api";
+import { useRouter } from "next/navigation";
 import { Button } from "../ui/Button";
 
 interface ProductCardProps {
@@ -20,33 +24,50 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product, className, delay = 0, variant = "default", isListView = false }: ProductCardProps) => {
   const { addItem, toggleDrawer } = useCartStore();
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { isAuthenticated } = useAuthStore();
+  const { items: wishlistItems, addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
+  const router = useRouter();
+  
+  const isFavorite = isInWishlist(product.id);
 
   // ... (maintain handleAddToCart, toggleFavorite, renderStars logic)
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const productVariant = product.variants?.[0];
-    if (!productVariant) return;
+    const defaultVariant = product.variants?.[0];
+    if (!defaultVariant) return;
     addItem({
-      id: `${product.id}-${productVariant.id}`,
+      id: `${product.id}-${defaultVariant.id}`,
       productId: product.id,
-      variantId: productVariant.id,
+      variantId: defaultVariant.id,
       name: product.name,
       image: product.images.find(img => img.isMain)?.url || product.images[0]?.url || "",
       price: product.price,
-      size: productVariant.size,
-      color: productVariant.color,
+      size: defaultVariant.size,
+      color: defaultVariant.color,
       quantity: 1,
-      stock: productVariant.stock,
+      stock: defaultVariant.stock,
     });
     toggleDrawer(true);
   };
 
-  const toggleFavorite = (e: React.MouseEvent) => {
+  const toggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsFavorite(!isFavorite);
+    if (!isAuthenticated) { 
+      router.push('/login'); 
+      return; 
+    }
+  
+    try {
+      if (isFavorite) {
+        await removeFromWishlist(product.id);
+      } else {
+        await addToWishlist(product.id);
+      }
+    } catch (err) {
+      console.error('Wishlist error:', err);
+    }
   };
 
   const renderStars = (rating: number = 0, count: number = 0) => {
@@ -131,12 +152,14 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
           </div>
 
           <div className="flex flex-wrap gap-4 pt-4">
-            <Button 
-              onClick={handleAddToCart}
-              className="px-8 py-3 bg-primary text-on-primary text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20 cursor-pointer"
-            >
-              Add to Collection
-            </Button>
+            {product.variants?.[0] && (
+              <Button 
+                onClick={handleAddToCart}
+                className="px-8 py-3 bg-primary text-on-primary text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20 cursor-pointer"
+              >
+                Add to Collection
+              </Button>
+            )}
             <Link 
               href={`/products/${product.slug}`}
               className="px-8 py-3 border border-outline text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-surface-container transition-all active:scale-95 flex items-center justify-center cursor-pointer"
@@ -189,14 +212,16 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
               }
             />
             
-            <Button
-              variant="primary"
-              onClick={handleAddToCart}
-              className="absolute bottom-0 left-0 w-full py-6 translate-y-full group-hover:translate-y-0 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] z-10"
-              size="none"
-            >
-              Quick Add
-            </Button>
+            {product.variants?.[0] && (
+              <Button
+                variant="primary"
+                onClick={handleAddToCart}
+                className="absolute bottom-0 left-0 w-full py-6 translate-y-full group-hover:translate-y-0 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] z-10"
+                size="none"
+              >
+                Quick Add
+              </Button>
+            )}
           </div>
           
           <div className="space-y-1 mt-6">
@@ -235,14 +260,16 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
             />
           )}
           
-          <Button
-            variant="primary"
-            size="icon"
-            onClick={handleAddToCart}
-            className="absolute bottom-6 right-6 w-12 h-12 bg-primary text-on-primary rounded-full flex items-center justify-center opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 delay-100 shadow-xl cursor-pointer"
-            aria-label="Add to cart"
-            icon={<Plus size={24} strokeWidth={1.5} />}
-          />
+          {product.variants?.[0] && (
+            <Button
+              variant="primary"
+              size="icon"
+              onClick={handleAddToCart}
+              className="absolute bottom-6 right-6 w-12 h-12 bg-primary text-on-primary rounded-full flex items-center justify-center opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 delay-100 shadow-xl cursor-pointer"
+              aria-label="Add to cart"
+              icon={<Plus size={24} strokeWidth={1.5} />}
+            />
+          )}
         </div>
 
         <div className="flex justify-between items-start">

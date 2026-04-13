@@ -32,11 +32,38 @@ export const OrderDetailPanel = ({ order, onClose, onUpdateStatus }: OrderDetail
   };
 
   const paymentStatus = order.paymentStatus === "PAID";
+
+  const getActionConfig = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return { label: "Confirm Order", nextStatus: "PROCESSING", icon: <CheckCircle size={14} /> };
+      case "PROCESSING":
+        return { label: "Ship Order", nextStatus: "SHIPPED", icon: <Truck size={14} /> };
+      case "SHIPPED":
+        return { label: "Mark Delivered", nextStatus: "DELIVERED", icon: <CheckCircle size={14} /> };
+      case "DELIVERED":
+        return null; // No action available — order is complete
+      default:
+        return null;
+    }
+  };
+
+  const actionConfig = getActionConfig(order.status);
+  
+  // Weights based on order flow mapping: PENDING -> PROCESSING -> SHIPPED -> DELIVERED
+  const statusWeights: Record<string, number> = {
+    "PENDING": 1,
+    "PROCESSING": 2,
+    "SHIPPED": 3,
+    "DELIVERED": 4
+  };
+  const stateWeight = statusWeights[order.status] || 0;
+
   const statusSteps = [
     { name: "Order Placed", date: new Date(order.createdAt).toLocaleString(), completed: true },
     { name: "Payment Confirmed", date: paymentStatus ? "Received" : "Pending", completed: paymentStatus },
-    { name: "Sent to Warehouse", date: order.status !== "PENDING" ? "Completed" : "Pending", completed: order.status !== "PENDING" },
-    { name: "Order Shipped", date: order.status === "DELIVERED" || order.status === "SHIPPED" ? "Completed" : "Pending", completed: order.status === "DELIVERED" || order.status === "SHIPPED" },
+    { name: "Sent to Warehouse", date: stateWeight >= 2 ? "Completed" : "Pending", completed: stateWeight >= 2 },
+    { name: "Order Shipped", date: stateWeight >= 3 ? "Completed" : "Pending", completed: stateWeight >= 3 },
   ];
 
   return (
@@ -273,15 +300,17 @@ export const OrderDetailPanel = ({ order, onClose, onUpdateStatus }: OrderDetail
             >
               Print Invoice
             </Button>
-            <Button 
-              variant="primary"
-              size="none"
-              onClick={() => onUpdateStatus(order.id, order.status === "PROCESSING" ? "SHIPPED" : "DELIVERED")}
-              className="px-4 py-2 bg-zinc-900 text-white font-medium text-sm rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 active:scale-95 w-auto"
-              icon={<Truck size={14} />}
-            >
-              {order.status === "PROCESSING" ? "Ship Order" : "Mark Delivered"}
-            </Button>
+            {actionConfig && (
+              <Button 
+                variant="primary"
+                size="none"
+                onClick={() => onUpdateStatus(order.id, actionConfig.nextStatus)}
+                className="px-4 py-2 bg-zinc-900 text-white font-medium text-sm rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2 active:scale-95 w-auto"
+                icon={actionConfig.icon}
+              >
+                {actionConfig.label}
+              </Button>
+            )}
           </div>
         </motion.div>
       )}

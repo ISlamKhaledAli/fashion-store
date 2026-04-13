@@ -87,9 +87,14 @@ export const getProducts = async (req: Request, res: Response, next: NextFunctio
         skip,
         orderBy,
         include: {
-          category: true,
-          brand: true,
-          images: { where: { isMain: true } },
+          category: { select: { name: true, slug: true } },
+          brand: { select: { name: true, slug: true } },
+          images: { where: { isMain: true }, take: 1 },
+          variants: { 
+            select: { id: true, size: true, color: true, colorHex: true, stock: true },
+            take: 1
+          },
+          _count: { select: { reviews: true } },
         },
       }),
       prisma.product.count({ where }),

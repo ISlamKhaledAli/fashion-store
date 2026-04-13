@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Search } from "lucide-react";
 import { useSearchStore } from "@/store/searchStore";
+import { useWishlistStore } from "@/store/wishlistStore";
 import { SearchOverlay } from "./SearchOverlay";
 
 export const Navbar = () => {
@@ -19,6 +20,7 @@ export const Navbar = () => {
   const { toggleDrawer, getTotalItems } = useCartStore();
   const { isAuthenticated } = useAuthStore();
   const { onOpen: onSearchOpen } = useSearchStore();
+  const { fetchWishlist } = useWishlistStore();
 
   const height = useTransform(scrollY, [0, 80], ["70px", "56px"]);
   const backgroundColor = useTransform(
@@ -26,6 +28,12 @@ export const Navbar = () => {
     [0, 80],
     ["rgba(249, 249, 251, 0)", "rgba(249, 249, 251, 0.8)"]
   );
+
+  useEffect(() => {
+    if (isMounted && isAuthenticated) {
+      fetchWishlist();
+    }
+  }, [isMounted, isAuthenticated, fetchWishlist]);
 
   useEffect(() => {
     // Ensuring setIsMounted is set after initial render to avoid cascading render warning

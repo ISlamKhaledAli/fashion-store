@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { categoryApi, productApi } from "@/lib/api";
+import { categoryApi, brandApi, productApi } from "@/lib/api";
 import { Category } from "@/types";
 import { Button } from "../ui/Button";
 
@@ -35,6 +35,7 @@ interface FilterSidebarProps {
 
 export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: FilterSidebarProps) => {
   const [categories, setCategories] = useState<string[]>([]);
+  const [brands, setBrands] = useState<string[]>([]);
   const [colors, setColors] = useState<{ name: string; class: string; hex: string }[]>([]);
   
   useEffect(() => {
@@ -46,12 +47,18 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
           setCategories(catRes.data.data.map((c: Category) => c.name));
         }
 
+        // Fetch Brands
+        const brandRes = await brandApi.getAll();
+        if (brandRes.data.success) {
+          setBrands(brandRes.data.data.map((b: any) => b.name));
+        }
+
         // Fetch Product Filters (Colors)
         const filterRes = await productApi.getFilters();
         if (filterRes.data.success) {
           setColors(filterRes.data.data.colors.map((c: { name: string; hex: string }) => ({
             name: c.name,
-            class: "", // We'll use style instead of class for dynamic hex
+            class: "",
             hex: c.hex
           })));
         }
@@ -91,6 +98,29 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
                   state.category.includes(cat) ? "text-stone-900 dark:text-stone-50" : "text-stone-400 group-hover:text-stone-900"
                 )}>
                   {cat}
+                </span>
+              </label>
+            ))}
+          </div>
+        </section>
+
+        {/* Brands */}
+        <section>
+          <h3 className="text-[11px] font-bold uppercase tracking-widest mb-4">Brands</h3>
+          <div className="flex flex-col gap-3">
+            {brands.map((brand) => (
+              <label key={brand} className="flex items-center gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  checked={state.brand.includes(brand)}
+                  onChange={() => dispatch({ type: "toggle_brand", payload: brand })}
+                  className="w-4 h-4 border-outline-variant text-primary focus:ring-primary rounded-sm bg-transparent"
+                />
+                <span className={cn(
+                  "text-xs uppercase tracking-wider transition-colors",
+                  state.brand.includes(brand) ? "text-stone-900 dark:text-stone-50" : "text-stone-400 group-hover:text-stone-900"
+                )}>
+                  {brand}
                 </span>
               </label>
             ))}
@@ -137,13 +167,7 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
         </section>
       </div>
 
-      <Button 
-        variant="primary"
-        onClick={onClose}
-        className="w-full"
-      >
-        Show Results
-      </Button>
+
     </div>
   );
 

@@ -6,20 +6,16 @@ import { formatCurrency, cn } from "@/lib/utils";
 import { useCartStore } from "@/store/cartStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { productApi } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
+import { useWishlistStore } from "@/store/wishlistStore";
+import { useRouter } from "next/navigation";
 import { Button } from "../ui/Button";
 
 interface ProductInfoProps {
   product: Product;
 }
 
-const COLOR_MAP: Record<string, string> = {
-  "Charcoal": "#1A1C1D",
-  "Grey": "#3D3E42",
-  "Silver": "#E5E5E5",
-  "Black": "#000000",
-  "White": "#FFFFFF",
-  "Navy": "#000080",
-};
+
 
 type ButtonState = "idle" | "loading" | "success";
 
@@ -34,7 +30,11 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
   );
   const [quantity, setQuantity] = useState(1);
   const [buttonState, setButtonState] = useState<ButtonState>("idle");
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { isAuthenticated } = useAuthStore();
+  const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
+  const router = useRouter();
+  
+  const isFavorite = isInWishlist(product.id);
 
   const availableSizes = product.variants
     .filter((v) => v.color === selectedColor)
@@ -74,10 +74,16 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
   };
 
   const toggleWishlist = async () => {
-    setIsFavorite(!isFavorite);
+    if (!isAuthenticated) {
+      router.push("/login");
+      return;
+    }
+    
     try {
-      if (!isFavorite) {
-        await productApi.addToWishlist(product.id);
+      if (isFavorite) {
+        await removeFromWishlist(product.id);
+      } else {
+        await addToWishlist(product.id);
       }
     } catch (err) {
       console.error("Wishlist error:", err);
@@ -120,21 +126,21 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
           Color / <span className="text-primary">{selectedColor}</span>
         </p>
         <div className="flex gap-3">
-          {colors.map((color) => (
+          {Array.from(new Map(product.variants.map(v => [v.color, v])).values()).map((variant) => (
             <Button
-              key={color}
+              key={variant.color}
               variant="none"
               size="none"
-              onClick={() => setSelectedColor(color)}
+              onClick={() => setSelectedColor(variant.color)}
               className={cn(
                 "w-8 h-8 rounded-full border transition-all duration-300",
-                selectedColor === color 
+                selectedColor === variant.color 
                   ? "border-primary ring-2 ring-surface ring-offset-0 scale-110" 
                   : "border-outline-variant hover:scale-110"
               )}
-              style={{ backgroundColor: COLOR_MAP[color] || color.toLowerCase() }}
-              title={color}
-              aria-label={`Select color ${color}`}
+              style={{ backgroundColor: variant.colorHex || '#ccc' }}
+              title={variant.color}
+              aria-label={`Select color ${variant.color}`}
             />
           ))}
         </div>
@@ -143,13 +149,14 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <p className="text-xs font-label tracking-widest uppercase">Size</p>
-          <Button 
-            variant="ghost" 
-            size="none" 
-            className="text-xs underline text-on-surface-variant hover:text-primary"
+          <a 
+            href="/size-guide"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs underline text-on-surface-variant hover:text-primary transition-colors"
           >
             Size Guide
-          </Button>
+          </a>
         </div>
         <div className="grid grid-cols-4 gap-2">
           {availableSizes.map((size) => (

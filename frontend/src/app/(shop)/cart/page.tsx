@@ -33,7 +33,39 @@ export default function CartPage() {
     const syncCart = async () => {
       if (!isAuthenticated) return; // Only sync if authenticated
       try {
-        await cartApi.get();
+        const res = await cartApi.get();
+        const serverCart = res.data.data as any;
+        if (serverCart?.items) {
+          const mappedItems = serverCart.items.map((item: any) => ({
+            id: item.id,
+            cartItemId: item.id,
+            variantId: item.variantId,
+            productId: item.variant.product.id,
+            name: item.variant.product.name,
+            image: item.variant.product.images?.[0]?.url || "",
+            price: item.variant.product.price,
+            size: item.variant.size,
+            color: item.variant.color,
+            quantity: item.quantity,
+            stock: item.variant.stock || 10,
+          }));
+          
+          const currentItems = useCartStore.getState().items;
+          const mergedItems = currentItems.map((localItem) => {
+             const serverMatch = mappedItems.find((m: any) => m.variantId === localItem.variantId);
+             if (serverMatch && !localItem.cartItemId) {
+                return { ...localItem, cartItemId: serverMatch.cartItemId };
+             }
+             return localItem;
+          });
+          
+          mappedItems.forEach((mItem: any) => {
+            const exists = mergedItems.find((i) => i.variantId === mItem.variantId);
+            if (!exists) mergedItems.push(mItem);
+          });
+          
+          useCartStore.getState().setItems(mergedItems);
+        }
       } catch {
         // Silently ignore — user may not be authenticated
       }
@@ -142,7 +174,7 @@ export default function CartPage() {
                               const newQty = Math.max(1, item.quantity - 1);
                               if (newQty !== item.quantity) {
                                 updateQuantity(item.id, newQty);
-                                cartApi.updateQuantity(item.id, newQty).catch(() => {});
+                                if (item.cartItemId) cartApi.updateQuantity(item.cartItemId, newQty).catch(() => {});
                               }
                             }}
                             className="text-on-surface-variant hover:text-on-surface transition-colors flex items-center justify-center p-2"
@@ -155,7 +187,7 @@ export default function CartPage() {
                             onClick={() => {
                               const newQty = item.quantity + 1;
                               updateQuantity(item.id, newQty);
-                              cartApi.updateQuantity(item.id, newQty).catch(() => {});
+                              if (item.cartItemId) cartApi.updateQuantity(item.cartItemId, newQty).catch(() => {});
                             }}
                             className="text-on-surface-variant hover:text-on-surface transition-colors flex items-center justify-center p-2"
                             icon={<span className="material-symbols-outlined text-sm">add</span>}
@@ -176,7 +208,7 @@ export default function CartPage() {
                           size="none"
                           onClick={() => {
                             removeItem(item.id);
-                            cartApi.removeItem(item.id).catch(() => {});
+                            if (item.cartItemId) cartApi.removeItem(item.cartItemId).catch(() => {});
                           }}
                           className="mt-6 text-on-surface-variant hover:text-error transition-colors duration-300 group/del p-2"
                           icon={<span className="material-symbols-outlined group-hover/del:scale-110 transition-transform" data-icon="delete">delete</span>}

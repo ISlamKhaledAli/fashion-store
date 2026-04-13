@@ -49,6 +49,13 @@ function filterReducer(state: FilterState, action: Action): FilterState {
           ? state.category.filter((c) => c !== action.payload)
           : [...state.category, action.payload],
       };
+    case "toggle_brand":
+      return {
+        ...state,
+        brand: state.brand.includes(action.payload)
+          ? state.brand.filter((b) => b !== action.payload)
+          : [...state.brand, action.payload],
+      };
     case "toggle_color":
       return {
         ...state,
@@ -77,14 +84,23 @@ function ProductsContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const isInitialMount = React.useRef(true);
   const fetchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // ... (maintain useEffects logic)
+  // Reset page when filters change
+  useEffect(() => {
+    if (!isInitialMount.current) setPage(1);
+  }, [state]);
+
   useEffect(() => {
     const params: Partial<FilterState> = {};
     const cat = searchParams.get("category");
     if (cat) params.category = cat.split(",");
+    const brand = searchParams.get("brand");
+    if (brand) params.brand = brand.split(",");
     const max = searchParams.get("maxPrice");
     if (max) params.maxPrice = parseInt(max);
 
@@ -97,13 +113,16 @@ function ProductsContent() {
       try {
         const res = await productApi.getAll({
           category: cat || "",
+          brand: brand || "",
           color: "",
           maxPrice: max ? parseInt(max) : 2000,
           sort: "createdAt:desc",
           limit: 12,
+          page: 1,
         });
         if (res.data.success) {
           setProducts(res.data.data);
+          setTotalPages(res.data.pagination?.totalPages || 1);
         }
       } catch (error) {
         console.error("Fetch error:", error);
@@ -124,19 +143,25 @@ function ProductsContent() {
       setIsLoading(true);
       const params = new URLSearchParams();
       if (state.category.length) params.set("category", state.category.join(","));
+      if (state.brand.length) params.set("brand", state.brand.join(","));
       if (state.color.length) params.set("color", state.color.join(","));
       if (state.maxPrice < 2000) params.set("maxPrice", state.maxPrice.toString());
       params.set("sort", state.sort);
       router.replace(`/products?${params.toString()}`, { scroll: false });
       try {
         const res = await productApi.getAll({
-          category: state.category.map(c => c.trim()).join(","),
-          color: state.color.map(c => c.trim()).join(","),
+          category: state.category.map((c) => c.trim()).join(","),
+          brand: state.brand.map((b) => b.trim()).join(","),
+          color: state.color.map((c) => c.trim()).join(","),
           maxPrice: state.maxPrice,
           sort: state.sort,
           limit: 12,
+          page,
         });
-        if (res.data.success) setProducts(res.data.data);
+        if (res.data.success) {
+          setProducts(res.data.data);
+          setTotalPages(res.data.pagination?.totalPages || 1);
+        }
       } catch (error) {
         console.error("Fetch error:", error);
       } finally {
@@ -144,7 +169,7 @@ function ProductsContent() {
       }
     }, 150);
     return () => { if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current); };
-  }, [state, router]);
+  }, [state, page, router]);
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen">
@@ -233,33 +258,46 @@ function ProductsContent() {
           )}
         </ProductGrid>
 
-        {/* Simple Pagination Mock */}
-        {products.length > 0 && (
+        {/* Pagination Integration */}
+        {products.length > 0 && totalPages > 1 && (
           <footer className="mt-24 flex justify-center items-center gap-8 border-t border-outline-variant/20 pt-12">
-            <Button variant="ghost" size="sm" className="gap-2 text-on-surface-variant hover:text-primary">
+            <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className={cn("gap-2 text-on-surface-variant hover:text-primary transition-opacity duration-300", page === 1 && "opacity-30 pointer-events-none")}
+             >
               <ArrowLeft size={14} strokeWidth={1.5} /> Prev
             </Button>
             
             <div className="flex items-center gap-6 text-xs font-bold tracking-widest">
-              {[1, 2].map((page) => (
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                 <Button 
-                  key={page}
+                  key={p}
                   variant="none"
                   size="none"
+                  onClick={() => setPage(p)}
                   className={cn(
                     "pb-1 transition-all cursor-pointer",
-                    page === 1 
+                    page === p 
                       ? "text-primary border-b border-primary" 
                       : "text-on-surface-variant hover:text-primary opacity-50 hover:opacity-100"
                   )}
-                  aria-label={`Go to page ${page}`}
+                  aria-label={`Go to page ${p}`}
                 >
-                  {page.toString().padStart(2, '0')}
+                  {p.toString().padStart(2, '0')}
                 </Button>
               ))}
             </div>
 
-            <Button variant="ghost" size="sm" className="gap-2 text-on-surface-variant hover:text-primary">
+            <Button 
+                 variant="ghost" 
+                 size="sm" 
+                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                 disabled={page === totalPages}
+                 className={cn("gap-2 text-on-surface-variant hover:text-primary transition-opacity duration-300", page === totalPages && "opacity-30 pointer-events-none")}
+            >
               Next <ArrowRight size={14} strokeWidth={1.5} />
             </Button>
           </footer>

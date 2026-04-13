@@ -3,6 +3,7 @@ import {
   ApiResponse, 
   Product, 
   Category, 
+  Brand,
   Order, 
   User, 
   WishlistItem,
@@ -29,14 +30,17 @@ export const productApi = {
   getFilters: () => 
     api.get<ApiResponse<{ colors: { name: string; hex: string }[] }>>("/products/filters"),
   getReviews: (productId: string) => 
-    api.get<ApiResponse<unknown[]>>(`/reviews/product/${productId}`),
-  addToWishlist: (productId: string) => 
-    api.post<ApiResponse<unknown>>("/wishlist/add", { productId }),
+    api.get<ApiResponse<any[]>>(`/reviews/product/${productId}`),
 };
 
 export const categoryApi = {
   getAll: () => 
     api.get<ApiResponse<Category[]>>("/categories"),
+};
+
+export const brandApi = {
+  getAll: () => 
+    api.get<ApiResponse<Brand[]>>("/brands"),
 };
 
 export const cartApi = {
@@ -69,6 +73,13 @@ export const wishlistApi = {
     api.post<ApiResponse<WishlistItem>>("/wishlist/add", { productId }),
   remove: (productId: string) => 
     api.delete<ApiResponse<unknown>>(`/wishlist/remove/${productId}`),
+};
+
+export const reviewApi = {
+  create: (data: { productId: string; rating: number; title: string; body: string }) =>
+    api.post<ApiResponse<any>>("/reviews", data),
+  getMine: (productId: string) =>
+    api.get<ApiResponse<any>>(`/reviews/mine/${productId}`),
 };
 
 export const addressApi = {

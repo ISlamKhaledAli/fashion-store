@@ -30,7 +30,7 @@ const FALLBACK_PRODUCTS: Product[] = [
       },
     ],
     variants: [
-      { id: "v-1", size: "M", color: "Bone White", stock: 10 },
+      { id: "v-1", size: "M", color: "Bone White", colorHex: "#F9F6F0", stock: 10 },
     ],
     category: { id: "2", name: "Essential", slug: "essential" },
   },
@@ -55,7 +55,7 @@ const FALLBACK_PRODUCTS: Product[] = [
       },
     ],
     variants: [
-      { id: "v-2", size: "L", color: "Carbon", stock: 5 },
+      { id: "v-2", size: "L", color: "Carbon", colorHex: "#3D3E42", stock: 5 },
     ],
     category: { id: "1", name: "Outerwear", slug: "outerwear" },
   },
@@ -80,7 +80,7 @@ const FALLBACK_PRODUCTS: Product[] = [
       },
     ],
     variants: [
-      { id: "v-3", size: "32", color: "Raw Indigo", stock: 8 },
+      { id: "v-3", size: "32", color: "Raw Indigo", colorHex: "#0D1B2A", stock: 8 },
     ],
     category: { id: "2", name: "Essential", slug: "essential" },
   },

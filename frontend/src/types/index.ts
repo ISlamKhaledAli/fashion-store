@@ -34,6 +34,7 @@ export interface Variant {
   id: string;
   size: string;
   color: string;
+  colorHex: string;
   stock: number;
 }
 
@@ -58,6 +59,7 @@ export interface Product {
 
 export interface CartItem {
   id: string; // unique cart item id
+  cartItemId?: string; // server cart item ID
   productId: string;
   variantId: string;
   name: string;

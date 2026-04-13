@@ -30,7 +30,7 @@ interface AdminSidebarProps {
 const navLinks = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
-  { name: "Products", href: "/admin/products", icon: Package },
+  { name: "Products", href: "#", icon: Package },
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { name: "Categories", href: "/admin/categories", icon: FolderTree },

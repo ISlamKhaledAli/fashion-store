@@ -8,7 +8,20 @@ export const getWishlist = async (req: Request, res: Response, next: NextFunctio
     const userId = req.user?.id;
     const wishlist = await prisma.wishlist.findMany({
       where: { userId },
-      include: { product: { include: { images: { where: { isMain: true } } } } },
+      include: { 
+        product: { 
+          include: { 
+            category: { select: { name: true, slug: true } },
+            brand: { select: { name: true, slug: true } },
+            images: { where: { isMain: true }, take: 1 },
+            variants: { 
+              select: { id: true, size: true, color: true, colorHex: true, stock: true },
+              take: 1
+            },
+            _count: { select: { reviews: true } }
+          } 
+        } 
+      },
     });
     return sendResponse({ res, status: 200, success: true, data: wishlist });
   } catch (error) {

@@ -31,7 +31,42 @@ export const CartDrawer = () => {
     if (isOpen && isAuthenticated && !isAuthPage) {
       const fetchCart = async () => {
         try {
-          await cartApi.get();
+          const res = await cartApi.get();
+          const serverCart = res.data.data as any;
+          if (serverCart?.items) {
+            const mappedItems = serverCart.items.map((item: any) => ({
+              id: item.id,
+              cartItemId: item.id,
+              variantId: item.variantId,
+              productId: item.variant.product.id,
+              name: item.variant.product.name,
+              image: item.variant.product.images?.[0]?.url || "",
+              price: item.variant.product.price,
+              size: item.variant.size,
+              color: item.variant.color,
+              quantity: item.quantity,
+              stock: item.variant.stock || 10,
+            }));
+            
+            const currentItems = useCartStore.getState().items;
+            
+            // 1. Link matching items with their server cartItemId
+            const mergedItems = currentItems.map((localItem) => {
+               const serverMatch = mappedItems.find((m: any) => m.variantId === localItem.variantId);
+               if (serverMatch && !localItem.cartItemId) {
+                  return { ...localItem, cartItemId: serverMatch.cartItemId };
+               }
+               return localItem;
+            });
+            
+            // 2. Add brand new items from server that we don't have locally
+            mappedItems.forEach((mItem: any) => {
+              const exists = mergedItems.find((i) => i.variantId === mItem.variantId);
+              if (!exists) mergedItems.push(mItem);
+            });
+            
+            useCartStore.getState().setItems(mergedItems);
+          }
         } catch {
           // Errors are handled by axios interceptor or silently ignored
         }
@@ -138,7 +173,9 @@ export const CartDrawer = () => {
                             size="none"
                             onClick={() => {
                               removeItem(item.id);
-                              cartApi.removeItem(item.id).catch(() => {});
+                              if (item.cartItemId) {
+                                cartApi.removeItem(item.cartItemId).catch(() => {});
+                              }
                             }}
                             className="text-outline-variant hover:text-error transition-colors p-2"
                             icon={
@@ -155,7 +192,9 @@ export const CartDrawer = () => {
                                 const newQty = Math.max(1, item.quantity - 1);
                                 if (newQty !== item.quantity) {
                                   updateQuantity(item.id, newQty);
-                                  cartApi.updateQuantity(item.id, newQty).catch(() => {});
+                                  if (item.cartItemId) {
+                                    cartApi.updateQuantity(item.cartItemId, newQty).catch(() => {});
+                                  }
                                 }
                               }}
                               className="text-on-surface-variant hover:text-on-surface dark:hover:text-stone-50 transition-colors flex items-center justify-center h-6 w-6"
@@ -170,7 +209,9 @@ export const CartDrawer = () => {
                               onClick={() => {
                                 const newQty = item.quantity + 1;
                                 updateQuantity(item.id, newQty);
-                                cartApi.updateQuantity(item.id, newQty).catch(() => {});
+                                if (item.cartItemId) {
+                                  cartApi.updateQuantity(item.cartItemId, newQty).catch(() => {});
+                                }
                               }}
                               className="text-on-surface-variant hover:text-on-surface dark:hover:text-stone-50 transition-colors flex items-center justify-center h-6 w-6"
                               icon={

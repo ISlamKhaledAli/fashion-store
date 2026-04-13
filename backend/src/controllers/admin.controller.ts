@@ -114,6 +114,17 @@ export const getAnalyticsOverview = async (req: Request, res: Response, next: Ne
     const paidOrders = await prisma.order.count({ where: { paymentStatus: "PAID" } });
     const conversionRate = totalCustomers > 0 ? (paidOrders / totalCustomers) * 100 : 0;
 
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    const [ordersToday, newCustomers, rawStatusCounts] = await Promise.all([
+      prisma.order.count({ where: { createdAt: { gte: today } } }),
+      prisma.user.count({ where: { createdAt: { gte: today }, role: 'CUSTOMER' } }),
+      prisma.order.groupBy({ by: ['status'], _count: true }),
+    ]);
+
+    const statusCounts = rawStatusCounts.reduce((acc: any, s) => ({ ...acc, [s.status]: s._count }), {});
+
     return sendResponse({
       res,
       status: 200,
@@ -124,6 +135,9 @@ export const getAnalyticsOverview = async (req: Request, res: Response, next: Ne
         totalOrders,
         totalCustomers,
         conversionRate,
+        ordersToday,
+        newCustomers,
+        statusCounts,
       },
     });
   } catch (error) {

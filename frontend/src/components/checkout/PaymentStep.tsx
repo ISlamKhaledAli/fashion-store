@@ -47,7 +47,7 @@ const CheckoutForm = ({ onNext, onBack }: PaymentStepProps) => {
         elements,
         clientSecret: (stripe as any)._clientSecret, // elements.submit() ensures this is ready
         confirmParams: {
-          return_url: `${window.location.origin}/checkout/review`,
+          return_url: `${window.location.origin}/checkout?step=review`,
         },
         redirect: "if_required",
       });
