@@ -36,7 +36,6 @@ const navLinks = [
   { name: "Categories", href: "/admin/categories", icon: FolderTree },
   { name: "Inventory", href: "/admin/inventory", icon: Warehouse },
   { name: "Discounts", href: "/admin/discounts", icon: Tags },
-  { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
 export const AdminSidebar = ({ isCollapsed, onToggle }: AdminSidebarProps) => {
@@ -47,7 +46,7 @@ export const AdminSidebar = ({ isCollapsed, onToggle }: AdminSidebarProps) => {
     <motion.aside
       initial={false}
       animate={{ width: isCollapsed ? 60 : 240 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as const }}
       className="fixed left-0 top-0 h-screen bg-zinc-950 border-r border-zinc-800/50 flex flex-col z-50 overflow-hidden"
     >
       {/* Logo Section */}

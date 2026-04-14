@@ -147,23 +147,30 @@ export const getAnalyticsOverview = async (req: Request, res: Response, next: Ne
 
 export const getRevenueAnalytics = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const { days = 30 } = req.query;
+    const daysRequested = Number(days);
+    
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysRequested);
 
     const revenue = await prisma.order.groupBy({
       by: ["createdAt"],
-      where: { paymentStatus: "PAID", createdAt: { gte: thirtyDaysAgo } },
+      where: { paymentStatus: "PAID", createdAt: { gte: startDate } },
       _sum: { total: true },
     });
 
-    // Grouping manually by day as Prisma doesn't support grouping by date part easily without raw query
     const revenueByDay: { [key: string]: number } = {};
     revenue.forEach(item => {
       const date = item.createdAt.toISOString().split("T")[0];
       revenueByDay[date] = (revenueByDay[date] || 0) + (item._sum.total || 0);
     });
 
-    return sendResponse({ res, status: 200, success: true, data: revenueByDay });
+    // Convert to sorted array for easier chart consumption
+    const result = Object.entries(revenueByDay)
+      .map(([date, amount]) => ({ date, amount }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    return sendResponse({ res, status: 200, success: true, data: result });
   } catch (error) {
     next(error);
   }

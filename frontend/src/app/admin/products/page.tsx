@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { Product } from "@/types";
 import { productApi, adminApi } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
@@ -22,9 +23,13 @@ import { formatCurrency, cn } from "@/lib/utils";
 import { ProductFormPanel } from "@/components/admin/ProductFormPanel";
 import { toast } from "sonner";
 
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 const TABS = ["ALL", "ACTIVE", "DRAFT", "ARCHIVED"];
 
 export default function AdminProductsPage() {
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("ALL");
@@ -33,23 +38,37 @@ export default function AdminProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (isMounted: { current: boolean }) => {
     setLoading(true);
     try {
       const res = await productApi.getAll({ limit: 100 });
-      if (res.data.success) {
+      if (isMounted.current && res.data.success) {
         setProducts(res.data.data);
       }
     } catch (err) {
-      toast.error("Telemetry failure. Catalog inaccessible.");
+      if (isMounted.current) {
+        toast.error("Telemetry failure. Catalog inaccessible.");
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    const isMounted = { current: true };
+    
+    fetchProducts(isMounted);
+    
+    if (searchParams.get("open") === "true") {
+      handleCreate();
+    }
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [searchParams]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
@@ -75,7 +94,10 @@ export default function AdminProductsPage() {
     try {
       await adminApi.updateProduct(id, { status: newStatus });
       toast.success(`Entry ${newStatus.toLowerCase()}ized`);
-      fetchProducts();
+      // Note: We don't strictly need cancellation logic for these fire-and-forget actions,
+      // but fetchProducts will handle it when called.
+      const isMounted = { current: true };
+      fetchProducts(isMounted);
     } catch (err) {
       toast.error("Protocol error. Status locked.");
     }
@@ -86,7 +108,8 @@ export default function AdminProductsPage() {
     try {
       await adminApi.deleteProduct(id);
       toast.success("Piece purged from archives");
-      fetchProducts();
+      const isMounted = { current: true };
+      fetchProducts(isMounted);
     } catch (err) {
       toast.error("Critical failure. Data persists.");
     }
@@ -125,17 +148,20 @@ export default function AdminProductsPage() {
         <div className="flex items-center gap-3">
           <Button 
             variant="outline" 
-            className="rounded-lg shadow-sm border-zinc-200 bg-white"
+            size="sm"
+            className="rounded-lg border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-100 font-medium shadow-sm transition-all"
             icon={<Filter size={16} />}
           >
             Filters
           </Button>
           <Button 
             variant="primary" 
+            size="sm"
             onClick={handleCreate}
-            className="rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.1)] px-8 py-3 bg-zinc-950 hover:bg-zinc-800 transition-all font-black uppercase tracking-widest text-[10px]"
+            className="rounded-lg bg-zinc-900 text-white hover:opacity-90 font-medium px-6 shadow-md transition-all flex items-center gap-2"
+            icon={<Plus size={16} />}
           >
-            <Plus size={18} className="mr-1" /> Manifest New Item
+            Manifest New Item
           </Button>
         </div>
       </div>
@@ -244,7 +270,7 @@ export default function AdminProductsPage() {
                         </div>
                         <div className="space-y-1">
                           <p className="text-base font-bold text-zinc-950 tracking-tight group-hover/row:translate-x-1 transition-transform">{p.name}</p>
-                          <p className="text-[10px] font-bold font-mono text-zinc-400 tracking-widest uppercase">REF: {p.variants[0]?.sku || "N/A"}</p>
+                           <p className="text-[10px] font-bold font-mono text-zinc-400 tracking-widest uppercase">REF: {p.variants[0]?.sku || "N/A"}</p>
                         </div>
                       </div>
                     </td>
@@ -317,7 +343,7 @@ export default function AdminProductsPage() {
                       <Package size={64} strokeWidth={1} className="text-zinc-200" />
                     </div>
                     <div className="space-y-2">
-                      <h3 className="text-xl font-bold text-zinc-950 tracking-tight">Void detected in archive</h3>
+                       <h3 className="text-xl font-bold text-zinc-950 tracking-tight">Void detected in archive</h3>
                       <p className="text-[11px] text-zinc-400 leading-relaxed font-bold uppercase tracking-widest px-8">The editorial collection currently holds no entries for this manifestation.</p>
                     </div>
                     <Button 
@@ -339,7 +365,7 @@ export default function AdminProductsPage() {
         product={selectedProduct}
         isOpen={isPanelOpen}
         onClose={() => setIsPanelOpen(false)}
-        onSuccess={fetchProducts}
+        onSuccess={() => fetchProducts({ current: true })}
       />
     </div>
   );

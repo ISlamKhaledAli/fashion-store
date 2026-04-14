@@ -1,5 +1,8 @@
 import React from 'react';
 
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 export default function AdminPlaceholderPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">

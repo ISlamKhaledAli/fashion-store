@@ -95,8 +95,8 @@ export const addressApi = {
 export const adminApi = {
   getAnalytics: () => 
     api.get<ApiResponse<unknown>>("/admin/analytics/overview"),
-  getRevenue: () => 
-    api.get<ApiResponse<unknown>>("/admin/analytics/revenue"),
+  getRevenue: (params?: Record<string, unknown>) => 
+    api.get<ApiResponse<unknown>>("/admin/analytics/revenue", { params }),
   getOrders: (params: Record<string, unknown>) => 
     api.get<ApiResponse<Order[]>>("/admin/orders", { params }),
   updateOrderStatus: (id: string, status: string) => 

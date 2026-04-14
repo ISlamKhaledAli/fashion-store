@@ -13,6 +13,8 @@ export const metadata: Metadata = {
   description: "Experience modern utility and timeless aesthetics with The Curator.",
 };
 
+export const revalidate = 0;
+
 import { NavigationObserver } from "@/components/layout/NavigationObserver";
 
 export default function RootLayout({

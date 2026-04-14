@@ -24,6 +24,9 @@ import { Input } from "@/components/ui/Input";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { cn } from "@/lib/utils";
 
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -33,7 +36,7 @@ export default function AdminOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 1 });
 
-  const fetchOrders = async (page = 1) => {
+  const fetchOrders = async (page = 1, isMounted: { current: boolean }) => {
     setLoading(true);
     try {
       const params: any = { 
@@ -44,24 +47,34 @@ export default function AdminOrdersPage() {
       };
       
       const res = await adminApi.getOrders(params);
-      if (res.data.success) {
+      if (isMounted.current && res.data.success) {
         setOrders(res.data.data);
         if (res.data.pagination) {
           setPagination(res.data.pagination);
         }
       }
     } catch (error) {
-      console.error("Failed to load orders");
+      if (isMounted.current) {
+        console.error("Failed to load orders");
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
+    const isMounted = { current: true };
+    
     const timer = setTimeout(() => {
-      fetchOrders(1);
+      fetchOrders(1, isMounted);
     }, 500);
-    return () => clearTimeout(timer);
+
+    return () => {
+      isMounted.current = false;
+      clearTimeout(timer);
+    };
   }, [searchQuery, statusFilter]);
 
   const toggleSelectAll = () => {
@@ -305,7 +318,10 @@ export default function AdminOrdersPage() {
               variant="outline"
               size="sm"
               disabled={pagination.page === 1}
-              onClick={() => fetchOrders(pagination.page - 1)}
+              onClick={() => {
+                const isMounted = { current: true };
+                fetchOrders(pagination.page - 1, isMounted);
+              }}
               className="px-4 py-2 bg-white border border-zinc-200 rounded-lg text-xs font-bold text-zinc-500 hover:text-zinc-900 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-sm"
             >
               Previous
@@ -314,7 +330,10 @@ export default function AdminOrdersPage() {
               variant="primary"
               size="sm"
               disabled={pagination.page === pagination.totalPages}
-              onClick={() => fetchOrders(pagination.page + 1)}
+              onClick={() => {
+                const isMounted = { current: true };
+                fetchOrders(pagination.page + 1, isMounted);
+              }}
               className="px-4 py-2 bg-zinc-900 text-white rounded-lg text-xs font-bold hover:opacity-90 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-sm"
             >
               Next

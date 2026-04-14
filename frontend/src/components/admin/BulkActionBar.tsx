@@ -19,7 +19,7 @@ export const BulkActionBar = ({ selectedCount, onClear, onAction }: BulkActionBa
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] as const }}
           className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] w-full max-w-3xl px-6"
         >
           <div className="bg-zinc-900/95 text-white rounded-2xl px-8 py-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center justify-between border border-white/10 backdrop-blur-xl">

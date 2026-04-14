@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Upload, Check, Trash2, ArrowRight } from "lucide-react";
 import { Product, Category, Brand, Variant } from "@/types";
@@ -22,6 +23,7 @@ interface ProductFormPanelProps {
 }
 
 export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: ProductFormPanelProps) => {
+  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -39,6 +41,10 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     images: [] as { url: string; publicId: string; isMain: boolean }[],
     variants: [] as Partial<Variant>[],
   });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -87,6 +93,20 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
       });
     }
   }, [product, isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape") onClose();
+      };
+      window.addEventListener("keydown", handleKeyDown);
+      return () => {
+        document.body.style.overflow = "unset";
+        window.removeEventListener("keydown", handleKeyDown);
+      };
+    }
+  }, [isOpen, onClose]);
 
   const handleNameChange = (name: string) => {
     const slug = name.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
@@ -142,23 +162,25 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
   const categoryOptions = categories.map(c => ({ label: c.name, value: c.id }));
   const brandOptions = brands.map(b => ({ label: b.name, value: b.id }));
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div className="fixed inset-0 z-[100]">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-zinc-950/20 backdrop-blur-sm z-[60]"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
           />
           <motion.div
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 250 }}
-            className="fixed inset-y-0 right-0 w-[520px] bg-white shadow-[-20px_0_60px_rgba(0,0,0,0.05)] z-[70] flex flex-col"
+            className="fixed inset-y-0 right-0 w-[420px] bg-white shadow-[0_10px_40px_rgba(0,0,0,0.2)] z-50 flex flex-col"
           >
             {/* Header */}
             <div className="px-8 py-8 border-b border-zinc-100 flex justify-between items-center sticky top-0 bg-white/80 backdrop-blur-xl z-20">
@@ -389,8 +411,9 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
               </Button>
             </div>
           </motion.div>
-        </>
+        </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
