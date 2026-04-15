@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: "primary" | "secondary" | "outline" | "error" | "surface";
+  variant?: "primary" | "secondary" | "outline" | "error" | "surface" | "archived";
   className?: string;
 }
 
@@ -14,6 +14,7 @@ export const Badge = ({ children, variant = "primary", className }: BadgeProps) 
     outline: "border border-outline-variant text-on-surface-variant",
     error: "bg-error text-on-error",
     surface: "bg-surface-container-high text-on-surface",
+    archived: "bg-archived text-on-archived hover:bg-archived-hover shadow-sm transition-all duration-300",
   };
 
   return (

@@ -15,7 +15,6 @@ function NavigationHandler() {
   // 1. Telemetry for Back Button (popstate)
   useEffect(() => {
     const handlePopState = () => {
-      console.log('Back button pressed, refreshing data...');
       router.refresh();
     };
 

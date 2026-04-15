@@ -5,12 +5,10 @@ import Link from 'next/link'
 
 interface Props {
   categorySlug: string
-  excludeSlug: string  // exclude current product
+  excludeId: string  // exclude current product
 }
 
-
-
-export const YouMayAlsoLike = ({ categorySlug, excludeSlug }: Props) => {
+export const YouMayAlsoLike = ({ categorySlug, excludeId }: Props) => {
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -28,7 +26,7 @@ export const YouMayAlsoLike = ({ categorySlug, excludeSlug }: Props) => {
         if (isMounted) {
           // exclude current product and take max 4
           const filtered = data.data
-            ?.filter((p: any) => p.slug !== excludeSlug)
+            ?.filter((p: any) => p.id !== excludeId)
             ?.slice(0, 4) || []
           setProducts(filtered)
         }
@@ -41,7 +39,7 @@ export const YouMayAlsoLike = ({ categorySlug, excludeSlug }: Props) => {
 
     fetchRelated()
     return () => { isMounted = false; }
-  }, [categorySlug, excludeSlug])
+  }, [categorySlug, excludeId])
 
   if (loading) {
     return (
@@ -77,7 +75,7 @@ export const YouMayAlsoLike = ({ categorySlug, excludeSlug }: Props) => {
           {products.map((product: any, idx: number) => (
             <Link 
               key={product.id} 
-              href={`/products/${product.slug}`}
+              href={`/products/${product.id}`}
               className="group animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both"
               style={{ animationDelay: `${idx * 80}ms` }}
             >

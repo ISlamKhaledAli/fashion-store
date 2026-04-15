@@ -5,13 +5,71 @@ import { Variant } from "@/types";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Trash2, Plus } from "lucide-react";
+import ColorPicker from "./ColorPicker";
 
 interface ProductVariantsTableProps {
   variants: Partial<Variant>[];
   onChange: (variants: Partial<Variant>[]) => void;
+  errors?: Record<string, string>;
 }
 
-export const ProductVariantsTable = ({ variants, onChange }: ProductVariantsTableProps) => {
+const VariantRow = ({ variant, index, onUpdate, onRemove, errors }: any) => {
+  return (
+    <tr className="group hover:bg-zinc-50 transition">
+      <td className="px-4 py-3">
+        <input
+          value={variant.size || ""}
+          onChange={(e) => onUpdate(index, "size", e.target.value)}
+          placeholder="S, M, L"
+          className="w-full py-2 bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-zinc-900"
+        />
+      </td>
+      <td className="px-4 py-3">
+        <Input
+          value={variant.color || ""}
+          onChange={(e) => onUpdate(index, "color", e.target.value)}
+          placeholder="Black"
+          className="w-full py-2 bg-transparent border-transparent hover:border-zinc-200 focus:bg-white focus:border-zinc-300 transition-all text-sm text-zinc-900"
+        />
+      </td>
+      <td className="px-4 py-3">
+        <ColorPicker
+          value={variant.colorHex || "#000000"}
+          onChange={(val) => onUpdate(index, "colorHex", val)}
+        />
+      </td>
+      <td className="px-4 py-3">
+        <Input
+          type="number"
+          value={variant.stock ?? 0}
+          onChange={(e) => onUpdate(index, "stock", parseInt(e.target.value) || 0)}
+          className="w-24 py-2 bg-transparent border-transparent hover:border-zinc-200 focus:bg-white focus:border-zinc-300 transition-all text-center font-bold text-sm text-zinc-900"
+        />
+      </td>
+      <td className="px-4 py-3">
+        <Input
+          value={variant.sku || ""}
+          onChange={(e) => onUpdate(index, "sku", e.target.value)}
+          placeholder="SKU-001"
+          className="w-full py-2 font-mono bg-transparent border-transparent hover:border-zinc-200 focus:bg-white focus:border-zinc-300 transition-all text-sm text-zinc-900"
+          error={errors?.[`variant_${index}_sku`]}
+        />
+      </td>
+      <td className="px-4 py-3 text-right">
+        <Button
+          type="button"
+          variant="icon"
+          size="none"
+          onClick={() => onRemove(index)}
+          className="text-zinc-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all active:scale-95"
+          icon={<Trash2 size={16} />}
+        />
+      </td>
+    </tr>
+  );
+};
+
+export const ProductVariantsTable = ({ variants, onChange, errors }: ProductVariantsTableProps) => {
   const addRow = () => {
     onChange([
       ...variants,
@@ -36,6 +94,7 @@ export const ProductVariantsTable = ({ variants, onChange }: ProductVariantsTabl
         <Button 
           variant="outline" 
           size="sm" 
+          type="button"
           onClick={addRow}
           className="text-[10px] font-bold uppercase tracking-widest rounded-lg"
           icon={<Plus size={14} />}
@@ -44,74 +103,28 @@ export const ProductVariantsTable = ({ variants, onChange }: ProductVariantsTabl
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-zinc-100 bg-white shadow-sm overflow-hidden">
-        <table className="w-full text-left border-collapse min-w-[600px]">
-          <thead className="bg-zinc-50/50 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 border-b border-zinc-100">
+      <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-300 rounded-xl border border-zinc-100 bg-white shadow-sm">
+        <table className="w-full text-left align-middle border-collapse min-w-[600px]">
+          <thead className="bg-zinc-50/50 text-xs uppercase tracking-wide text-zinc-500 border-b border-zinc-100">
             <tr>
-              <th className="px-6 py-4">Size</th>
-              <th className="px-6 py-4">Color</th>
-              <th className="px-6 py-4">Hex Code</th>
-              <th className="px-6 py-4">Stock</th>
-              <th className="px-6 py-4">SKU Reference</th>
-              <th className="px-6 py-4 text-right"></th>
+              <th className="px-4 py-3 font-medium">Size</th>
+              <th className="px-4 py-3 font-medium">Color</th>
+              <th className="px-4 py-3 font-medium">Hex Code</th>
+              <th className="px-4 py-3 font-medium">Stock</th>
+              <th className="px-4 py-3 font-medium">SKU Reference</th>
+              <th className="px-4 py-3 text-right"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-50">
             {variants.map((variant, index) => (
-              <tr key={index} className="group hover:bg-zinc-50/50 transition-colors">
-                <td className="px-6 py-4">
-                  <Input
-                    value={variant.size}
-                    onChange={(e) => updateRow(index, "size", e.target.value)}
-                    placeholder="S, M, L"
-                    className="w-full py-2 bg-transparent border-transparent hover:border-zinc-200 focus:bg-white"
-                  />
-                </td>
-                <td className="px-6 py-4">
-                  <Input
-                    value={variant.color}
-                    onChange={(e) => updateRow(index, "color", e.target.value)}
-                    placeholder="Black"
-                    className="w-full py-2 bg-transparent border-transparent hover:border-zinc-200 focus:bg-white"
-                  />
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={variant.colorHex}
-                      onChange={(e) => updateRow(index, "colorHex", e.target.value)}
-                      className="w-8 h-8 rounded-full overflow-hidden border-2 border-zinc-100 p-0 cursor-pointer shadow-sm hover:scale-110 transition-transform"
-                    />
-                    <span className="text-[10px] font-mono text-zinc-400 font-bold uppercase">{variant.colorHex}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <Input
-                    type="number"
-                    value={variant.stock}
-                    onChange={(e) => updateRow(index, "stock", parseInt(e.target.value))}
-                    className="w-24 py-2 bg-transparent border-transparent hover:border-zinc-200 focus:bg-white text-center font-bold"
-                  />
-                </td>
-                <td className="px-6 py-4">
-                  <Input
-                    value={variant.sku}
-                    onChange={(e) => updateRow(index, "sku", e.target.value)}
-                    placeholder="SKU-001"
-                    className="w-full py-2 font-mono bg-transparent border-transparent hover:border-zinc-200 focus:bg-white"
-                  />
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <Button
-                    variant="icon"
-                    size="none"
-                    onClick={() => removeRow(index)}
-                    className="text-zinc-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all active:scale-95"
-                    icon={<Trash2 size={16} />}
-                  />
-                </td>
-              </tr>
+              <VariantRow 
+                key={variant.id || `new-${index}`}
+                variant={variant}
+                index={index}
+                onUpdate={updateRow}
+                onRemove={removeRow}
+                errors={errors}
+              />
             ))}
             {variants.length === 0 && (
               <tr>
@@ -126,3 +139,6 @@ export const ProductVariantsTable = ({ variants, onChange }: ProductVariantsTabl
     </div>
   );
 };
+
+
+

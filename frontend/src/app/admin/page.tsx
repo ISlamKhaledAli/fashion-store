@@ -6,10 +6,12 @@ import { MetricCard } from "@/components/admin/MetricCard";
 import { RevenueChart } from "@/components/admin/RevenueChart";
 import { OrdersDonut } from "@/components/admin/OrdersDonut";
 import { RecentOrdersTable } from "@/components/admin/RecentOrdersTable";
+import { OrderDetailPanel } from "@/components/admin/OrderDetailPanel";
 import { adminApi } from "@/lib/api";
 import { Order } from "@/types";
 import { Package, TrendingUp, Settings, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { toast } from "sonner";
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -45,6 +47,7 @@ export default function AdminDashboard() {
   const [ordersStatusData, setOrdersStatusData] = useState<any[]>([]);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [customersData, setCustomersData] = useState<any[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   // 1. Initial Data Fetch
   useEffect(() => {
@@ -113,6 +116,20 @@ export default function AdminDashboard() {
       console.error("Failed to fetch revenue analytics:", error);
     } finally {
       setRevenueLoading(false);
+    }
+  }, []);
+
+  const handleUpdateOrderStatus = useCallback(async (id: string, status: string) => {
+    try {
+      const res = await adminApi.updateOrder(id, { status });
+      if (res.data.success) {
+        toast.success(`Order status updated to ${status}`);
+        // Update local state if the order is currently visible
+        setRecentOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+        setSelectedOrder(prev => prev?.id === id ? { ...prev, status } : prev);
+      }
+    } catch (error) {
+      toast.error("Failed to update order status");
     }
   }, []);
 
@@ -225,7 +242,17 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent Orders Section */}
-      <RecentOrdersTable orders={recentOrders} isLoading={loading} />
+      <RecentOrdersTable 
+        orders={recentOrders} 
+        isLoading={loading} 
+        onOrderClick={setSelectedOrder}
+      />
+
+      <OrderDetailPanel 
+        order={selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        onUpdateStatus={handleUpdateOrderStatus}
+      />
     </motion.div>
   );
 }

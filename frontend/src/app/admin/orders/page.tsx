@@ -17,12 +17,14 @@ import { adminApi } from "@/lib/api";
 import { Order } from "@/types";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { BulkActionBar } from "@/components/admin/BulkActionBar";
-import { OrderDetailPanel } from "@/components/admin/OrderDetailPanel";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { cn } from "@/lib/utils";
+
+// Optimized Imports
+const OrderDetailPanel = React.lazy(() => import("@/components/admin/OrderDetailPanel").then(module => ({ default: module.OrderDetailPanel })));
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -97,7 +99,6 @@ export default function AdminOrdersPage() {
   };
 
   const handleBulkAction = async (action: string) => {
-    console.log(`Performing ${action} on ${selectedIds.size} orders...`);
     // Implement bulk API calls here
     if (action === "export") {
       handleExport();
@@ -127,25 +128,24 @@ export default function AdminOrdersPage() {
     a.click();
   };
 
-  const handleUpdateStatus = async (id: string, status: string) => {
+  const handleUpdateStatus = React.useCallback(async (id: string, status: string) => {
     try {
       const res = await adminApi.updateOrderStatus(id, status);
       if (res.data.success) {
         setOrders(prev => prev.map(o => o.id === id ? res.data.data : o));
         if (selectedOrder?.id === id) setSelectedOrder(res.data.data);
-        console.log(`Order marked as ${status}`);
       }
     } catch (error) {
       console.error("Failed to update status");
     }
-  };
+  }, [selectedOrder?.id]);
 
   return (
     <div className="flex-1 flex flex-col min-h-screen animate-in fade-in duration-700">
       {/* Filters bar */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-8 border-b border-zinc-100 pb-4">
-        <div className="flex items-center gap-8">
-          <nav className="hidden md:flex gap-8">
+      <div className="flex flex-col gap-4 items-stretch sm:items-center sm:flex-row justify-between mb-6 lg:mb-8 border-b border-zinc-100 pb-4">
+        <div className="flex items-center gap-4 sm:gap-8 overflow-x-auto no-scrollbar">
+          <nav className="flex gap-4 sm:gap-8">
             {["All", "Processing", "Shipped", "Delivered"].map((status) => (
               <Button
                 key={status}
@@ -171,13 +171,13 @@ export default function AdminOrdersPage() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <Input 
             type="text"
             placeholder="Search orders..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-72"
+            className="flex-1 sm:w-60 lg:w-72"
             icon={<Search />}
           />
           <Button 
@@ -194,8 +194,9 @@ export default function AdminOrdersPage() {
 
       {/* Table Container */}
       <div className="bg-white rounded-2xl border border-zinc-100 shadow-xl shadow-zinc-200/50 overflow-hidden relative">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-zinc-50/50 text-zinc-500 text-[10px] uppercase tracking-[0.2em] font-black border-b border-zinc-100">
                 <th className="px-6 py-5 w-12 text-center">
@@ -308,8 +309,88 @@ export default function AdminOrdersPage() {
           </table>
         </div>
 
+        {/* Mobile View */}
+        <div className="md:hidden divide-y divide-zinc-50">
+          {loading ? (
+             Array(3).fill(0).map((_, i) => (
+              <div key={i} className="p-6 space-y-4 animate-pulse">
+                <div className="flex justify-between items-center">
+                  <div className="w-20 h-4 bg-zinc-100 rounded" />
+                  <div className="w-24 h-6 bg-zinc-100 rounded-full" />
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-zinc-100 rounded-full" />
+                  <div className="space-y-2 flex-1">
+                    <div className="w-32 h-4 bg-zinc-100 rounded" />
+                    <div className="w-48 h-3 bg-zinc-100 rounded" />
+                  </div>
+                </div>
+                <div className="flex justify-between pt-2">
+                  <div className="w-24 h-4 bg-zinc-100 rounded" />
+                  <div className="w-16 h-5 bg-zinc-100 rounded" />
+                </div>
+              </div>
+            ))
+          ) : orders.length === 0 ? (
+            <div className="p-12 text-center text-zinc-400 text-sm italic">
+              No orders on file
+            </div>
+          ) : (
+            orders.map((order) => (
+              <div 
+                key={order.id} 
+                className={cn(
+                  "p-6 space-y-4 hover:bg-zinc-50/50 transition-all cursor-pointer relative",
+                  selectedOrder?.id === order.id ? "bg-zinc-50/80" : ""
+                )}
+                onClick={() => setSelectedOrder(order)}
+              >
+                <div className="flex justify-between items-center">
+                  <span className="font-mono text-xs font-bold text-zinc-900 uppercase tracking-tighter">
+                    #{order.id.slice(-6).toUpperCase()}
+                  </span>
+                  <StatusBadge status={order.status} />
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-xs font-bold text-zinc-500 border border-zinc-200 shrink-0">
+                    {order.user?.avatar ? (
+                      <img src={order.user.avatar} className="w-full h-full object-cover rounded-full" alt="" />
+                    ) : (
+                      order.user?.name ? order.user.name.split(' ').map(n => n[0]).join('') : "U"
+                    )}
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-bold text-zinc-900 truncate">{order.user?.name || "Unknown Customer"}</span>
+                    <span className="text-[10px] text-zinc-400 font-medium truncate">{order.user?.email || "No email"}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-zinc-50">
+                   <div className="flex flex-col">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">Transaction Date</span>
+                    <span className="text-xs text-zinc-600 font-medium">
+                      {new Date(order.createdAt).toLocaleDateString()}
+                    </span>
+                   </div>
+                   <div className="flex flex-col items-end">
+                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest text-right">Settlement</span>
+                    <span className="text-sm font-black text-zinc-900 tabular-nums">
+                      ${order.total.toLocaleString()}
+                    </span>
+                   </div>
+                </div>
+
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-300">
+                  <ChevronRight size={18} />
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
         {/* Pagination */}
-        <div className="px-8 py-5 bg-zinc-50/30 border-t border-zinc-100 flex justify-between items-center">
+        <div className="px-4 sm:px-8 py-4 lg:py-5 bg-zinc-50/30 border-t border-zinc-100 flex flex-col sm:flex-row justify-between items-center gap-3">
           <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
             Showing {orders.length} of {pagination.total} orders
           </span>
@@ -348,11 +429,13 @@ export default function AdminOrdersPage() {
         onAction={handleBulkAction}
       />
 
-      <OrderDetailPanel 
-        order={selectedOrder} 
-        onClose={() => setSelectedOrder(null)} 
-        onUpdateStatus={handleUpdateStatus}
-      />
+      <React.Suspense fallback={null}>
+        <OrderDetailPanel 
+          order={selectedOrder} 
+          onClose={() => setSelectedOrder(null)} 
+          onUpdateStatus={handleUpdateStatus}
+        />
+      </React.Suspense>
     </div>
   );
 }

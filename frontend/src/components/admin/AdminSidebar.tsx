@@ -15,16 +15,20 @@ import {
   Tags,
   Warehouse,
   FolderTree,
-  LogOut
+  LogOut,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/Button";
+import { CloseButton } from "@/components/ui/CloseButton";
 
 interface AdminSidebarProps {
   isCollapsed: boolean;
   onToggle: () => void;
+  isMobileOpen: boolean;
+  onMobileClose: () => void;
 }
 
 const navLinks = [
@@ -38,17 +42,12 @@ const navLinks = [
   { name: "Discounts", href: "/admin/discounts", icon: Tags },
 ];
 
-export const AdminSidebar = ({ isCollapsed, onToggle }: AdminSidebarProps) => {
+export const AdminSidebar = ({ isCollapsed, onToggle, isMobileOpen, onMobileClose }: AdminSidebarProps) => {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
 
-  return (
-    <motion.aside
-      initial={false}
-      animate={{ width: isCollapsed ? 60 : 240 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as const }}
-      className="fixed left-0 top-0 h-screen bg-zinc-950 border-r border-zinc-800/50 flex flex-col z-50 overflow-hidden"
-    >
+  const sidebarContent = (
+    <>
       {/* Logo Section */}
       <div className="h-24 flex items-center px-6 relative border-b border-zinc-900/50">
         <AnimatePresence mode="wait">
@@ -79,6 +78,13 @@ export const AdminSidebar = ({ isCollapsed, onToggle }: AdminSidebarProps) => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Mobile close button */}
+        <CloseButton
+          onClick={onMobileClose}
+          className="lg:hidden absolute right-4 top-1/2 -translate-y-1/2 hover:bg-zinc-800 text-zinc-500 hover:text-white"
+          size={18}
+        />
       </div>
 
       {/* Nav Section */}
@@ -89,6 +95,7 @@ export const AdminSidebar = ({ isCollapsed, onToggle }: AdminSidebarProps) => {
             <Link
               key={link.name}
               href={link.href}
+              onClick={onMobileClose}
               className={cn(
                 "flex items-center h-12 px-6 transition-all relative group",
                 isActive 
@@ -99,9 +106,9 @@ export const AdminSidebar = ({ isCollapsed, onToggle }: AdminSidebarProps) => {
               <link.icon 
                 size={18} 
                 strokeWidth={isActive ? 2 : 1.5}
-                className={cn("min-w-[18px]", isCollapsed ? "mx-auto" : "mr-4")} 
+                className={cn("min-w-[18px]", isCollapsed && !isMobileOpen ? "mx-auto" : "mr-4")} 
               />
-              {!isCollapsed && (
+              {(!isCollapsed || isMobileOpen) && (
                 <motion.span
                   initial={{ opacity: 0, x: -5 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -110,7 +117,7 @@ export const AdminSidebar = ({ isCollapsed, onToggle }: AdminSidebarProps) => {
                   {link.name}
                 </motion.span>
               )}
-              {isCollapsed && (
+              {isCollapsed && !isMobileOpen && (
                 <div className="absolute left-full ml-4 px-3 py-2 bg-white text-zinc-950 text-xs font-bold rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[60] shadow-xl">
                   {link.name}
                 </div>
@@ -124,7 +131,7 @@ export const AdminSidebar = ({ isCollapsed, onToggle }: AdminSidebarProps) => {
       <div className="p-4 border-t border-zinc-800/50">
         <div className={cn(
           "flex items-center gap-3 p-2 rounded-lg bg-zinc-900/50 border border-zinc-800/30",
-          isCollapsed ? "justify-center" : "px-3"
+          isCollapsed && !isMobileOpen ? "justify-center" : "px-3"
         )}>
           <div className="w-8 h-8 rounded-full bg-zinc-800 shrink-0 overflow-hidden border border-zinc-700">
             {user?.avatar ? (
@@ -135,7 +142,7 @@ export const AdminSidebar = ({ isCollapsed, onToggle }: AdminSidebarProps) => {
               </div>
             )}
           </div>
-          {!isCollapsed && (
+          {(!isCollapsed || isMobileOpen) && (
             <div className="flex-1 min-w-0">
               <div className="text-[11px] font-bold text-white truncate">{user?.name || "Sarah Jenkins"}</div>
               <div className="text-[9px] text-zinc-500 uppercase tracking-widest font-bold truncate">Super Admin</div>
@@ -143,7 +150,8 @@ export const AdminSidebar = ({ isCollapsed, onToggle }: AdminSidebarProps) => {
           )}
         </div>
         
-        <div className="mt-4 flex justify-center">
+        {/* Collapse toggle - desktop only */}
+        <div className="mt-4 hidden lg:flex justify-center">
           <Button 
             variant="icon"
             size="none"
@@ -159,6 +167,47 @@ export const AdminSidebar = ({ isCollapsed, onToggle }: AdminSidebarProps) => {
           />
         </div>
       </div>
-    </motion.aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* ===== DESKTOP SIDEBAR ===== */}
+      <motion.aside
+        initial={false}
+        animate={{ width: isCollapsed ? 60 : 240 }}
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as const }}
+        className="hidden lg:flex fixed left-0 top-0 h-screen bg-zinc-950 border-r border-zinc-800/50 flex-col z-50 overflow-hidden"
+      >
+        {sidebarContent}
+      </motion.aside>
+
+      {/* ===== MOBILE SIDEBAR (DRAWER) ===== */}
+      <AnimatePresence>
+        {isMobileOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              onClick={onMobileClose}
+              className="lg:hidden fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm"
+            />
+            {/* Drawer */}
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="lg:hidden fixed left-0 top-0 h-screen w-[280px] bg-zinc-950 border-r border-zinc-800/50 flex flex-col z-[100] overflow-hidden"
+            >
+              {sidebarContent}
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 };

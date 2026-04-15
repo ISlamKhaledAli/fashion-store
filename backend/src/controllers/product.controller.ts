@@ -4,20 +4,33 @@ import { sendResponse } from "../utils/apiResponse";
 import { getPagination, calculatePagination } from "../utils/pagination";
 import { createProductSchema, updateProductSchema } from "../validators/product.validator";
 import { NotFoundError } from "../utils/AppError";
+import { Prisma } from "@prisma/client";
 
 export const getProducts = async (req: Request, res: Response, next: NextFunction) => {
   try {
     console.log("[DEBUG] Incoming Products Query:", req.query);
-    const { category, brand, minPrice, maxPrice, search, sort, page, limit, featured, color } = req.query;
+    const { 
+      category, brand, minPrice, maxPrice, search, sort, page, limit, featured, color,
+      status 
+    } = req.query;
 
     const { skip, limit: take, page: currentPage } = getPagination({
       page: Number(page),
       limit: Number(limit),
     });
 
-    const where: any = {
-      status: "ACTIVE",
-    };
+    const where: any = {};
+    
+    // Status filtering logic
+    if (status) {
+      if (status !== 'all') {
+        where.status = status;
+      }
+      // if 'all', we don't apply any status filter
+    } else {
+      // Default to ACTIVE for storefront safety
+      where.status = "ACTIVE";
+    }
 
     if (category) {
       const cats = String(category).split(",").map(c => c.trim());
@@ -116,11 +129,12 @@ export const getProducts = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const getProductBySlug = async (req: Request, res: Response, next: NextFunction) => {
+export const getProductByIdentifier = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { slug } = req.params;
+    const { identifier: slug } = req.params;
 
-    const product = await prisma.product.findUnique({
+    // Try finding by slug first, then by ID to support stable routing
+    let product = await prisma.product.findUnique({
       where: { slug: String(slug) },
       include: {
         category: true,
@@ -132,6 +146,21 @@ export const getProductBySlug = async (req: Request, res: Response, next: NextFu
         },
       },
     }) as any;
+
+    if (!product) {
+      product = await prisma.product.findUnique({
+        where: { id: String(slug) },
+        include: {
+          category: true,
+          brand: true,
+          images: true,
+          variants: true,
+          reviews: {
+            include: { user: { select: { name: true, avatar: true } } },
+          },
+        },
+      }) as any;
+    }
 
     if (!product) {
       throw new NotFoundError("Product not found");
@@ -153,10 +182,42 @@ export const getProductBySlug = async (req: Request, res: Response, next: NextFu
   }
 };
 
+export const getProductById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const product = await prisma.product.findUnique({
+      where: { id: String(id) },
+      include: {
+        category: true,
+        brand: true,
+        images: true,
+        variants: true,
+        reviews: {
+          include: { user: { select: { name: true, avatar: true } } },
+        },
+      },
+    }) as any;
+
+    if (!product) {
+      throw new NotFoundError("Product not found");
+    }
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      data: product,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const createProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validatedData = createProductSchema.parse(req.body);
-    const { variants, ...productData } = validatedData;
+    const { variants, images, ...productData } = validatedData;
 
     const product = await prisma.product.create({
       data: {
@@ -165,9 +226,13 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
         variants: {
           create: variants,
         },
+        images: images ? {
+          create: images,
+        } : undefined,
       },
       include: {
         variants: true,
+        images: true,
       },
     });
 
@@ -185,25 +250,128 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
 export const updateProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const validatedData = updateProductSchema.parse(req.body);
-    const { variants, ...productData } = validatedData;
 
-    // First check if product exists
-    const existing = await prisma.product.findUnique({ where: { id: String(id) } });
-    if (!existing) throw new NotFoundError("Product not found");
-
-    // Handle variants separately if provided
-    if (variants) {
-      await prisma.variant.deleteMany({ where: { productId: String(id) } });
-      await prisma.variant.createMany({
-        data: variants.map(v => ({ ...v, productId: String(id) })) as any,
+    const parseResult = updateProductSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      console.error("[VALIDATION ERROR]", parseResult.error.flatten());
+      return res.status(400).json({ 
+        success: false, 
+        message: "Validation failed", 
+        errors: parseResult.error.flatten() 
       });
     }
+    const validatedData = parseResult.data;
 
-    const product = await prisma.product.update({
+    const { variants, images, ...productData } = validatedData;
+    
+    // Prepare product update data
+    const updateData: any = { ...productData };
+    // DO NOT regenerate slug automatically on update to maintain URL stability
+    // Slug is generated only during creation in createProduct()
+
+    // First check if product exists
+    const existing = await prisma.product.findUnique({ 
       where: { id: String(id) },
-      data: productData as any,
-      include: { variants: true },
+      include: { variants: true, images: true },
+    });
+    if (!existing) throw new NotFoundError("Product not found");
+
+    // Use a transaction to ensure atomicity
+    const product = await prisma.$transaction(async (tx) => {
+      // 1. Handle variants separately if provided
+      if (variants) {
+        const existingVariantIds = existing.variants.map(v => v.id);
+        const incomingVariantIds = variants.filter(v => v.id).map(v => v.id!);
+
+        // Delete removed variants
+        const variantIdsToDelete = existingVariantIds.filter(
+          eid => !incomingVariantIds.includes(eid)
+        );
+        if (variantIdsToDelete.length > 0) {
+          await tx.cartItem.deleteMany({
+            where: { variantId: { in: variantIdsToDelete } },
+          });
+          await tx.variant.deleteMany({
+            where: { id: { in: variantIdsToDelete } },
+          });
+        }
+
+        // Update existing variants (two-pass for SKU swaps)
+        for (const v of variants) {
+          if (v.id && existingVariantIds.includes(v.id)) {
+            await tx.variant.update({
+              where: { id: v.id },
+              data: { sku: `_tmp_${v.id}_${Date.now()}` },
+            });
+          }
+        }
+
+        for (const v of variants) {
+          if (v.id && existingVariantIds.includes(v.id)) {
+            const { id: variantId, ...data } = v;
+            await tx.variant.update({
+              where: { id: variantId },
+              data: data as any,
+            });
+          }
+        }
+
+        // Create new variants
+        const newVariants = variants
+          .filter(v => !v.id)
+          .map(({ id: _id, ...rest }) => ({
+            ...rest,
+            productId: String(id),
+          }));
+        if (newVariants.length > 0) {
+          await tx.variant.createMany({ data: newVariants as any });
+        }
+      }
+
+      // 2. Handle images separately if provided
+      if (images) {
+        const existingImageIds = existing.images.map(img => img.id);
+        const incomingImageIds = images.filter(img => img.id).map(img => img.id!);
+
+        // Delete removed images
+        const imageIdsToDelete = existingImageIds.filter(
+          eid => !incomingImageIds.includes(eid)
+        );
+        if (imageIdsToDelete.length > 0) {
+          await tx.productImage.deleteMany({
+            where: { id: { in: imageIdsToDelete } },
+          });
+        }
+
+        // Update existing images (e.g., changing isMain status)
+        for (const img of images) {
+          if (img.id && existingImageIds.includes(img.id)) {
+            const { id: imageId, ...data } = img;
+            await tx.productImage.update({
+              where: { id: imageId },
+              data: data as any,
+            });
+          }
+        }
+
+        // Create new images
+        const newImages = images
+          .filter(img => !img.id)
+          .map(({ id: _id, ...rest }) => ({
+            ...rest,
+            productId: String(id),
+          }));
+        if (newImages.length > 0) {
+          await tx.productImage.createMany({ data: newImages as any });
+        }
+      }
+
+      // Update the product
+      return tx.product.update({
+        where: { id: String(id) },
+        data: updateData,
+        include: { variants: true, images: true, category: true, brand: true },
+      });
     });
 
     return sendResponse({
@@ -213,6 +381,7 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
       data: product,
     });
   } catch (error) {
+    console.error("[UPDATE PRODUCT ERROR]", error);
     next(error);
   }
 };

@@ -6,10 +6,10 @@ import Link from 'next/link'
 import { Button } from "@/components/ui/Button"
 
 interface Props {
-  excludeSlug: string
+  excludeId: string
 }
 
-export const HorizontalScroll = ({ excludeSlug }: Props) => {
+export const HorizontalScroll = ({ excludeId }: Props) => {
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -22,7 +22,7 @@ export const HorizontalScroll = ({ excludeSlug }: Props) => {
         const data = await res.json()
         if (isMounted) {
           const filtered = data.data
-            ?.filter((p: any) => p.slug !== excludeSlug)
+            ?.filter((p: any) => p.id !== excludeId)
             ?.slice(0, 8) || []
           setProducts(filtered)
         }
@@ -34,7 +34,7 @@ export const HorizontalScroll = ({ excludeSlug }: Props) => {
     }
     fetchFeatured()
     return () => { isMounted = false }
-  }, [excludeSlug])
+  }, [excludeId])
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -105,7 +105,7 @@ export const HorizontalScroll = ({ excludeSlug }: Props) => {
           {products.map((product: any, idx: number) => (
             <Link 
               key={product.id}
-              href={`/products/${product.slug}`}
+              href={`/products/${product.id}`}
               className="min-w-[320px] snap-start group animate-in fade-in slide-in-from-right-8 duration-700 fill-mode-both"
               style={{ animationDelay: `${idx * 100}ms` }}
             >

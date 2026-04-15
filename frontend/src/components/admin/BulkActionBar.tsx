@@ -4,6 +4,7 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Truck, Download, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { CloseButton } from "@/components/ui/CloseButton";
 
 interface BulkActionBarProps {
   selectedCount: number;
@@ -85,12 +86,9 @@ export const BulkActionBar = ({ selectedCount, onClear, onAction }: BulkActionBa
             <div className="h-8 w-px bg-white/10 mx-6" />
 
             {/* Right: Close */}
-            <Button 
-              variant="icon"
-              size="none"
-              onClick={onClear}
-              className="w-10 h-10 hover:bg-white/10 rounded-full transition-all text-zinc-500 hover:text-white flex shrink-0"
-              icon={<X size={20} />}
+            <CloseButton 
+              onClick={onClear} 
+              className="hover:bg-white/10 text-zinc-500 hover:text-white"
             />
           </div>
         </motion.div>

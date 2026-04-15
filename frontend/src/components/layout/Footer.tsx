@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Globe, Share2 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 export const Footer = () => {
@@ -73,22 +74,23 @@ export const Footer = () => {
                   className="bg-white/50 focus:bg-white transition-colors duration-300 pr-12"
                   disabled={status === 'loading' || status === 'success'}
                 />
-                <button
+                <Button
                   type="submit"
+                  variant="none"
                   disabled={status !== 'idle' || !email.includes('@')}
                   className={cn(
-                    "absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
-                    status === 'idle' ? "bg-primary text-on-primary hover:scale-110" : "bg-surface-container-highest text-on-surface-variant"
+                    "absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 p-0",
+                    status === 'idle' ? "bg-zinc-950 text-white hover:scale-110" : "bg-zinc-100 text-zinc-400"
                   )}
                 >
                   {status === 'loading' ? (
-                    <div className="w-4 h-4 border-2 border-on-surface-variant/30 border-t-on-surface-variant rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-zinc-400/30 border-t-zinc-400 rounded-full animate-spin" />
                   ) : status === 'success' ? (
                     <span className="material-symbols-outlined text-sm text-green-600">check</span>
                   ) : (
                     <span className="material-symbols-outlined text-sm">arrow_forward</span>
                   )}
-                </button>
+                </Button>
               </div>
               <AnimatePresence>
                 {status === 'success' && (

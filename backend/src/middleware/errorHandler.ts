@@ -27,7 +27,9 @@ export const errorHandler = (
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === "P2002") {
       statusCode = 409;
-      message = `Unique constraint failed on ${err.meta?.target || "field"}`;
+      const target = (err.meta?.target as string[])?.join(", ") || "field";
+      message = `Unique constraint failed on ${target}`;
+      console.error("[PRISMA CONFLICT]", err.meta);
     } else if (err.code === "P2025") {
       statusCode = 404;
       message = "Record not found";

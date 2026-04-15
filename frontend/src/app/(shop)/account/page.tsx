@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { useCartStore } from "@/store/cartStore";
+import { StatusBadge } from "@/components/admin/StatusBadge";
 
 export default function AccountPage() {
   const { user } = useAuthStore();
@@ -225,24 +226,7 @@ function MetricCard({ label, value, hasIndicator }: { label: string; value?: str
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    PENDING: "bg-[#fff7ed] text-[#c2410c] border-[#ffedd5]",
-    PROCESSING: "bg-[#fffbeb] text-[#b45309] border-[#fef3c7]",
-    SHIPPED: "bg-[#eff6ff] text-[#1d4ed8] border-[#dbeafe]",
-    DELIVERED: "bg-[#f0fdf4] text-[#15803d] border-[#dcfce7]",
-    CANCELLED: "bg-[#f9fafb] text-[#4b5563] border-[#f3f4f6]",
-  };
 
-  return (
-    <span className={cn(
-      "inline-flex items-center py-1 px-3 rounded-full font-medium text-[10px] uppercase tracking-wider border",
-      styles[status] || styles.PENDING
-    )}>
-      {status.toLowerCase()}
-    </span>
-  );
-}
 
 function QuickReorderItem({ name, price, image, onReorder }: { name: string; price: number; image: string; onReorder: () => void }) {
   return (

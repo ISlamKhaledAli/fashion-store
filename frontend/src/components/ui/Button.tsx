@@ -53,6 +53,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <motion.button
         ref={ref}
+        type={props.type || "button"}
         whileHover={{ scale: 0.98 }}
         whileTap={{ scale: 0.96 }}
         className={cn(

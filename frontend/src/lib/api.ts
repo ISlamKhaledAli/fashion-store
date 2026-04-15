@@ -23,8 +23,8 @@ export const authApi = {
 export const productApi = {
   getAll: (params: Record<string, unknown>) => 
     api.get<ApiResponse<Product[]>>("/products", { params }),
-  getBySlug: (slug: string) => 
-    api.get<ApiResponse<Product>>(`/products/${slug}`),
+  getByIdentifier: (identifier: string) => 
+    api.get<ApiResponse<Product>>(`/products/${identifier}`),
   getFeatured: () => 
     api.get<ApiResponse<Product[]>>("/products", { params: { featured: true } }),
   getFilters: () => 
@@ -103,10 +103,31 @@ export const adminApi = {
     api.put<ApiResponse<Order>>(`/admin/orders/${id}`, { status }),
   getCustomers: (params?: Record<string, unknown>) => 
     api.get<ApiResponse<unknown[]>>("/admin/customers", { params }),
+  getProductById: (id: string) =>
+    api.get<ApiResponse<Product>>(`/products/admin/${id}`),
   createProduct: (data: Record<string, unknown>) => 
     api.post<ApiResponse<Product>>("/products", data),
-  updateProduct: (id: string, data: Record<string, unknown>) => 
-    api.put<ApiResponse<Product>>(`/products/${id}`, data),
+  updateProduct: (id: string, data: Record<string, unknown>) => {
+    // Map frontend fields (like discountPrice) to backend expected schema (comparePrice)
+    // and omit extraneous fields
+    const { 
+      name, description, price, cost, categoryId, brandId, status, 
+      featured, variants, discountPrice 
+    } = data as any;
+    
+    return api.put<ApiResponse<Product>>(`/products/${id}`, {
+      name,
+      description,
+      price,
+      comparePrice: discountPrice,
+      cost,
+      categoryId,
+      brandId,
+      status,
+      featured,
+      variants,
+    });
+  },
   deleteProduct: (id: string) => 
     api.delete<ApiResponse<unknown>>(`/products/${id}`),
   uploadMedia: (file: File) => {

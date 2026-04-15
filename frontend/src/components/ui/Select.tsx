@@ -18,9 +18,10 @@ interface SelectProps {
   onChange: (value: string) => void;
   className?: string;
   labelPrefix?: string;
+  error?: string;
 }
 
-export const Select = ({ options, value, onChange, className, labelPrefix }: SelectProps) => {
+export const Select = ({ options, value, onChange, className, labelPrefix, error }: SelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -29,12 +30,16 @@ export const Select = ({ options, value, onChange, className, labelPrefix }: Sel
   const selectedOption = options.find((opt) => opt.value === value) || options[0] || { label: "Select...", value: "" };
 
   return (
-    <div ref={containerRef} className={cn("relative inline-block", className)}>
+    <div ref={containerRef} className={cn("relative inline-block space-y-1", className)}>
       <Button
         variant="none"
         size="none"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 text-xs uppercase tracking-widest text-on-surface font-bold cursor-pointer outline-none group"
+        className={cn(
+          "flex items-center gap-2 text-xs uppercase tracking-widest text-on-surface font-bold cursor-pointer outline-none group border rounded-md px-4 py-3 transition-all",
+          error ? "border-error bg-error/5" : "border-outline-variant/30 bg-surface-container-lowest",
+          isOpen && "border-primary"
+        )}
         aria-label={labelPrefix ? `${labelPrefix} ${selectedOption.label}` : selectedOption.label}
         aria-expanded={isOpen}
       >
@@ -49,6 +54,10 @@ export const Select = ({ options, value, onChange, className, labelPrefix }: Sel
           <ChevronDown size={14} className="text-on-surface-variant group-hover:text-primary transition-colors" />
         </motion.div>
       </Button>
+
+      {error && (
+        <p className="text-[10px] text-error font-medium uppercase tracking-wider">{error}</p>
+      )}
 
       <AnimatePresence>
         {isOpen && (

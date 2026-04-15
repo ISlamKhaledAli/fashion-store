@@ -56,7 +56,17 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
         // Fetch Product Filters (Colors)
         const filterRes = await productApi.getFilters();
         if (filterRes.data.success) {
-          setColors(filterRes.data.data.colors.map((c: { name: string; hex: string }) => ({
+          const rawColors = filterRes.data.data.colors;
+          // Aggressively deduplicate by hex only — visually identical colors should appear once
+          const seenHex = new Set<string>();
+          const uniqueColors = rawColors.filter((color: any) => {
+            const hex = color.hex.toLowerCase().trim();
+            if (seenHex.has(hex)) return false;
+            seenHex.add(hex);
+            return true;
+          });
+          
+          setColors(uniqueColors.map((c: { name: string; hex: string }) => ({
             name: c.name,
             class: "",
             hex: c.hex
@@ -70,7 +80,7 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
   }, []);
 
   const content = (
-    <div className="space-y-8 flex flex-col h-full">
+    <div className="space-y-8 flex flex-col h-full pb-6">
       <div className="space-y-1">
         <h2 className="font-headline text-sm uppercase tracking-widest text-on-surface-stone-900 font-bold text-stone-50">
           FILTER
@@ -147,9 +157,9 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
         </section>
 
         {/* Colors */}
-        <section>
+        <section className="max-w-full pb-4">
           <h3 className="text-[11px] font-bold uppercase tracking-widest mb-4">Colors</h3>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 p-1">
             {colors.map((color) => (
               <Button 
                 key={color.name}
@@ -201,7 +211,7 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
   }
 
   return (
-    <aside className="sticky top-20 h-[calc(100vh-5rem)] w-64 shrink-0 flex-col p-8 gap-6 bg-stone-50 dark:bg-stone-900 border-none hidden lg:flex">
+    <aside className="sticky top-20 h-[calc(100vh-5rem)] w-64 shrink-0 flex-col p-8 gap-6 bg-stone-50 dark:bg-stone-900 border-none hidden lg:flex overflow-y-auto premium-scrollbar">
       {content}
     </aside>
   );

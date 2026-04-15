@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, use } from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { productApi } from "@/lib/api";
 import { Product } from "@/types";
 import { ImageGallery } from "@/components/shop/ImageGallery";
@@ -15,30 +16,41 @@ import Skeleton from "@/components/ui/Skeleton";
 import { YouMayAlsoLike } from "@/components/shop/YouMayAlsoLike";
 
 interface PageProps {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ id: string }>;
 }
 
 export default function ProductDetailPage({ params }: PageProps) {
-  const { slug } = use(params);
+  const { id } = use(params);
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const router = useRouter();
 
   useEffect(() => {
     const fetchProduct = async () => {
       setIsLoading(true);
       try {
-        const res = await productApi.getBySlug(slug);
+        // Fetch using the identifier (could be slug or ID)
+        const res = await productApi.getByIdentifier(id);
         if (res.data.success) {
-          setProduct(res.data.data);
+          const fetchedProduct = res.data.data;
+          setProduct(fetchedProduct);
           
+          // CRITICAL: Redirection Handling
+          // If the URL identifier (the 'id' param) is not the actual product ID (meaning it's a slug),
+          // redirect to the stable ID-based URL to ensure consistency.
+          if (id !== fetchedProduct.id) {
+            router.replace(`/products/${fetchedProduct.id}`);
+          }
+
           // Fetch related products based on category
           const relatedRes = await productApi.getAll({ 
-            category: res.data.data.categoryId,
+            category: fetchedProduct.categoryId,
             limit: 4 
           });
           if (relatedRes.data.success) {
-            setRelatedProducts(relatedRes.data.data.filter(p => p.id !== res.data.data.id));
+            setRelatedProducts(relatedRes.data.data.filter(p => p.id !== fetchedProduct.id));
           }
         }
       } catch (error) {
@@ -50,7 +62,7 @@ export default function ProductDetailPage({ params }: PageProps) {
     };
 
     fetchProduct();
-  }, [slug]);
+  }, [id, router]);
 
   if (isLoading) {
     return (
@@ -146,7 +158,7 @@ export default function ProductDetailPage({ params }: PageProps) {
       <ProductAccordions items={accordionItems} />
 
       {/* 4. Complete the Look Horizontal Scroll */}
-      <HorizontalScroll excludeSlug={product.slug} />
+      <HorizontalScroll excludeId={product.id} />
 
       {/* 5. Reviews Section */}
       <ProductReviews 
@@ -157,7 +169,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
       {/* 6. You May Also Like Section */}
       {/* @ts-ignore - category is populated from backend even if type doesn't reflect it */}
-      <YouMayAlsoLike categorySlug={product.category?.slug} excludeSlug={product.slug} />
+      <YouMayAlsoLike categorySlug={product.category?.slug} excludeId={product.id} />
     </main>
   );
 }

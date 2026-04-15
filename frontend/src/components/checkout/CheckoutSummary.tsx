@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useCartStore } from "@/store/cartStore";
 import { formatCurrency } from "@/lib/utils";
 import { cartApi } from "@/lib/api";
@@ -45,7 +46,7 @@ export const CheckoutSummary = () => {
         <ul className="space-y-6 mb-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar no-scrollbar">
           {items.map((item) => (
             <li key={item.id} className="flex gap-4 group">
-              <div className="w-20 h-24 bg-surface-container-high relative overflow-hidden flex-shrink-0">
+              <Link href={`/products/${item.productId}`} className="w-20 h-24 bg-surface-container-high relative overflow-hidden flex-shrink-0 cursor-pointer">
                 <Image
                   src={item.image}
                   alt={item.name}
@@ -53,10 +54,12 @@ export const CheckoutSummary = () => {
                   sizes="80px"
                   className="object-cover grayscale transition-transform duration-700 group-hover:scale-110"
                 />
-              </div>
+              </Link>
               <div className="flex flex-col justify-between py-1 flex-1">
                 <div>
-                  <h4 className="text-sm font-medium leading-snug">{item.name}</h4>
+                  <Link href={`/products/${item.productId}`}>
+                    <h4 className="text-sm font-medium leading-snug hover:text-primary transition-colors cursor-pointer">{item.name}</h4>
+                  </Link>
                   <p className="text-[10px] uppercase tracking-wider text-on-surface-variant mt-1">
                     {item.color} / {item.size} × {item.quantity}
                   </p>

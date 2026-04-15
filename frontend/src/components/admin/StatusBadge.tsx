@@ -6,24 +6,57 @@ import { cn } from "@/lib/utils";
 interface StatusBadgeProps {
   status: string;
   className?: string;
+  icon?: React.ReactNode;
+  animate?: boolean;
+  children?: React.ReactNode;
 }
 
-const statusStyles: Record<string, string> = {
-  PROCESSING: "bg-primary-container text-on-primary-container",
-  SHIPPED: "bg-secondary-container/10 text-secondary border border-secondary/20",
-  DELIVERED: "bg-green-100 text-green-800",
-  CANCELLED: "bg-error-container text-on-error-container",
-  PENDING: "bg-surface-container-high text-on-surface-variant",
+interface VariantConfig {
+  bg: string;
+  dot: string;
+  pulse?: boolean;
+  glow?: boolean;
+}
+
+const statusVariants: Record<string, VariantConfig> = {
+  // Core Statuses
+  PROCESSING: { bg: "bg-amber-100 text-amber-700 border-amber-200", dot: "bg-amber-500", pulse: true },
+  PENDING: { bg: "bg-zinc-100 text-zinc-600 border-zinc-200", dot: "bg-zinc-400" },
+  DELIVERED: { bg: "bg-green-100 text-green-700 border-green-200", dot: "bg-green-600", glow: true },
+  
+  // Inventory Related
+  ACTIVE: { bg: "bg-zinc-950 text-white border-zinc-950 shadow-lg shadow-zinc-950/20", dot: "bg-white", glow: true },
+  OUT_OF_STOCK: { bg: "bg-red-50 text-red-700 border-red-100/50", dot: "bg-red-500", glow: true },
+  DEPLETING: { bg: "bg-orange-50 text-orange-700 border-orange-100/50", dot: "bg-orange-500", glow: true },
+  
+  // Archival/Misc
+  ARCHIVED: { bg: "bg-zinc-100 text-zinc-500 border-zinc-200", dot: "bg-zinc-400" },
+  DRAFT: { bg: "bg-amber-100 text-amber-700 border-amber-200", dot: "bg-amber-500" },
+
+  // Mapped States
+  SHIPPED: { bg: "bg-zinc-100 text-zinc-600 border-zinc-200", dot: "bg-zinc-400" },
+  PAID: { bg: "bg-green-100 text-green-700 border-green-200", dot: "bg-green-600", glow: true },
+  CANCELLED: { bg: "bg-red-50 text-red-700 border-red-100/50", dot: "bg-red-600" },
 };
 
-export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
+export const StatusBadge = ({ status, className, children }: StatusBadgeProps) => {
+  const normalizedStatus = status.toUpperCase().replace(/\s+/g, '_');
+  const variant = statusVariants[normalizedStatus] || statusVariants.ARCHIVED;
+
   return (
     <span className={cn(
-      "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
-      statusStyles[status] || "bg-zinc-100 text-zinc-600",
+      "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-medium tracking-wide border transition-all duration-300 hover:scale-[1.05] hover:shadow-md hover:z-10 uppercase select-none whitespace-nowrap",
+      variant.bg,
+      variant.glow && "animate-soft-glow",
       className
     )}>
-      {status}
+      <span className={cn(
+        "w-2 h-2 rounded-full shrink-0",
+        variant.dot,
+        variant.pulse && "animate-pulse"
+      )} />
+      {children || status.replace(/_/g, ' ')}
     </span>
   );
 };
+

@@ -150,15 +150,16 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
           {product.variants
             .filter((v, i, arr) => arr.findIndex(x => x.color === v.color) === i) // unique colors
             .map((variant) => (
-              <button
+              <Button
+                variant="none"
                 key={variant.color}
                 onClick={() => setSelectedColor(variant.color)}
                 style={{ backgroundColor: variant.colorHex || '#ccc' }}
                 className={cn(
-                  "w-7 h-7 rounded-full border-2 transition-all",
+                  "w-7 h-7 rounded-full border-2 transition-all p-0",
                   selectedColor === variant.color 
-                    ? 'border-primary scale-110' 
-                    : 'border-transparent hover:border-outline-variant'
+                    ? 'border-zinc-950 scale-110' 
+                    : 'border-transparent hover:border-zinc-200'
                 )}
                 title={variant.color}
                 aria-label={`Select color ${variant.color}`}

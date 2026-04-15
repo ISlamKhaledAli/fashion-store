@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useReducer, useEffect, useState, Suspense } from "react";
+import React, { useReducer, useEffect, useState, Suspense, useMemo, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useDebounce } from "@/hooks/useDebounce";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { FilterSidebar, FilterState } from "@/components/shop/FilterSidebar";
 import { ProductGrid } from "@/components/shop/ProductGrid";
@@ -11,7 +12,7 @@ import { ProductSkeleton } from "@/components/shop/ProductSkeleton";
 import { productApi } from "@/lib/api";
 import { Product } from "@/types";
 import { cn } from "@/lib/utils";
-import { Filter, LayoutGrid, List, ArrowLeft, ArrowRight } from "lucide-react";
+import { Filter, LayoutGrid, List, Loader2 } from "lucide-react";
 import { Select } from "@/components/ui/Select";
 
 const SORT_OPTIONS = [
@@ -42,35 +43,36 @@ const initialState: FilterState = {
 
 function filterReducer(state: FilterState, action: Action): FilterState {
   switch (action.type) {
-    case "toggle_category":
-      return {
-        ...state,
-        category: state.category.includes(action.payload)
-          ? state.category.filter((c) => c !== action.payload)
-          : [...state.category, action.payload],
-      };
-    case "toggle_brand":
-      return {
-        ...state,
-        brand: state.brand.includes(action.payload)
-          ? state.brand.filter((b) => b !== action.payload)
-          : [...state.brand, action.payload],
-      };
-    case "toggle_color":
-      return {
-        ...state,
-        color: state.color.includes(action.payload)
-          ? state.color.filter((c) => c !== action.payload)
-          : [...state.color, action.payload],
-      };
+    case "toggle_category": {
+      const category = state.category.includes(action.payload)
+        ? state.category.filter((c) => c !== action.payload)
+        : [...state.category, action.payload];
+      return { ...state, category };
+    }
+    case "toggle_brand": {
+      const brand = state.brand.includes(action.payload)
+        ? state.brand.filter((b) => b !== action.payload)
+        : [...state.brand, action.payload];
+      return { ...state, brand };
+    }
+    case "toggle_color": {
+      const color = state.color.includes(action.payload)
+        ? state.color.filter((c) => c !== action.payload)
+        : [...state.color, action.payload];
+      return { ...state, color };
+    }
     case "set_max_price":
+      if (state.maxPrice === action.payload) return state;
       return { ...state, maxPrice: action.payload };
     case "set_sort":
+      if (state.sort === action.payload) return state;
       return { ...state, sort: action.payload };
     case "reset":
       return initialState;
-    case "sync_from_url":
-      return { ...state, ...action.payload };
+    case "sync_from_url": {
+      const isDifferent = JSON.stringify(state) !== JSON.stringify({ ...state, ...action.payload });
+      return isDifferent ? { ...state, ...action.payload } : state;
+    }
     default:
       return state;
   }
@@ -86,90 +88,117 @@ function ProductsContent() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
   const isInitialMount = React.useRef(true);
-  const fetchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const observer = useRef<IntersectionObserver | null>(null);
+
+  const lastItemRef = useCallback((node: HTMLDivElement | null) => {
+    if (isLoading || isFetchingMore) return;
+    if (observer.current) observer.current.disconnect();
+
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && page < totalPages) {
+        setPage(prevPage => prevPage + 1);
+      }
+    });
+
+    if (node) observer.current.observe(node);
+  }, [isLoading, isFetchingMore, page, totalPages]);
 
   // ... (maintain useEffects logic)
-  // Reset page when filters change
-  useEffect(() => {
-    if (!isInitialMount.current) setPage(1);
-  }, [state]);
+  // Memoize stable filters to prevent unnecessary re-renders
+  const stableFilters = useMemo(() => ({
+    category: state.category,
+    brand: state.brand,
+    color: state.color,
+    maxPrice: state.maxPrice,
+    sort: state.sort
+  }), [state.category, state.brand, state.color, state.maxPrice, state.sort]);
 
+  const debouncedFilters = useDebounce(stableFilters, 300);
+
+  // Reset products and page when filters change
+  useEffect(() => {
+    if (!isInitialMount.current) {
+      setPage(1);
+      setProducts([]);
+    }
+  }, [debouncedFilters]);
+
+  // Sync state FROM URL ONLY on mount or when back/forward navigation occurs
   useEffect(() => {
     const params: Partial<FilterState> = {};
     const cat = searchParams.get("category");
     if (cat) params.category = cat.split(",");
     const brand = searchParams.get("brand");
     if (brand) params.brand = brand.split(",");
+    const color = searchParams.get("color");
+    if (color) params.color = color.split(",");
     const max = searchParams.get("maxPrice");
     if (max) params.maxPrice = parseInt(max);
+    const sort = searchParams.get("sort");
+    if (sort) params.sort = sort;
 
-    if (Object.keys(params).length > 0) {
-      dispatch({ type: "sync_from_url", payload: params });
-    }
-
-    const fetchInitial = async () => {
-      setIsLoading(true);
-      try {
-        const res = await productApi.getAll({
-          category: cat || "",
-          brand: brand || "",
-          color: searchParams.get("color") || "",
-          maxPrice: max ? parseInt(max) : 2000,
-          sort: searchParams.get("sort") || "createdAt:desc",
-          limit: 12,
-          page: 1,
-        });
-        if (res.data.success) {
-          setProducts(res.data.data);
-          setTotalPages(res.data.pagination?.totalPages || 1);
-        }
-      } catch (error) {
-        console.error("Fetch error:", error);
-      } finally {
-        setTimeout(() => setIsLoading(false), 300);
-      }
-    };
-
-    fetchInitial().then(() => {
-      isInitialMount.current = false;
-    });
+    // Only dispatch if values have actually changed from URL
+    dispatch({ type: "sync_from_url", payload: params });
   }, [searchParams]);
 
+  // Main fetch effect - driven by debounced state and page
   useEffect(() => {
-    if (isInitialMount.current) return;
-    if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
-    fetchTimeoutRef.current = setTimeout(async () => {
-      setIsLoading(true);
-      const params = new URLSearchParams();
-      if (state.category.length) params.set("category", state.category.join(","));
-      if (state.brand.length) params.set("brand", state.brand.join(","));
-      if (state.color.length) params.set("color", state.color.join(","));
-      if (state.maxPrice < 2000) params.set("maxPrice", state.maxPrice.toString());
-      params.set("sort", state.sort);
-      router.replace(`/products?${params.toString()}`, { scroll: false });
+    const fetchProducts = async () => {
+      if (page === 1) setIsLoading(true);
+      else setIsFetchingMore(true);
+      
       try {
         const res = await productApi.getAll({
-          category: state.category.map((c) => c.trim()).join(","),
-          brand: state.brand.map((b) => b.trim()).join(","),
-          color: state.color.map((c) => c.trim()).join(","),
-          maxPrice: state.maxPrice,
-          sort: state.sort,
+          category: debouncedFilters.category.join(","),
+          brand: debouncedFilters.brand.join(","),
+          color: debouncedFilters.color.join(","),
+          maxPrice: debouncedFilters.maxPrice,
+          sort: debouncedFilters.sort,
           limit: 12,
           page,
         });
+
         if (res.data.success) {
-          setProducts(res.data.data);
+          if (page === 1) {
+            setProducts(res.data.data);
+          } else {
+            setProducts(prev => [...prev, ...res.data.data]);
+          }
           setTotalPages(res.data.pagination?.totalPages || 1);
+          setTotalProducts(res.data.pagination?.total || 0);
         }
       } catch (error) {
         console.error("Fetch error:", error);
       } finally {
-        setTimeout(() => setIsLoading(false), 300);
+        setTimeout(() => {
+          setIsLoading(false);
+          setIsFetchingMore(false);
+        }, 300);
       }
-    }, 150);
-    return () => { if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current); };
-  }, [state, page, router]);
+    };
+
+    fetchProducts();
+    
+    // Update URL to match state (Side Effect of state change)
+    if (!isInitialMount.current) {
+      const params = new URLSearchParams();
+      if (debouncedFilters.category.length) params.set("category", debouncedFilters.category.join(","));
+      if (debouncedFilters.brand.length) params.set("brand", debouncedFilters.brand.join(","));
+      if (debouncedFilters.color.length) params.set("color", debouncedFilters.color.join(","));
+      if (debouncedFilters.maxPrice < 2000) params.set("maxPrice", debouncedFilters.maxPrice.toString());
+      params.set("sort", debouncedFilters.sort);
+      
+      const newUrl = `/products?${params.toString()}`;
+      if (window.location.search !== `?${params.toString()}`) {
+        router.replace(newUrl, { scroll: false });
+      }
+    }
+    
+    isInitialMount.current = false;
+  }, [debouncedFilters, page, router]);
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen">
@@ -189,7 +218,7 @@ function ProductsContent() {
               Collections
             </h1>
             <div className="flex items-center gap-4 text-xs uppercase tracking-widest text-on-surface-variant">
-              <span className="font-bold text-on-surface">{products.length} Products</span>
+              <span className="font-bold text-on-surface">{totalProducts} Products</span>
               <span className="w-8 h-1px bg-outline-variant"></span>
               <Button 
                 variant="none"
@@ -242,15 +271,19 @@ function ProductsContent() {
               <ProductSkeleton key={i} />
             ))
           ) : products.length > 0 ? (
-            products.map((product, index) => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                variant="editorial" 
-                isListView={viewMode === "list"}
-                delay={index * 0.06} 
-              />
-            ))
+            <>
+              {products.map((product, index) => (
+                <ProductCard 
+                  key={`${product.id}-${index}`} // Use combination for stability with appending
+                  product={product} 
+                  variant="editorial" 
+                  isListView={viewMode === "list"}
+                  delay={index % 12 * 0.06} // Reset animation delay per page load
+                />
+              ))}
+              {/* Sentinel for Infinite Scroll */}
+              <div ref={lastItemRef} className="col-span-full h-10 invisible" />
+            </>
           ) : (
             <div className="col-span-full py-32 text-center text-stone-400 font-medium tracking-wide">
               No pieces found matching your criteria.
@@ -258,49 +291,11 @@ function ProductsContent() {
           )}
         </ProductGrid>
 
-        {/* Pagination Integration */}
-        {products.length > 0 && totalPages > 1 && (
-          <footer className="mt-24 flex justify-center items-center gap-8 border-t border-outline-variant/20 pt-12">
-            <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className={cn("gap-2 text-on-surface-variant hover:text-primary transition-opacity duration-300", page === 1 && "opacity-30 pointer-events-none")}
-             >
-              <ArrowLeft size={14} strokeWidth={1.5} /> Prev
-            </Button>
-            
-            <div className="flex items-center gap-6 text-xs font-bold tracking-widest">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <Button 
-                  key={p}
-                  variant="none"
-                  size="none"
-                  onClick={() => setPage(p)}
-                  className={cn(
-                    "pb-1 transition-all cursor-pointer",
-                    page === p 
-                      ? "text-primary border-b border-primary" 
-                      : "text-on-surface-variant hover:text-primary opacity-50 hover:opacity-100"
-                  )}
-                  aria-label={`Go to page ${p}`}
-                >
-                  {p.toString().padStart(2, '0')}
-                </Button>
-              ))}
-            </div>
-
-            <Button 
-                 variant="ghost" 
-                 size="sm" 
-                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                 disabled={page === totalPages}
-                 className={cn("gap-2 text-on-surface-variant hover:text-primary transition-opacity duration-300", page === totalPages && "opacity-30 pointer-events-none")}
-            >
-              Next <ArrowRight size={14} strokeWidth={1.5} />
-            </Button>
-          </footer>
+        {/* Loading Indicator for Infinite Scroll */}
+        {isFetchingMore && (
+          <div className="py-12 flex justify-center">
+            <Loader2 className="w-6 h-6 animate-spin text-stone-400" />
+          </div>
         )}
       </section>
     </div>

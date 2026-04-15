@@ -118,7 +118,7 @@ export default function CartPage() {
                   transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                   className="flex flex-col sm:flex-row gap-8 pb-12 border-b border-outline-variant/10 group"
                 >
-                  <div className="w-full sm:w-40 aspect-[3/4] bg-surface-container-low overflow-hidden relative">
+                  <Link href={`/products/${item.productId}`} className="w-full sm:w-40 aspect-[3/4] bg-surface-container-low overflow-hidden relative cursor-pointer">
                     <Image
                       src={item.image}
                       alt={item.name}
@@ -126,11 +126,13 @@ export default function CartPage() {
                       sizes="(max-width: 640px) 100vw, 160px"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[600ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
                     />
-                  </div>
+                  </Link>
                   <div className="flex-1 flex flex-col justify-between py-1">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="text-xl font-medium tracking-tight mb-1">{item.name}</h3>
+                        <Link href={`/products/${item.productId}`}>
+                          <h3 className="text-xl font-medium tracking-tight mb-1 hover:text-primary transition-colors cursor-pointer">{item.name}</h3>
+                        </Link>
                         <p className="text-on-surface-variant text-sm mb-6 uppercase tracking-wider">
                           Size: {item.size} / Color: {item.color}
                         </p>

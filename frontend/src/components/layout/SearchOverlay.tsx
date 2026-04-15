@@ -197,10 +197,26 @@ export const SearchOverlay = () => {
                 <Button
                   variant="ghost"
                   onClick={onClose}
-                  className="flex items-center gap-2 group"
+                  className="flex items-center gap-2 group transition-all"
                 >
                   <span className="text-xs uppercase tracking-[0.2em] font-bold group-hover:text-primary transition-colors">Close</span>
-                  <X size={18} className="group-hover:rotate-90 transition-transform duration-500" />
+                  <motion.div
+                    whileHover="hover"
+                    whileTap="tap"
+                    initial="initial"
+                    className="flex items-center justify-center p-2 rounded-full hover:bg-zinc-100/50"
+                  >
+                    <motion.div
+                      variants={{
+                        initial: { rotate: 0, scale: 1 },
+                        hover: { rotate: 90, scale: 1.1 },
+                        tap: { scale: 0.9 }
+                      }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    >
+                      <X size={18} />
+                    </motion.div>
+                  </motion.div>
                 </Button>
               </div>
 
@@ -282,7 +298,7 @@ export const SearchOverlay = () => {
                           className="group cursor-pointer"
                           onClick={() => {
                             onClose();
-                            router.push(`/products/${product.slug}`);
+                            router.push(`/products/${product.id}`);
                           }}
                         >
                           <div className="aspect-[3/4] overflow-hidden bg-surface-container-low mb-4 relative">

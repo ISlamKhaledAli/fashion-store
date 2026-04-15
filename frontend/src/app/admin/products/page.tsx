@@ -9,19 +9,178 @@ import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { 
-  Search, 
-  Plus, 
-  Filter, 
-  Edit, 
-  Archive, 
-  Trash2,
-  Package,
-  AlertTriangle,
-} from "lucide-react";
-import { formatCurrency, cn } from "@/lib/utils";
-import { ProductFormPanel } from "@/components/admin/ProductFormPanel";
+import { StatusBadge } from "@/components/admin/StatusBadge";
 import { toast } from "sonner";
+import { Search, Plus, Filter, Edit, Archive, Trash2, Package } from "lucide-react";
+import { formatCurrency, cn } from "@/lib/utils";
+
+const ProductFormPanel = React.lazy(() => import("@/components/admin/ProductFormPanel").then(module => ({ default: module.ProductFormPanel })));
+
+// Optimized Atomic Components
+const ProductRow = React.memo(({ 
+  product, 
+  isSelected, 
+  onToggle, 
+  onEdit, 
+  onArchive, 
+  onDelete 
+}: { 
+  product: Product; 
+  isSelected: boolean; 
+  onToggle: (id: string) => void; 
+  onEdit: (p: Product) => void;
+  onArchive: (id: string, status: string) => void;
+  onDelete: (id: string) => void;
+}) => {
+  const totalStock = product.variants.reduce((acc, v) => acc + v.stock, 0);
+  const isLowStock = totalStock <= 5 && totalStock > 0;
+  const status = (product as any).status || "ACTIVE";
+
+  return (
+    <tr 
+      onClick={() => onEdit(product)}
+      className={cn(
+        "group/row hover:bg-zinc-50/50 transition-all cursor-pointer relative border-b border-zinc-50",
+        (totalStock === 0 || isLowStock) && "border-l-4 border-l-warning bg-warning/5 border-b-warning/30"
+      )}
+    >
+      <td className="px-8 py-8" onClick={(e) => e.stopPropagation()}>
+        <Checkbox 
+          checked={isSelected} 
+          onCheckedChange={() => onToggle(product.id)}
+        />
+      </td>
+      <td className="px-8 py-8">
+        <div className="flex items-center gap-6">
+          <div className="w-16 h-20 bg-zinc-100 rounded-sm overflow-hidden flex-shrink-0 shadow-sm transition-all group-hover/row:scale-[1.05] group-hover/row:shadow-xl group-hover/row:z-10">
+             <img 
+              src={product.images.find(img => img.isMain)?.url || product.images[0]?.url || ""} 
+              className="w-full h-full object-cover transition-transform duration-700"
+              alt={product.name}
+            />
+          </div>
+          <div className="space-y-1">
+            <p className="text-base font-bold text-zinc-950 tracking-tight group-hover/row:translate-x-1 transition-transform">{product.name}</p>
+             <p className="text-[10px] font-bold font-mono text-zinc-400 tracking-widest uppercase">REF: {product.variants[0]?.sku || "N/A"}</p>
+          </div>
+        </div>
+      </td>
+      <td className="px-8 py-8">
+        <StatusBadge status="ARCHIVED" className="bg-zinc-50/50">
+          {product.category?.name || "Uncategorized"}
+        </StatusBadge>
+      </td>
+      <td className="px-8 py-8 text-right">
+        <p className="text-base font-black text-zinc-950 tracking-tighter tabular-nums">{formatCurrency(product.price)}</p>
+      </td>
+      <td className="px-8 py-8 text-center">
+        {totalStock === 0 ? (
+          <StatusBadge status="OUT_OF_STOCK" />
+        ) : isLowStock ? (
+          <StatusBadge status="DEPLETING" className="text-sm font-medium tracking-wide">
+            {totalStock.toString().padStart(2, '0')} UNITS
+          </StatusBadge>
+        ) : (
+          <StatusBadge status="ACTIVE" className="bg-zinc-50 border-zinc-100 text-zinc-950 text-sm font-medium tracking-wide">
+            {totalStock.toString().padStart(2, '0')} UNITS
+          </StatusBadge>
+        )}
+      </td>
+      <td className="px-8 py-8">
+        <StatusBadge status={status} />
+      </td>
+      <td className="px-8 py-8 text-right pr-12" onClick={(e) => e.stopPropagation()}>
+        <div className="flex justify-end items-center gap-1.5 opacity-0 group-hover/row:opacity-100 transition-all translate-x-4 group-hover/row:translate-x-0">
+          <Button 
+            variant="icon" 
+            size="none" 
+            onClick={() => onEdit(product)}
+            className="hover:bg-zinc-100 transition-all p-2.5 text-zinc-400 hover:text-zinc-950 rounded-full" 
+            icon={<Edit size={18} />} 
+          />
+          <Button 
+            variant="icon" 
+            size="none" 
+            onClick={() => onArchive(product.id, status)}
+            className="hover:bg-zinc-100 transition-all p-2.5 text-zinc-400 hover:text-zinc-950 rounded-full" 
+            icon={<Archive size={18} />} 
+          />
+          <Button 
+            variant="icon" 
+            size="none" 
+            onClick={() => onDelete(product.id)}
+            className="hover:bg-red-50 transition-all p-2.5 text-zinc-400 hover:text-red-500 rounded-full" 
+            icon={<Trash2 size={18} />} 
+          />
+        </div>
+      </td>
+    </tr>
+  );
+});
+
+const MobileProductRow = React.memo(({ 
+  product, 
+  onEdit 
+}: { 
+  product: Product; 
+  onEdit: (p: Product) => void;
+}) => {
+  const totalStock = product.variants.reduce((acc, v) => acc + v.stock, 0);
+  const isLowStock = totalStock <= 5 && totalStock > 0;
+  const status = (product as any).status || "ACTIVE";
+
+  return (
+    <div 
+      className={cn(
+        "p-6 space-y-4 hover:bg-zinc-50/50 transition-colors cursor-pointer",
+        (totalStock === 0 || isLowStock) && "border-l-4 border-l-warning bg-warning/5 border-b border-b-warning/20"
+      )}
+      onClick={() => onEdit(product)}
+    >
+      <div className="flex gap-4">
+        <div className="w-16 h-20 bg-zinc-100 rounded-sm overflow-hidden flex-shrink-0 shadow-sm">
+          <img 
+            src={product.images.find(img => img.isMain)?.url || product.images[0]?.url || ""} 
+            className="w-full h-full object-cover"
+            alt={product.name}
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-start gap-2">
+            <p className="text-sm font-bold text-zinc-950 truncate">{product.name}</p>
+            <p className="text-sm font-black text-zinc-950 tabular-nums">{formatCurrency(product.price)}</p>
+          </div>
+          <p className="text-[10px] font-bold font-mono text-zinc-400 tracking-widest uppercase mt-1">REF: {product.variants[0]?.sku || "N/A"}</p>
+          <div className="mt-2 flex items-center gap-2">
+            <StatusBadge status="ARCHIVED" className="px-2 py-0.5 text-[9px]">
+              {product.category?.name || "Uncategorized"}
+            </StatusBadge>
+            <StatusBadge status={status} className="px-2 py-0.5 text-[9px]" />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between border-t border-zinc-50 pt-4">
+        <div className="flex items-center gap-1">
+          {totalStock === 0 ? (
+            <StatusBadge status="OUT_OF_STOCK" className="px-2 py-1 text-[10px] font-medium" />
+          ) : isLowStock ? (
+            <StatusBadge status="DEPLETING" className="px-2 py-1 text-[10px] font-medium">
+               {totalStock} UNITS
+            </StatusBadge>
+          ) : (
+            <StatusBadge status="ACTIVE" className="px-2 py-1 text-[10px] font-medium bg-zinc-50 text-zinc-950">
+              {totalStock} UNITS
+            </StatusBadge>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Edit size={16} className="text-zinc-400" />
+        </div>
+      </div>
+    </div>
+  );
+});
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -41,7 +200,7 @@ export default function AdminProductsPage() {
   const fetchProducts = async (isMounted: { current: boolean }) => {
     setLoading(true);
     try {
-      const res = await productApi.getAll({ limit: 100 });
+      const res = await productApi.getAll({ limit: 100, status: 'all' });
       if (isMounted.current && res.data.success) {
         setProducts(res.data.data);
       }
@@ -79,31 +238,29 @@ export default function AdminProductsPage() {
     });
   }, [products, searchQuery, activeTab]);
 
-  const handleEdit = (product: Product) => {
+  const handleEdit = React.useCallback((product: Product) => {
     setSelectedProduct(product);
     setIsPanelOpen(true);
-  };
+  }, []);
 
-  const handleCreate = () => {
+  const handleCreate = React.useCallback(() => {
     setSelectedProduct(null);
     setIsPanelOpen(true);
-  };
+  }, []);
 
-  const handleArchive = async (id: string, currentStatus: string) => {
+  const handleArchive = React.useCallback(async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === "ARCHIVED" ? "ACTIVE" : "ARCHIVED";
     try {
       await adminApi.updateProduct(id, { status: newStatus });
       toast.success(`Entry ${newStatus.toLowerCase()}ized`);
-      // Note: We don't strictly need cancellation logic for these fire-and-forget actions,
-      // but fetchProducts will handle it when called.
       const isMounted = { current: true };
       fetchProducts(isMounted);
     } catch (err) {
       toast.error("Protocol error. Status locked.");
     }
-  };
+  }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = React.useCallback(async (id: string) => {
     if (!confirm("Are you sure you want to permanently delete this piece?")) return;
     try {
       await adminApi.deleteProduct(id);
@@ -113,30 +270,28 @@ export default function AdminProductsPage() {
     } catch (err) {
       toast.error("Critical failure. Data persists.");
     }
-  };
+  }, []);
 
-  const toggleAll = () => {
+  const toggleAll = React.useCallback(() => {
     if (selectedIds.length === filteredProducts.length) {
       setSelectedIds([]);
     } else {
       setSelectedIds(filteredProducts.map(p => p.id));
     }
-  };
+  }, [selectedIds, filteredProducts]);
 
-  const toggleOne = (id: string) => {
-    if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter(i => i !== id));
-    } else {
-      setSelectedIds([...selectedIds, id]);
-    }
-  };
+  const toggleOne = React.useCallback((id: string) => {
+    setSelectedIds((prev) => 
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  }, []);
 
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+    <div className="space-y-6 sm:space-y-8 lg:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
       {/* Page Header */}
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-8">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4 sm:gap-6 lg:gap-8">
         <div className="space-y-2">
-          <h2 className="text-5xl font-bold tracking-tight text-zinc-950">Products</h2>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-zinc-950">Products</h2>
           <div className="flex items-center gap-4">
              <Badge variant="surface" className="px-3 py-1 font-black">Archive Feed</Badge>
              <div className="h-4 w-[1px] bg-zinc-200" />
@@ -145,11 +300,11 @@ export default function AdminProductsPage() {
              </span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <Button 
             variant="outline" 
             size="sm"
-            className="rounded-lg border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-100 font-medium shadow-sm transition-all"
+            className="rounded-lg border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-100 font-medium shadow-sm transition-all flex-1 sm:flex-none"
             icon={<Filter size={16} />}
           >
             Filters
@@ -158,7 +313,7 @@ export default function AdminProductsPage() {
             variant="primary" 
             size="sm"
             onClick={handleCreate}
-            className="rounded-lg bg-zinc-900 text-white hover:opacity-90 font-medium px-6 shadow-md transition-all flex items-center gap-2"
+            className="rounded-lg bg-zinc-900 text-white hover:opacity-90 font-medium px-6 shadow-md transition-all flex items-center gap-2 flex-1 sm:flex-none"
             icon={<Plus size={16} />}
           >
             Manifest New Item
@@ -170,8 +325,9 @@ export default function AdminProductsPage() {
       <div className="flex flex-col lg:flex-row justify-between items-center gap-8 border-b border-zinc-100 pb-4">
         <div className="flex gap-x-12 w-full lg:w-auto overflow-x-auto no-scrollbar scroll-smooth">
           {TABS.map((tab) => (
-            <button
+            <Button
               key={tab}
+              variant="none"
               onClick={() => setActiveTab(tab)}
               className={cn(
                 "pb-4 text-[10px] font-black uppercase tracking-[0.3em] transition-all relative whitespace-nowrap group",
@@ -186,10 +342,10 @@ export default function AdminProductsPage() {
                 "absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-200 scale-x-0 group-hover:scale-x-100 transition-transform origin-left",
                 activeTab === tab && "hidden"
               )} />
-            </button>
+            </Button>
           ))}
         </div>
-        <div className="w-full lg:w-[400px]">
+        <div className="w-full lg:w-[320px] xl:w-[400px]">
           <Input
             placeholder="Search by name, SKU..."
             value={searchQuery}
@@ -201,172 +357,125 @@ export default function AdminProductsPage() {
       </div>
 
       {/* Table Section */}
-      <div className="bg-white rounded-xl border border-zinc-100 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.01)] group/table">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-zinc-50/50 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 border-b border-zinc-100">
-            <tr>
-              <th className="px-8 py-5 w-20">
-                <Checkbox 
-                  checked={selectedIds.length === filteredProducts.length && filteredProducts.length > 0} 
-                  onCheckedChange={toggleAll}
-                />
-              </th>
-              <th className="px-8 py-5">Piece Specification</th>
-              <th className="px-8 py-5">Classification</th>
-              <th className="px-8 py-5 text-right">Value</th>
-              <th className="px-8 py-5 text-center">Availability</th>
-              <th className="px-8 py-5">Stance</th>
-              <th className="px-8 py-5 text-right pr-12">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-50">
-            {loading ? (
-              Array(6).fill(0).map((_, i) => (
-                <tr key={i}>
-                  <td className="px-8 py-8"><Skeleton className="h-5 w-5 rounded-md" /></td>
-                  <td className="px-8 py-8 flex items-center gap-6">
-                    <Skeleton className="w-16 h-20 rounded-md" />
-                    <div className="space-y-3">
-                       <Skeleton className="h-5 w-48" />
-                       <Skeleton className="h-3 w-24 px-10" />
+      <div className="bg-white rounded-xl border border-zinc-100 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[900px]">
+            <thead className="bg-zinc-50/50 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 border-b border-zinc-100">
+              <tr>
+                <th className="px-8 py-5 w-20">
+                  <Checkbox 
+                    checked={selectedIds.length === filteredProducts.length && filteredProducts.length > 0} 
+                    onCheckedChange={toggleAll}
+                  />
+                </th>
+                <th className="px-8 py-5">Piece Specification</th>
+                <th className="px-8 py-5">Classification</th>
+                <th className="px-8 py-5 text-right">Value</th>
+                <th className="px-8 py-5 text-center">Availability</th>
+                <th className="px-8 py-5">Stance</th>
+                <th className="px-8 py-5 text-right pr-12">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-50">
+              {loading ? (
+                Array(6).fill(0).map((_, i) => (
+                  <tr key={i}>
+                    <td className="px-8 py-8"><Skeleton className="h-5 w-5 rounded-md" /></td>
+                    <td className="px-8 py-8 flex items-center gap-6">
+                      <Skeleton className="w-16 h-20 rounded-md" />
+                      <div className="space-y-3">
+                         <Skeleton className="h-5 w-48" />
+                         <Skeleton className="h-3 w-24 px-10" />
+                      </div>
+                    </td>
+                    <td className="px-8 py-8"><Skeleton className="h-6 w-32 rounded-full" /></td>
+                    <td className="px-8 py-8"><Skeleton className="h-5 w-16 ml-auto" /></td>
+                    <td className="px-8 py-8"><Skeleton className="h-5 w-16 mx-auto" /></td>
+                    <td className="px-8 py-8"><Skeleton className="h-6 w-24 rounded-full" /></td>
+                    <td className="px-8 py-8"><Skeleton className="h-5 w-12 ml-auto" /></td>
+                  </tr>
+                ))
+              ) : filteredProducts.length > 0 ? (
+                filteredProducts.map((p) => (
+                  <ProductRow 
+                    key={p.id}
+                    product={p}
+                    isSelected={selectedIds.includes(p.id)}
+                    onToggle={toggleOne}
+                    onEdit={handleEdit}
+                    onArchive={handleArchive}
+                    onDelete={handleDelete}
+                  />
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="px-8 py-44 text-center">
+                    <div className="flex flex-col items-center gap-6 max-w-sm mx-auto">
+                      <div className="p-8 bg-zinc-50 rounded-full shadow-inner">
+                        <Package size={64} strokeWidth={1} className="text-zinc-200" />
+                      </div>
+                      <div className="space-y-2">
+                         <h3 className="text-xl font-bold text-zinc-950 tracking-tight">Void detected in archive</h3>
+                        <p className="text-[11px] text-zinc-400 leading-relaxed font-bold uppercase tracking-widest px-8">The editorial collection currently holds no entries for this manifestation.</p>
+                      </div>
+                      <Button 
+                        variant="primary" 
+                        onClick={handleCreate}
+                        className="mt-6 rounded-lg bg-zinc-950 text-[10px] font-black uppercase tracking-[0.3em] px-12 py-4 shadow-2xl"
+                      >
+                        Initialize Archive
+                      </Button>
                     </div>
                   </td>
-                  <td className="px-8 py-8"><Skeleton className="h-6 w-32 rounded-full" /></td>
-                  <td className="px-8 py-8"><Skeleton className="h-5 w-16 ml-auto" /></td>
-                  <td className="px-8 py-8"><Skeleton className="h-5 w-16 mx-auto" /></td>
-                  <td className="px-8 py-8"><Skeleton className="h-6 w-24 rounded-full" /></td>
-                  <td className="px-8 py-8"><Skeleton className="h-5 w-12 ml-auto" /></td>
                 </tr>
-              ))
-            ) : filteredProducts.length > 0 ? (
-              filteredProducts.map((p) => {
-                const totalStock = p.variants.reduce((acc, v) => acc + v.stock, 0);
-                const isLowStock = totalStock <= 5 && totalStock > 0;
-                const status = (p as any).status || "ACTIVE";
-                
-                return (
-                  <tr 
-                    key={p.id} 
-                    onClick={() => handleEdit(p)}
-                    className={cn(
-                      "group/row hover:bg-zinc-50/50 transition-all cursor-pointer relative",
-                      isLowStock && "border-l-4 border-amber-500"
-                    )}
-                  >
-                    <td className="px-8 py-8" onClick={(e) => e.stopPropagation()}>
-                      <Checkbox 
-                        checked={selectedIds.includes(p.id)} 
-                        onCheckedChange={() => toggleOne(p.id)}
-                      />
-                    </td>
-                    <td className="px-8 py-8">
-                      <div className="flex items-center gap-6">
-                        <div className="w-16 h-20 bg-zinc-100 rounded-sm overflow-hidden flex-shrink-0 shadow-sm transition-all group-hover/row:scale-[1.05] group-hover/row:shadow-xl group-hover/row:z-10">
-                           <img 
-                            src={p.images.find(img => img.isMain)?.url || p.images[0]?.url || ""} 
-                            className="w-full h-full object-cover transition-transform duration-700"
-                            alt={p.name}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-base font-bold text-zinc-950 tracking-tight group-hover/row:translate-x-1 transition-transform">{p.name}</p>
-                           <p className="text-[10px] font-bold font-mono text-zinc-400 tracking-widest uppercase">REF: {p.variants[0]?.sku || "N/A"}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-8">
-                      <Badge variant="surface" className="px-3 py-1 font-bold lowercase tracking-normal">
-                        {p.category?.name || "Uncategorized"}
-                      </Badge>
-                    </td>
-                    <td className="px-8 py-8 text-right">
-                      <p className="text-base font-black text-zinc-950 tracking-tighter tabular-nums">{formatCurrency(p.price)}</p>
-                    </td>
-                    <td className="px-8 py-8 text-center">
-                      <div className="flex flex-col items-center gap-2">
-                        <span className={cn(
-                          "text-[10px] font-black tabular-nums tracking-[0.2em] px-3 py-1 rounded-full border shadow-sm transition-all",
-                          totalStock === 0 ? "bg-red-50 text-red-600 border-red-100" : 
-                          isLowStock ? "bg-amber-50 text-amber-600 border-amber-100 scale-110 shadow-amber-900/5" : 
-                          "bg-zinc-50 text-zinc-950 border-zinc-100"
-                        )}>
-                          {totalStock.toString().padStart(2, '0')} UNITS
-                        </span>
-                        {isLowStock && (
-                          <span className="flex items-center gap-1.5 text-[8px] font-black uppercase text-amber-600 tracking-widest animate-pulse">
-                            <AlertTriangle size={10} /> Depleted
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-8 py-8">
-                      <Badge 
-                        variant={status === 'ACTIVE' ? "primary" : status === 'ARCHIVED' ? "error" : "surface"}
-                        className="px-3 py-1 font-black"
-                      >
-                        {status}
-                      </Badge>
-                    </td>
-                    <td className="px-8 py-8 text-right pr-12" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex justify-end items-center gap-1.5 opacity-0 group-hover/row:opacity-100 transition-all translate-x-4 group-hover/row:translate-x-0">
-                        <Button 
-                          variant="icon" 
-                          size="none" 
-                          onClick={() => handleEdit(p)}
-                          className="hover:bg-zinc-100 transition-all p-2.5 text-zinc-400 hover:text-zinc-950 rounded-full" 
-                          icon={<Edit size={18} />} 
-                        />
-                        <Button 
-                          variant="icon" 
-                          size="none" 
-                          onClick={() => handleArchive(p.id, status)}
-                          className="hover:bg-zinc-100 transition-all p-2.5 text-zinc-400 hover:text-zinc-950 rounded-full" 
-                          icon={<Archive size={18} />} 
-                        />
-                        <Button 
-                          variant="icon" 
-                          size="none" 
-                          onClick={() => handleDelete(p.id)}
-                          className="hover:bg-red-50 transition-all p-2.5 text-zinc-400 hover:text-red-500 rounded-full" 
-                          icon={<Trash2 size={18} />} 
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan={7} className="px-8 py-44 text-center">
-                  <div className="flex flex-col items-center gap-6 max-w-sm mx-auto">
-                    <div className="p-8 bg-zinc-50 rounded-full shadow-inner">
-                      <Package size={64} strokeWidth={1} className="text-zinc-200" />
-                    </div>
-                    <div className="space-y-2">
-                       <h3 className="text-xl font-bold text-zinc-950 tracking-tight">Void detected in archive</h3>
-                      <p className="text-[11px] text-zinc-400 leading-relaxed font-bold uppercase tracking-widest px-8">The editorial collection currently holds no entries for this manifestation.</p>
-                    </div>
-                    <Button 
-                      variant="primary" 
-                      onClick={handleCreate}
-                      className="mt-6 rounded-lg bg-zinc-950 text-[10px] font-black uppercase tracking-[0.3em] px-12 py-4 shadow-2xl"
-                    >
-                      Initialize Archive
-                    </Button>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Stacked View */}
+        <div className="md:hidden divide-y divide-zinc-50">
+          {loading ? (
+            Array(3).fill(0).map((_, i) => (
+              <div key={i} className="p-6 space-y-4">
+                <div className="flex gap-4">
+                  <Skeleton className="w-16 h-20 rounded-md" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-5 w-full" />
+                    <Skeleton className="h-4 w-24" />
                   </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                </div>
+                <div className="flex justify-between">
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-6 w-24" />
+                </div>
+              </div>
+            ))
+          ) : filteredProducts.length > 0 ? (
+            filteredProducts.map((p) => (
+              <MobileProductRow 
+                key={p.id}
+                product={p}
+                onEdit={handleEdit}
+              />
+            ))
+          ) : (
+            <div className="p-12 text-center text-zinc-400 text-xs italic">
+              No pieces found in archive
+            </div>
+          )}
+        </div>
       </div>
 
-      <ProductFormPanel 
-        product={selectedProduct}
-        isOpen={isPanelOpen}
-        onClose={() => setIsPanelOpen(false)}
-        onSuccess={() => fetchProducts({ current: true })}
-      />
+      <React.Suspense fallback={null}>
+        <ProductFormPanel 
+          product={selectedProduct}
+          isOpen={isPanelOpen}
+          onClose={() => setIsPanelOpen(false)}
+          onSuccess={() => fetchProducts({ current: true })}
+        />
+      </React.Suspense>
     </div>
   );
 }

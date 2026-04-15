@@ -302,20 +302,24 @@ function OrderCard({ order, isExpanded, onToggle, onCancel, onTrack, onReturn }:
                           </Button>
                         )}
                         {order.status !== "PENDING" && order.status !== "CANCELLED" && (
-                          <button 
+                          <Button 
+                            variant="primary"
+                            size="sm"
                             onClick={(e) => onTrack(e)}
-                            className="bg-primary text-on-primary px-8 py-3 rounded-md text-sm font-medium hover:opacity-80 transition"
+                            className="rounded-md"
                           >
                             Track Order
-                          </button>
+                          </Button>
                         )}
                         {order.status === "DELIVERED" && (
-                          <button 
+                          <Button 
+                            variant="outline"
+                            size="sm"
                             onClick={(e) => onReturn(e)}
-                            className="bg-transparent text-on-surface px-8 py-3 rounded-md text-sm font-medium outline outline-1 outline-outline-variant/30 hover:bg-surface-container-low transition-colors"
+                            className="rounded-md"
                           >
                             Return
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </div>
