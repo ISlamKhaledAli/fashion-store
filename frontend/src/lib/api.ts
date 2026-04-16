@@ -54,6 +54,15 @@ export const cartApi = {
   clear: () => api.delete<ApiResponse<unknown>>("/cart/clear"),
   validatePromo: (code: string, orderTotal: number) => 
     api.post<ApiResponse<{ valid: boolean; discountAmount: number; message?: string }>>("/discounts/validate", { code, orderTotal }),
+  calculateTotals: (shippingMethod: string = "standard", promoCode?: string) =>
+    api.post<ApiResponse<{
+      subtotal: number;
+      discountAmount: number;
+      discountedSubtotal: number;
+      shippingCost: number;
+      tax: number;
+      total: number;
+    }>>("/cart/calculate", { shippingMethod, promoCode }),
 };
 
 export const orderApi = {

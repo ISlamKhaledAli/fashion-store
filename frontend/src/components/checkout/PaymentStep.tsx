@@ -12,15 +12,23 @@ import { Button } from "@/components/ui/Button";
 import api from "@/lib/axios";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
+import { addressApi } from "@/lib/api";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || "");
 
 interface PaymentStepProps {
   onNext: (clientSecret: string, paymentIntentId: string) => void;
   onBack: () => void;
+  shippingMethod?: string;
 }
 
-const CheckoutForm = ({ onNext, onBack }: PaymentStepProps) => {
+interface CheckoutFormProps extends PaymentStepProps {
+  paymentIntentId: string | null;
+  addressId: string | null;
+  promoCode: string | null;
+}
+
+const CheckoutForm = ({ onNext, onBack, paymentIntentId, addressId, shippingMethod, promoCode }: CheckoutFormProps) => {
   const stripe = useStripe();
   const elements = useElements();
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +50,28 @@ const CheckoutForm = ({ onNext, onBack }: PaymentStepProps) => {
         return;
       }
 
+      let orderId = "";
+      try {
+        const orderRes = await api.post("/orders", {
+          addressId,
+          stripePaymentId: paymentIntentId,
+          notes: "Created via checkout flow",
+          shippingMethod,
+          promoCode: promoCode || undefined,
+        });
+        if (orderRes.data.success) {
+          orderId = orderRes.data.data.order.id;
+        } else {
+          setError("Order creation failed.");
+          setLoading(false);
+          return;
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.message || "Order creation failed. Please check your cart.");
+        setLoading(false);
+        return;
+      }
+
       // 2. Confirm the payment with Stripe immediately
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
@@ -58,10 +88,10 @@ const CheckoutForm = ({ onNext, onBack }: PaymentStepProps) => {
         return;
       }
 
-      if (paymentIntent && paymentIntent.status === "succeeded") {
-        // Success! Pass the payment intent ID up to the parent
-        // Note: we also pass the clientSecret (which is our onNext's first param historically)
-        onNext(paymentIntent.client_secret || "", paymentIntent.id);
+      if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing" || paymentIntent.status === "requires_action" || paymentIntent.status === "requires_capture")) {
+        // Success! Pass the order ID up to the parent
+        // Note: we pass the orderId in place of paymentIntentId so the Review step gets it
+        onNext(paymentIntent.client_secret || "", orderId);
       }
     } catch (err: any) {
       setError("An unexpected error occurred during payment.");
@@ -109,11 +139,13 @@ const CheckoutForm = ({ onNext, onBack }: PaymentStepProps) => {
   );
 };
 
-export const PaymentStep = ({ onNext, onBack }: PaymentStepProps) => {
+export const PaymentStep = ({ onNext, onBack, shippingMethod = "standard" }: PaymentStepProps) => {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [addressId, setAddressId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { getTotalPrice } = useCartStore();
+  const { getTotalPrice, promoCode } = useCartStore();
 
   useEffect(() => {
     const fetchIntent = async () => {
@@ -125,17 +157,31 @@ export const PaymentStep = ({ onNext, onBack }: PaymentStepProps) => {
           return;
         }
 
+        const addressRes = await addressApi.getAll();
+        const addresses = addressRes.data.data;
+        if (!addresses || addresses.length === 0) {
+          setError("No confirmed address found. Please go back to shipping.");
+          setLoading(false);
+          return;
+        }
+        setAddressId(addresses[0].id);
+
         const token = useAuthStore.getState().accessToken;
 
 
         const res = await api.post(
           "/payment/intent", 
-          { amount: subtotal },
+          { 
+            amount: subtotal,
+            shippingMethod,
+            promoCode: promoCode || undefined
+          },
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
         if (res.data.success) {
           setClientSecret(res.data.data.clientSecret);
+          setPaymentIntentId(res.data.data.paymentIntentId);
         }
       } catch (err: any) {
         setError(err.response?.data?.message || "Failed to initialize payment. Please try again.");
@@ -167,7 +213,14 @@ export const PaymentStep = ({ onNext, onBack }: PaymentStepProps) => {
 
   return (
     <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
-      <CheckoutForm onNext={onNext} onBack={onBack} />
+      <CheckoutForm 
+        onNext={onNext} 
+        onBack={onBack} 
+        paymentIntentId={paymentIntentId} 
+        addressId={addressId} 
+        shippingMethod={shippingMethod}
+        promoCode={promoCode}
+      />
     </Elements>
   );
 };

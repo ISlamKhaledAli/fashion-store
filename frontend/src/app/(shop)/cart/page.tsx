@@ -16,7 +16,8 @@ export default function CartPage() {
     removeItem, 
     updateQuantity, 
     getTotalPrice, 
-    getTotalItems 
+    getTotalItems,
+    setPromo
   } = useCartStore();
   const { isAuthenticated } = useAuthStore();
   
@@ -54,9 +55,11 @@ export default function CartPage() {
       if (res.data.success && res.data.data?.valid) {
         setPromoStatus("success");
         setDiscountAmount(res.data.data.discountAmount);
+        setPromo(promoCode, res.data.data.discountAmount);
       } else {
         setPromoStatus("error");
         setPromoMessage(res.data.data?.message || "Invalid promo code");
+        setPromo(null, 0);
       }
     } catch (err: any) {
       setPromoStatus("error");
@@ -83,9 +86,9 @@ export default function CartPage() {
   }
 
   const subtotal = getTotalPrice();
-  const taxSubtotal = Math.max(0, subtotal - discountAmount);
-  const tax = taxSubtotal * 0.085; // Mock 8.5% tax
-  const total = taxSubtotal + tax;
+  // Pre-checkout estimate only — the real calculation happens server-side at checkout
+  const estimatedTax = Math.round((Math.max(0, subtotal - discountAmount) * 0.10) * 100) / 100;
+  const estimatedTotal = Math.round((Math.max(0, subtotal - discountAmount) + estimatedTax) * 100) / 100;
 
   return (
     <main className="pt-32 pb-24 px-8 max-w-[1440px] mx-auto min-h-screen">
@@ -214,7 +217,7 @@ export default function CartPage() {
               </div>
               <div className="flex justify-between items-center text-sm font-label tracking-wide">
                 <span className="text-on-surface-variant">Estimated Tax</span>
-                <span className="font-medium">{formatCurrency(tax)}</span>
+                <span className="font-medium">{formatCurrency(estimatedTax)}</span>
               </div>
               {discountAmount > 0 && (
                 <motion.div 
@@ -288,12 +291,12 @@ export default function CartPage() {
             <div className="flex justify-between items-center pt-2 mb-10">
               <span className="text-lg font-medium">Total</span>
               <motion.span 
-                key={total}
+                key={estimatedTotal}
                 initial={{ opacity: 0.5 }}
                 animate={{ opacity: 1 }}
                 className="text-2xl font-bold tracking-tight text-primary"
               >
-                {formatCurrency(total)}
+                {formatCurrency(estimatedTotal)}
               </motion.span>
             </div>
 

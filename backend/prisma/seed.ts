@@ -39,8 +39,7 @@ const CUSTOMER_ACCOUNTS = [
 ];
 
 const IMAGE_LIBRARY = {
-  hero:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuDAGnsbbuvwSlUY_WStz922zawWfeVdjUP72_IMBp2BH0hcqUfFKm6DOtNXmlVjrzbM2yR8U5J6nNN5QSa0wkTb5lvDUakRpIrBY4ecAmffAKnggO_EySHje0YxYb1IcCYOqUtsOW6fLlJKBe5ElgioKVjYdsseGqxX4Te9mKiaWnZo6zfriKOBosLxXKN-VMcrpXUiMTyP23KEGss6NKBhpUuLqejitEv8BQ_Aq27CokLJu_Q7DdVsbZYhzXrcr9YX7Od03JP2Xqs",
+  hero: "https://lh3.googleusercontent.com/aida-public/AB6AXuDAGnsbbuvwSlUY_WStz922zawWfeVdjUP72_IMBp2BH0hcqUfFKm6DOtNXmlVjrzbM2yR8U5J6nNN5QSa0wkTb5lvDUakRpIrBY4ecAmffAKnggO_EySHje0YxYb1IcCYOqUtsOW6fLlJKBe5ElgioKVjYdsseGqxX4Te9mKiaWnZo6zfriKOBosLxXKN-VMcrpXUiMTyP23KEGss6NKBhpUuLqejitEv8BQ_Aq27CokLJu_Q7DdVsbZYhzXrcr9YX7Od03JP2Xqs",
   brandStory:
     "https://lh3.googleusercontent.com/aida-public/AB6AXuB1_lGLYExz9Ivn1c1cVkz4T8j9N5-zvp5-WMqVCYP50XCmPlxbgrvKF9SPxT5L_o3qVwdFVT6CRTGDUkCW3YHIRns_OgNSvpH2HK9sGxJpOvBTsT2CWSN25soiU6zzHCPYsOg3UO525Y6dL3RRZ0AZc03hZA5yaepmbjGgid9QSRov27ENM_LdD5uLzVH4bxBhpEy944jQfvyYLIldeuKhoGgbW5ptO3H8sl3ClCrJ8xkFVL1KJVqF2y-BQH5hF95YsJWf9r5wyUE",
   outerwear:
@@ -56,18 +55,33 @@ const IMAGE_LIBRARY = {
 const CATEGORY_SEEDS = [
   { name: "Outerwear", slug: "outerwear", image: IMAGE_LIBRARY.outerwear },
   { name: "Essential", slug: "essential", image: IMAGE_LIBRARY.essential },
-  { name: "Objects", slug: "objects", image: IMAGE_LIBRARY.objects },
+  { name: "Accessories", slug: "accessories", image: IMAGE_LIBRARY.objects },
   { name: "Footwear", slug: "footwear", image: IMAGE_LIBRARY.footwear },
 ];
 
 const BRAND_SEEDS = [
-  { name: "Atelier North", slug: "atelier-north", logo: IMAGE_LIBRARY.outerwear },
-  { name: "Meridian Studio", slug: "meridian-studio", logo: IMAGE_LIBRARY.brandStory },
+  {
+    name: "Atelier North",
+    slug: "atelier-north",
+    logo: IMAGE_LIBRARY.outerwear,
+  },
+  {
+    name: "Meridian Studio",
+    slug: "meridian-studio",
+    logo: IMAGE_LIBRARY.brandStory,
+  },
   { name: "Plain Form", slug: "plain-form", logo: IMAGE_LIBRARY.essential },
   { name: "Urban Drift", slug: "urban-drift", logo: IMAGE_LIBRARY.footwear },
 ];
 
-const TAG_NAMES = ["Best Seller", "New Season", "Tailored", "Minimal", "Travel Ready", "Limited Run"];
+const TAG_NAMES = [
+  "Best Seller",
+  "New Season",
+  "Tailored",
+  "Minimal",
+  "Travel Ready",
+  "Limited Run",
+];
 
 type ProductSeed = {
   name: string;
@@ -105,9 +119,27 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     imageUrls: [IMAGE_LIBRARY.outerwear, IMAGE_LIBRARY.hero],
     tagNames: ["Best Seller", "Tailored", "Travel Ready"],
     variants: [
-      { size: "S", color: "Sand", colorHex: "#D2BEA1", stock: 7, sku: "SEED-HORIZON-S-SAND" },
-      { size: "M", color: "Sand", colorHex: "#D2BEA1", stock: 9, sku: "SEED-HORIZON-M-SAND" },
-      { size: "L", color: "Sand", colorHex: "#D2BEA1", stock: 4, sku: "SEED-HORIZON-L-SAND" },
+      {
+        size: "S",
+        color: "Sand",
+        colorHex: "#D2BEA1",
+        stock: 7,
+        sku: "SEED-HORIZON-S-SAND",
+      },
+      {
+        size: "M",
+        color: "Sand",
+        colorHex: "#D2BEA1",
+        stock: 9,
+        sku: "SEED-HORIZON-M-SAND",
+      },
+      {
+        size: "L",
+        color: "Sand",
+        colorHex: "#D2BEA1",
+        stock: 4,
+        sku: "SEED-HORIZON-L-SAND",
+      },
     ],
   },
   {
@@ -124,9 +156,27 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     imageUrls: [IMAGE_LIBRARY.brandStory, IMAGE_LIBRARY.outerwear],
     tagNames: ["Minimal", "New Season"],
     variants: [
-      { size: "S", color: "Graphite", colorHex: "#4A4A4F", stock: 6, sku: "SEED-FRAME-S-GRAPHITE" },
-      { size: "M", color: "Graphite", colorHex: "#4A4A4F", stock: 8, sku: "SEED-FRAME-M-GRAPHITE" },
-      { size: "L", color: "Graphite", colorHex: "#4A4A4F", stock: 5, sku: "SEED-FRAME-L-GRAPHITE" },
+      {
+        size: "S",
+        color: "Graphite",
+        colorHex: "#4A4A4F",
+        stock: 6,
+        sku: "SEED-FRAME-S-GRAPHITE",
+      },
+      {
+        size: "M",
+        color: "Graphite",
+        colorHex: "#4A4A4F",
+        stock: 8,
+        sku: "SEED-FRAME-M-GRAPHITE",
+      },
+      {
+        size: "L",
+        color: "Graphite",
+        colorHex: "#4A4A4F",
+        stock: 5,
+        sku: "SEED-FRAME-L-GRAPHITE",
+      },
     ],
   },
   {
@@ -143,9 +193,27 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     imageUrls: [IMAGE_LIBRARY.essential, IMAGE_LIBRARY.hero],
     tagNames: ["Best Seller", "Minimal"],
     variants: [
-      { size: "S", color: "Off White", colorHex: "#F1EDE4", stock: 15, sku: "SEED-CORETEE-S-WHITE" },
-      { size: "M", color: "Off White", colorHex: "#F1EDE4", stock: 18, sku: "SEED-CORETEE-M-WHITE" },
-      { size: "L", color: "Off White", colorHex: "#F1EDE4", stock: 12, sku: "SEED-CORETEE-L-WHITE" },
+      {
+        size: "S",
+        color: "Off White",
+        colorHex: "#F1EDE4",
+        stock: 15,
+        sku: "SEED-CORETEE-S-WHITE",
+      },
+      {
+        size: "M",
+        color: "Off White",
+        colorHex: "#F1EDE4",
+        stock: 18,
+        sku: "SEED-CORETEE-M-WHITE",
+      },
+      {
+        size: "L",
+        color: "Off White",
+        colorHex: "#F1EDE4",
+        stock: 12,
+        sku: "SEED-CORETEE-L-WHITE",
+      },
     ],
   },
   {
@@ -162,9 +230,27 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     imageUrls: [IMAGE_LIBRARY.brandStory, IMAGE_LIBRARY.essential],
     tagNames: ["Tailored", "Travel Ready"],
     variants: [
-      { size: "30", color: "Ink", colorHex: "#1D2538", stock: 8, sku: "SEED-LINE-30-INK" },
-      { size: "32", color: "Ink", colorHex: "#1D2538", stock: 6, sku: "SEED-LINE-32-INK" },
-      { size: "34", color: "Ink", colorHex: "#1D2538", stock: 3, sku: "SEED-LINE-34-INK" },
+      {
+        size: "30",
+        color: "Ink",
+        colorHex: "#1D2538",
+        stock: 8,
+        sku: "SEED-LINE-30-INK",
+      },
+      {
+        size: "32",
+        color: "Ink",
+        colorHex: "#1D2538",
+        stock: 6,
+        sku: "SEED-LINE-32-INK",
+      },
+      {
+        size: "34",
+        color: "Ink",
+        colorHex: "#1D2538",
+        stock: 3,
+        sku: "SEED-LINE-34-INK",
+      },
     ],
   },
   {
@@ -175,30 +261,19 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     price: 138,
     comparePrice: 165,
     cost: 76,
-    categorySlug: "objects",
+    categorySlug: "accessories",
     brandSlug: "atelier-north",
     featured: false,
     imageUrls: [IMAGE_LIBRARY.objects, IMAGE_LIBRARY.brandStory],
     tagNames: ["Limited Run", "Travel Ready"],
     variants: [
-      { size: "One Size", color: "Espresso", colorHex: "#4B342D", stock: 7, sku: "SEED-ARC-ONE-ESPRESSO" },
-    ],
-  },
-  {
-    name: "Studio Notebook Set",
-    slug: "studio-notebook-set",
-    description:
-      "A set of three cloth-bound notebooks with grid pages and contrast spines for sketches, notes, and travel records.",
-    price: 28,
-    comparePrice: 36,
-    cost: 10,
-    categorySlug: "objects",
-    brandSlug: "plain-form",
-    featured: false,
-    imageUrls: [IMAGE_LIBRARY.objects, IMAGE_LIBRARY.essential],
-    tagNames: ["Minimal", "New Season"],
-    variants: [
-      { size: "Set of 3", color: "Stone", colorHex: "#C8C0B4", stock: 20, sku: "SEED-NOTEBOOK-SET3-STONE" },
+      {
+        size: "One Size",
+        color: "Espresso",
+        colorHex: "#4B342D",
+        stock: 7,
+        sku: "SEED-ARC-ONE-ESPRESSO",
+      },
     ],
   },
   {
@@ -215,9 +290,27 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     imageUrls: [IMAGE_LIBRARY.footwear, IMAGE_LIBRARY.hero],
     tagNames: ["Best Seller", "Travel Ready"],
     variants: [
-      { size: "41", color: "Chalk", colorHex: "#E8E2D8", stock: 8, sku: "SEED-STRIDE-41-CHALK" },
-      { size: "42", color: "Chalk", colorHex: "#E8E2D8", stock: 5, sku: "SEED-STRIDE-42-CHALK" },
-      { size: "43", color: "Chalk", colorHex: "#E8E2D8", stock: 4, sku: "SEED-STRIDE-43-CHALK" },
+      {
+        size: "41",
+        color: "Chalk",
+        colorHex: "#E8E2D8",
+        stock: 8,
+        sku: "SEED-STRIDE-41-CHALK",
+      },
+      {
+        size: "42",
+        color: "Chalk",
+        colorHex: "#E8E2D8",
+        stock: 5,
+        sku: "SEED-STRIDE-42-CHALK",
+      },
+      {
+        size: "43",
+        color: "Chalk",
+        colorHex: "#E8E2D8",
+        stock: 4,
+        sku: "SEED-STRIDE-43-CHALK",
+      },
     ],
   },
   {
@@ -234,9 +327,27 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     imageUrls: [IMAGE_LIBRARY.footwear, IMAGE_LIBRARY.brandStory],
     tagNames: ["Limited Run", "Minimal"],
     variants: [
-      { size: "39", color: "Taupe", colorHex: "#8E7B67", stock: 3, sku: "SEED-MONO-39-TAUPE" },
-      { size: "40", color: "Taupe", colorHex: "#8E7B67", stock: 2, sku: "SEED-MONO-40-TAUPE" },
-      { size: "41", color: "Taupe", colorHex: "#8E7B67", stock: 4, sku: "SEED-MONO-41-TAUPE" },
+      {
+        size: "39",
+        color: "Taupe",
+        colorHex: "#8E7B67",
+        stock: 3,
+        sku: "SEED-MONO-39-TAUPE",
+      },
+      {
+        size: "40",
+        color: "Taupe",
+        colorHex: "#8E7B67",
+        stock: 2,
+        sku: "SEED-MONO-40-TAUPE",
+      },
+      {
+        size: "41",
+        color: "Taupe",
+        colorHex: "#8E7B67",
+        stock: 4,
+        sku: "SEED-MONO-41-TAUPE",
+      },
     ],
   },
   {
@@ -253,9 +364,27 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     imageUrls: [IMAGE_LIBRARY.outerwear, IMAGE_LIBRARY.hero],
     tagNames: ["Travel Ready", "New Season"],
     variants: [
-      { size: "S", color: "Olive", colorHex: "#6D7752", stock: 8, sku: "SEED-ATLAS-S-OLIVE" },
-      { size: "M", color: "Olive", colorHex: "#6D7752", stock: 11, sku: "SEED-ATLAS-M-OLIVE" },
-      { size: "L", color: "Olive", colorHex: "#6D7752", stock: 6, sku: "SEED-ATLAS-L-OLIVE" },
+      {
+        size: "S",
+        color: "Olive",
+        colorHex: "#6D7752",
+        stock: 8,
+        sku: "SEED-ATLAS-S-OLIVE",
+      },
+      {
+        size: "M",
+        color: "Olive",
+        colorHex: "#6D7752",
+        stock: 11,
+        sku: "SEED-ATLAS-M-OLIVE",
+      },
+      {
+        size: "L",
+        color: "Olive",
+        colorHex: "#6D7752",
+        stock: 6,
+        sku: "SEED-ATLAS-L-OLIVE",
+      },
     ],
   },
   {
@@ -272,9 +401,27 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     imageUrls: [IMAGE_LIBRARY.outerwear, IMAGE_LIBRARY.brandStory],
     tagNames: ["Tailored", "Travel Ready"],
     variants: [
-      { size: "M", color: "Clay", colorHex: "#A5866D", stock: 7, sku: "SEED-DUNE-M-CLAY" },
-      { size: "L", color: "Clay", colorHex: "#A5866D", stock: 5, sku: "SEED-DUNE-L-CLAY" },
-      { size: "XL", color: "Clay", colorHex: "#A5866D", stock: 4, sku: "SEED-DUNE-XL-CLAY" },
+      {
+        size: "M",
+        color: "Clay",
+        colorHex: "#A5866D",
+        stock: 7,
+        sku: "SEED-DUNE-M-CLAY",
+      },
+      {
+        size: "L",
+        color: "Clay",
+        colorHex: "#A5866D",
+        stock: 5,
+        sku: "SEED-DUNE-L-CLAY",
+      },
+      {
+        size: "XL",
+        color: "Clay",
+        colorHex: "#A5866D",
+        stock: 4,
+        sku: "SEED-DUNE-XL-CLAY",
+      },
     ],
   },
   {
@@ -291,9 +438,27 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     imageUrls: [IMAGE_LIBRARY.brandStory, IMAGE_LIBRARY.outerwear],
     tagNames: ["Best Seller", "Minimal"],
     variants: [
-      { size: "S", color: "Onyx", colorHex: "#232327", stock: 6, sku: "SEED-QUARRY-S-ONYX" },
-      { size: "M", color: "Onyx", colorHex: "#232327", stock: 8, sku: "SEED-QUARRY-M-ONYX" },
-      { size: "L", color: "Onyx", colorHex: "#232327", stock: 5, sku: "SEED-QUARRY-L-ONYX" },
+      {
+        size: "S",
+        color: "Onyx",
+        colorHex: "#232327",
+        stock: 6,
+        sku: "SEED-QUARRY-S-ONYX",
+      },
+      {
+        size: "M",
+        color: "Onyx",
+        colorHex: "#232327",
+        stock: 8,
+        sku: "SEED-QUARRY-M-ONYX",
+      },
+      {
+        size: "L",
+        color: "Onyx",
+        colorHex: "#232327",
+        stock: 5,
+        sku: "SEED-QUARRY-L-ONYX",
+      },
     ],
   },
   {
@@ -310,9 +475,27 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     imageUrls: [IMAGE_LIBRARY.essential, IMAGE_LIBRARY.brandStory],
     tagNames: ["New Season", "Minimal"],
     variants: [
-      { size: "S", color: "Sky", colorHex: "#AFC7D7", stock: 12, sku: "SEED-MERCER-S-SKY" },
-      { size: "M", color: "Sky", colorHex: "#AFC7D7", stock: 10, sku: "SEED-MERCER-M-SKY" },
-      { size: "L", color: "Sky", colorHex: "#AFC7D7", stock: 8, sku: "SEED-MERCER-L-SKY" },
+      {
+        size: "S",
+        color: "Sky",
+        colorHex: "#AFC7D7",
+        stock: 12,
+        sku: "SEED-MERCER-S-SKY",
+      },
+      {
+        size: "M",
+        color: "Sky",
+        colorHex: "#AFC7D7",
+        stock: 10,
+        sku: "SEED-MERCER-M-SKY",
+      },
+      {
+        size: "L",
+        color: "Sky",
+        colorHex: "#AFC7D7",
+        stock: 8,
+        sku: "SEED-MERCER-L-SKY",
+      },
     ],
   },
   {
@@ -329,9 +512,27 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     imageUrls: [IMAGE_LIBRARY.essential, IMAGE_LIBRARY.hero],
     tagNames: ["Minimal", "Best Seller"],
     variants: [
-      { size: "S", color: "Bone", colorHex: "#E8E0D3", stock: 18, sku: "SEED-RIBTANK-S-BONE" },
-      { size: "M", color: "Bone", colorHex: "#E8E0D3", stock: 16, sku: "SEED-RIBTANK-M-BONE" },
-      { size: "L", color: "Bone", colorHex: "#E8E0D3", stock: 12, sku: "SEED-RIBTANK-L-BONE" },
+      {
+        size: "S",
+        color: "Bone",
+        colorHex: "#E8E0D3",
+        stock: 18,
+        sku: "SEED-RIBTANK-S-BONE",
+      },
+      {
+        size: "M",
+        color: "Bone",
+        colorHex: "#E8E0D3",
+        stock: 16,
+        sku: "SEED-RIBTANK-M-BONE",
+      },
+      {
+        size: "L",
+        color: "Bone",
+        colorHex: "#E8E0D3",
+        stock: 12,
+        sku: "SEED-RIBTANK-L-BONE",
+      },
     ],
   },
   {
@@ -348,9 +549,27 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     imageUrls: [IMAGE_LIBRARY.brandStory, IMAGE_LIBRARY.essential],
     tagNames: ["Tailored", "New Season"],
     variants: [
-      { size: "S", color: "Navy", colorHex: "#2C3552", stock: 9, sku: "SEED-COLUMN-S-NAVY" },
-      { size: "M", color: "Navy", colorHex: "#2C3552", stock: 10, sku: "SEED-COLUMN-M-NAVY" },
-      { size: "L", color: "Navy", colorHex: "#2C3552", stock: 7, sku: "SEED-COLUMN-L-NAVY" },
+      {
+        size: "S",
+        color: "Navy",
+        colorHex: "#2C3552",
+        stock: 9,
+        sku: "SEED-COLUMN-S-NAVY",
+      },
+      {
+        size: "M",
+        color: "Navy",
+        colorHex: "#2C3552",
+        stock: 10,
+        sku: "SEED-COLUMN-M-NAVY",
+      },
+      {
+        size: "L",
+        color: "Navy",
+        colorHex: "#2C3552",
+        stock: 7,
+        sku: "SEED-COLUMN-L-NAVY",
+      },
     ],
   },
   {
@@ -367,9 +586,27 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     imageUrls: [IMAGE_LIBRARY.hero, IMAGE_LIBRARY.essential],
     tagNames: ["Travel Ready", "Best Seller"],
     variants: [
-      { size: "M", color: "Smoke", colorHex: "#7B7C84", stock: 14, sku: "SEED-TRANSIT-M-SMOKE" },
-      { size: "L", color: "Smoke", colorHex: "#7B7C84", stock: 11, sku: "SEED-TRANSIT-L-SMOKE" },
-      { size: "XL", color: "Smoke", colorHex: "#7B7C84", stock: 7, sku: "SEED-TRANSIT-XL-SMOKE" },
+      {
+        size: "M",
+        color: "Smoke",
+        colorHex: "#7B7C84",
+        stock: 14,
+        sku: "SEED-TRANSIT-M-SMOKE",
+      },
+      {
+        size: "L",
+        color: "Smoke",
+        colorHex: "#7B7C84",
+        stock: 11,
+        sku: "SEED-TRANSIT-L-SMOKE",
+      },
+      {
+        size: "XL",
+        color: "Smoke",
+        colorHex: "#7B7C84",
+        stock: 7,
+        sku: "SEED-TRANSIT-XL-SMOKE",
+      },
     ],
   },
   {
@@ -386,9 +623,27 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     imageUrls: [IMAGE_LIBRARY.essential, IMAGE_LIBRARY.brandStory],
     tagNames: ["Travel Ready", "Minimal"],
     variants: [
-      { size: "30", color: "Slate", colorHex: "#5C6675", stock: 9, sku: "SEED-EVERYDAY-30-SLATE" },
-      { size: "32", color: "Slate", colorHex: "#5C6675", stock: 8, sku: "SEED-EVERYDAY-32-SLATE" },
-      { size: "34", color: "Slate", colorHex: "#5C6675", stock: 6, sku: "SEED-EVERYDAY-34-SLATE" },
+      {
+        size: "30",
+        color: "Slate",
+        colorHex: "#5C6675",
+        stock: 9,
+        sku: "SEED-EVERYDAY-30-SLATE",
+      },
+      {
+        size: "32",
+        color: "Slate",
+        colorHex: "#5C6675",
+        stock: 8,
+        sku: "SEED-EVERYDAY-32-SLATE",
+      },
+      {
+        size: "34",
+        color: "Slate",
+        colorHex: "#5C6675",
+        stock: 6,
+        sku: "SEED-EVERYDAY-34-SLATE",
+      },
     ],
   },
   {
@@ -399,13 +654,19 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     price: 42,
     comparePrice: 54,
     cost: 17,
-    categorySlug: "objects",
+    categorySlug: "accessories",
     brandSlug: "atelier-north",
     featured: false,
     imageUrls: [IMAGE_LIBRARY.objects, IMAGE_LIBRARY.outerwear],
     tagNames: ["Travel Ready", "Limited Run"],
     variants: [
-      { size: "One Size", color: "Tan", colorHex: "#B7946C", stock: 15, sku: "SEED-FOLD-ONE-TAN" },
+      {
+        size: "One Size",
+        color: "Tan",
+        colorHex: "#B7946C",
+        stock: 15,
+        sku: "SEED-FOLD-ONE-TAN",
+      },
     ],
   },
   {
@@ -416,30 +677,19 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     price: 29,
     comparePrice: 36,
     cost: 11,
-    categorySlug: "objects",
+    categorySlug: "accessories",
     brandSlug: "urban-drift",
     featured: false,
     imageUrls: [IMAGE_LIBRARY.objects, IMAGE_LIBRARY.hero],
     tagNames: ["Best Seller", "New Season"],
     variants: [
-      { size: "One Size", color: "Forest", colorHex: "#495B43", stock: 18, sku: "SEED-CAP-ONE-FOREST" },
-    ],
-  },
-  {
-    name: "Resin Desk Tray",
-    slug: "resin-desk-tray",
-    description:
-      "A cast resin valet tray with rounded corners and subtle marbling for keys, rings, and pocket essentials.",
-    price: 36,
-    comparePrice: 44,
-    cost: 14,
-    categorySlug: "objects",
-    brandSlug: "plain-form",
-    featured: false,
-    imageUrls: [IMAGE_LIBRARY.objects, IMAGE_LIBRARY.brandStory],
-    tagNames: ["Minimal", "Limited Run"],
-    variants: [
-      { size: "One Size", color: "Amber", colorHex: "#A96D3B", stock: 12, sku: "SEED-TRAY-ONE-AMBER" },
+      {
+        size: "One Size",
+        color: "Forest",
+        colorHex: "#495B43",
+        stock: 18,
+        sku: "SEED-CAP-ONE-FOREST",
+      },
     ],
   },
   {
@@ -456,9 +706,27 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     imageUrls: [IMAGE_LIBRARY.footwear, IMAGE_LIBRARY.essential],
     tagNames: ["Travel Ready", "Minimal"],
     variants: [
-      { size: "41", color: "Cream", colorHex: "#E7DFC9", stock: 7, sku: "SEED-HARBOUR-41-CREAM" },
-      { size: "42", color: "Cream", colorHex: "#E7DFC9", stock: 9, sku: "SEED-HARBOUR-42-CREAM" },
-      { size: "43", color: "Cream", colorHex: "#E7DFC9", stock: 6, sku: "SEED-HARBOUR-43-CREAM" },
+      {
+        size: "41",
+        color: "Cream",
+        colorHex: "#E7DFC9",
+        stock: 7,
+        sku: "SEED-HARBOUR-41-CREAM",
+      },
+      {
+        size: "42",
+        color: "Cream",
+        colorHex: "#E7DFC9",
+        stock: 9,
+        sku: "SEED-HARBOUR-42-CREAM",
+      },
+      {
+        size: "43",
+        color: "Cream",
+        colorHex: "#E7DFC9",
+        stock: 6,
+        sku: "SEED-HARBOUR-43-CREAM",
+      },
     ],
   },
   {
@@ -475,9 +743,27 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     imageUrls: [IMAGE_LIBRARY.footwear, IMAGE_LIBRARY.hero],
     tagNames: ["Best Seller", "New Season"],
     variants: [
-      { size: "41", color: "Shadow", colorHex: "#676C7A", stock: 10, sku: "SEED-VECTOR-41-SHADOW" },
-      { size: "42", color: "Shadow", colorHex: "#676C7A", stock: 8, sku: "SEED-VECTOR-42-SHADOW" },
-      { size: "43", color: "Shadow", colorHex: "#676C7A", stock: 7, sku: "SEED-VECTOR-43-SHADOW" },
+      {
+        size: "41",
+        color: "Shadow",
+        colorHex: "#676C7A",
+        stock: 10,
+        sku: "SEED-VECTOR-41-SHADOW",
+      },
+      {
+        size: "42",
+        color: "Shadow",
+        colorHex: "#676C7A",
+        stock: 8,
+        sku: "SEED-VECTOR-42-SHADOW",
+      },
+      {
+        size: "43",
+        color: "Shadow",
+        colorHex: "#676C7A",
+        stock: 7,
+        sku: "SEED-VECTOR-43-SHADOW",
+      },
     ],
   },
   {
@@ -494,9 +780,27 @@ const PRODUCT_SEEDS: ProductSeed[] = [
     imageUrls: [IMAGE_LIBRARY.footwear, IMAGE_LIBRARY.brandStory],
     tagNames: ["Tailored", "Limited Run"],
     variants: [
-      { size: "41", color: "Chestnut", colorHex: "#7A4A2D", stock: 5, sku: "SEED-DERBY-41-CHESTNUT" },
-      { size: "42", color: "Chestnut", colorHex: "#7A4A2D", stock: 6, sku: "SEED-DERBY-42-CHESTNUT" },
-      { size: "43", color: "Chestnut", colorHex: "#7A4A2D", stock: 4, sku: "SEED-DERBY-43-CHESTNUT" },
+      {
+        size: "41",
+        color: "Chestnut",
+        colorHex: "#7A4A2D",
+        stock: 5,
+        sku: "SEED-DERBY-41-CHESTNUT",
+      },
+      {
+        size: "42",
+        color: "Chestnut",
+        colorHex: "#7A4A2D",
+        stock: 6,
+        sku: "SEED-DERBY-42-CHESTNUT",
+      },
+      {
+        size: "43",
+        color: "Chestnut",
+        colorHex: "#7A4A2D",
+        stock: 4,
+        sku: "SEED-DERBY-43-CHESTNUT",
+      },
     ],
   },
 ];
@@ -611,7 +915,7 @@ const ORDER_SEEDS = [
     createdAt: daysAgo(2),
     items: [
       { sku: "SEED-ARC-ONE-ESPRESSO", quantity: 1 },
-      { sku: "SEED-NOTEBOOK-SET3-STONE", quantity: 2 },
+      { sku: "SEED-CAP-ONE-FOREST", quantity: 1 },
     ],
   },
 ];
@@ -722,7 +1026,10 @@ async function main() {
   }
 
   const productMap = new Map<string, { id: string; price: number }>();
-  const variantMap = new Map<string, { id: string; productId: string; price: number }>();
+  const variantMap = new Map<
+    string,
+    { id: string; productId: string; price: number }
+  >();
 
   for (const product of PRODUCT_SEEDS) {
     const categoryId = categoryMap.get(product.categorySlug)?.id;
@@ -818,11 +1125,16 @@ async function main() {
       }),
     });
 
-    productMap.set(product.slug, { id: productRecord.id, price: product.price });
+    productMap.set(product.slug, {
+      id: productRecord.id,
+      price: product.price,
+    });
   }
 
   const customerIds = Array.from(customers.values()).map((user) => user.id);
-  const productIds = Array.from(productMap.values()).map((product) => product.id);
+  const productIds = Array.from(productMap.values()).map(
+    (product) => product.id,
+  );
 
   await prisma.order.deleteMany({
     where: {
@@ -895,7 +1207,9 @@ async function main() {
       const product = productMap.get(review.productSlug);
 
       if (!user || !product) {
-        throw new Error(`Missing review dependency for ${review.email} / ${review.productSlug}`);
+        throw new Error(
+          `Missing review dependency for ${review.email} / ${review.productSlug}`,
+        );
       }
 
       return {
@@ -914,7 +1228,9 @@ async function main() {
       const product = productMap.get(entry.productSlug);
 
       if (!user || !product) {
-        throw new Error(`Missing wishlist dependency for ${entry.email} / ${entry.productSlug}`);
+        throw new Error(
+          `Missing wishlist dependency for ${entry.email} / ${entry.productSlug}`,
+        );
       }
 
       return {
@@ -935,8 +1251,14 @@ async function main() {
       items: {
         deleteMany: {},
         create: [
-          { variantId: variantMap.get("SEED-LINE-32-INK")?.id as string, quantity: 1 },
-          { variantId: variantMap.get("SEED-MONO-40-TAUPE")?.id as string, quantity: 1 },
+          {
+            variantId: variantMap.get("SEED-LINE-32-INK")?.id as string,
+            quantity: 1,
+          },
+          {
+            variantId: variantMap.get("SEED-MONO-40-TAUPE")?.id as string,
+            quantity: 1,
+          },
         ],
       },
     },
@@ -944,8 +1266,14 @@ async function main() {
       userId: layla.id,
       items: {
         create: [
-          { variantId: variantMap.get("SEED-LINE-32-INK")?.id as string, quantity: 1 },
-          { variantId: variantMap.get("SEED-MONO-40-TAUPE")?.id as string, quantity: 1 },
+          {
+            variantId: variantMap.get("SEED-LINE-32-INK")?.id as string,
+            quantity: 1,
+          },
+          {
+            variantId: variantMap.get("SEED-MONO-40-TAUPE")?.id as string,
+            quantity: 1,
+          },
         ],
       },
     },
@@ -973,7 +1301,10 @@ async function main() {
       };
     });
 
-    const subtotal = lineItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const subtotal = lineItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
     const shipping = 10;
     const tax = Number((subtotal * 0.1).toFixed(2));
     const total = Number((subtotal + shipping + tax).toFixed(2));
@@ -1006,17 +1337,28 @@ async function main() {
     });
   }
 
-  const [productsCount, customersCount, ordersCount, discountsCount] = await Promise.all([
-    prisma.product.count({ where: { slug: { in: PRODUCT_SEEDS.map((product) => product.slug) } } }),
-    prisma.user.count({ where: { email: { in: CUSTOMER_ACCOUNTS.map((customer) => customer.email) } } }),
-    prisma.order.count({
-      where: {
-        userId: { in: customerIds },
-        notes: { startsWith: "[seed]" },
-      },
-    }),
-    prisma.discount.count({ where: { code: { in: DISCOUNT_SEEDS.map((discount) => discount.code) } } }),
-  ]);
+  const [productsCount, customersCount, ordersCount, discountsCount] =
+    await Promise.all([
+      prisma.product.count({
+        where: { slug: { in: PRODUCT_SEEDS.map((product) => product.slug) } },
+      }),
+      prisma.user.count({
+        where: {
+          email: { in: CUSTOMER_ACCOUNTS.map((customer) => customer.email) },
+        },
+      }),
+      prisma.order.count({
+        where: {
+          userId: { in: customerIds },
+          notes: { startsWith: "[seed]" },
+        },
+      }),
+      prisma.discount.count({
+        where: {
+          code: { in: DISCOUNT_SEEDS.map((discount) => discount.code) },
+        },
+      }),
+    ]);
 
   console.log("Seed completed successfully.");
   console.log(`Admin email: ${ADMIN_CREDENTIALS.email}`);

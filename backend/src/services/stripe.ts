@@ -7,8 +7,9 @@ const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
 });
 
 export const createPaymentIntent = async (amount: number, currency: string = "usd", metadata: any = {}) => {
+  if (!Number.isInteger(amount)) throw new Error('PaymentIntent amount must be an integer');
   return await stripe.paymentIntents.create({
-    amount: Math.round(amount * 100), // Stripe works in cents
+    amount,
     currency,
     metadata,
   });

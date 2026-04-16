@@ -1,8 +1,11 @@
 import { Request, Response, NextFunction } from "express";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { sendResponse } from "../utils/apiResponse";
 import { createOrderSchema } from "../validators/order.validator";
 import { createPaymentIntent } from "../services/stripe";
+import stripe from "../services/stripe";
+import { calculateOrderTotals } from "../utils/pricing";
 import { NotFoundError, ConflictError, ValidationError } from "../utils/AppError";
 
 export const getOrders = async (req: Request, res: Response, next: NextFunction) => {
@@ -48,7 +51,7 @@ export const getOrderById = async (req: Request, res: Response, next: NextFuncti
 export const createOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?.id as string;
-    const { addressId, notes, stripePaymentId, items: inputItems } = createOrderSchema.parse(req.body);
+    const { addressId, notes, stripePaymentId, shippingMethod, promoCode, items: inputItems } = createOrderSchema.parse(req.body);
 
     let orderItems: any[] = [];
 
@@ -87,7 +90,15 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
       let subtotal = 0;
       const finalizedItems = [];
 
-      // Step 1: Verify stock and fetch fresh prices for ALL items
+      // Step 1a: Lock variants row explicitly to ensure atomic check-and-decrement validation limits
+      const variantIds = orderItems.map(item => item.variantId).sort();
+      await tx.$queryRaw`
+        SELECT id FROM "variants" 
+        WHERE id IN (${Prisma.join(variantIds)}) 
+        FOR UPDATE
+      `;
+
+      // Step 1b: Verify stock and fetch fresh prices for ALL items
       for (const item of orderItems) {
         const variant = await tx.variant.findUnique({
           where: { id: item.variantId },
@@ -115,23 +126,58 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
         });
       }
 
-      const shipping = 10;
-      const tax = subtotal * 0.1;
-      const total = subtotal + shipping + tax;
+      let rawDiscountAmount = 0;
+      if (promoCode) {
+        const discountRecord = await tx.discount.findUnique({ where: { code: promoCode } });
+        if (!discountRecord || !discountRecord.isActive) {
+          throw new ValidationError("Invalid promo code");
+        }
+        if (discountRecord.expiresAt && new Date() > discountRecord.expiresAt) {
+          throw new ValidationError("Promo code has expired");
+        }
+        if (discountRecord.maxUses && discountRecord.usedCount >= discountRecord.maxUses) {
+          throw new ValidationError("Promo code usage limit exceeded");
+        }
+        if (discountRecord.minOrder && subtotal < discountRecord.minOrder) {
+          throw new ValidationError(`Promo code requires minimum order of $${discountRecord.minOrder}`);
+        }
+
+        if (discountRecord.type.toLowerCase() === "fixed") {
+          rawDiscountAmount = discountRecord.value;
+        } else if (discountRecord.type.toLowerCase() === "percentage" || discountRecord.type.toLowerCase() === "percent") {
+          rawDiscountAmount = subtotal * (discountRecord.value / 100);
+        }
+
+        // Increment count
+        await tx.discount.update({
+          where: { id: discountRecord.id },
+          data: { usedCount: { increment: 1 } }
+        });
+      }
+
+      const totals = calculateOrderTotals({
+        subtotal,
+        discountAmount: rawDiscountAmount,
+        shippingMethod
+      });
 
       // Step 2: Create Order
       const newOrder = await tx.order.create({
         data: {
           userId,
           addressId,
-          subtotal,
-          shipping,
-          tax,
-          total,
+          subtotal: totals.subtotal,
+          // @ts-ignore - Bypass frozen TS dev cache
+          discountAmount: totals.discountAmount,
+          // @ts-ignore
+          promoCode,
+          shipping: totals.shippingCost,
+          tax: totals.tax,
+          total: totals.total,
           notes,
           stripePaymentId,
-          paymentStatus: stripePaymentId ? "PAID" : "UNPAID",
-          status: stripePaymentId ? "PROCESSING" : "PENDING",
+          paymentStatus: "UNPAID",
+          status: "PENDING",
           items: {
             create: finalizedItems
           },
@@ -160,8 +206,13 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
 
     // 3. Handle Payment Intent
     let clientSecret = null;
-    if (!stripePaymentId) {
-      const paymentIntent = await createPaymentIntent(order.total, "usd", { orderId: order.id });
+    if (stripePaymentId) {
+      await stripe.paymentIntents.update(stripePaymentId, {
+        metadata: { orderId: order.id }
+      });
+    } else {
+      const amountInCents = Math.round(order.total * 100);
+      const paymentIntent = await createPaymentIntent(amountInCents, "usd", { orderId: order.id });
       clientSecret = paymentIntent.client_secret;
     }
 

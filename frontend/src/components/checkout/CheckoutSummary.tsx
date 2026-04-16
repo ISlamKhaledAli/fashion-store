@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCartStore } from "@/store/cartStore";
@@ -9,28 +9,67 @@ import { cartApi } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { motion, AnimatePresence } from "framer-motion";
 
-export const CheckoutSummary = () => {
-  const { items, getTotalPrice, getTotalItems } = useCartStore();
-  const [promoCode, setPromoCode] = useState("");
+interface Totals {
+  subtotal: number;
+  discountAmount: number;
+  discountedSubtotal: number;
+  shippingCost: number;
+  tax: number;
+  total: number;
+}
+
+export const CheckoutSummary = ({ shippingMethod = "standard" }: { shippingMethod?: string }) => {
+  const { items, getTotalPrice, getTotalItems, promoCode, discountAmount, setPromo } = useCartStore();
   const [promoStatus, setPromoStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [discountAmount, setDiscountAmount] = useState(0);
+  const [localPromo, setLocalPromo] = useState(promoCode || "");
+  const [totals, setTotals] = useState<Totals | null>(null);
+  const [calculating, setCalculating] = useState(false);
 
   const subtotal = getTotalPrice();
-  // Matching backend logic: $10 shipping, 10% tax
-  const shipping = items.length > 0 ? 10 : 0;
-  const taxableAmount = Math.max(0, subtotal - discountAmount);
-  const tax = taxableAmount * 0.1;
-  const total = taxableAmount + shipping + tax;
+
+  // Fetch server-authoritative totals whenever inputs change
+  const fetchTotals = useCallback(async () => {
+    setCalculating(true);
+    try {
+      const res = await cartApi.calculateTotals(shippingMethod, promoCode || undefined);
+      if (res.data.success && res.data.data) {
+        setTotals(res.data.data);
+      }
+    } catch {
+      // Fallback: show client-side estimate if API fails (e.g. guest user)
+      const discounted = Math.max(0, subtotal - discountAmount);
+      const tax = Math.round(discounted * 0.10 * 100) / 100;
+      const shippingRates: Record<string, number> = { standard: 0, express: 9.99, overnight: 24.99 };
+      const ship = shippingRates[shippingMethod] ?? 0;
+      setTotals({
+        subtotal,
+        discountAmount,
+        discountedSubtotal: discounted,
+        shippingCost: ship,
+        tax,
+        total: Math.round((discounted + tax + ship) * 100) / 100,
+      });
+    } finally {
+      setCalculating(false);
+    }
+  }, [shippingMethod, promoCode, subtotal, discountAmount]);
+
+  useEffect(() => {
+    if (items.length > 0) {
+      fetchTotals();
+    }
+  }, [fetchTotals, items.length]);
 
   const handleApplyPromo = async () => {
-    if (!promoCode) return;
+    if (!localPromo) return;
     setPromoStatus("loading");
     try {
-      const res = await cartApi.validatePromo(promoCode, subtotal);
+      const res = await cartApi.validatePromo(localPromo, subtotal);
       if (res.data.success && res.data.data?.valid) {
-        setDiscountAmount(res.data.data.discountAmount);
+        setPromo(localPromo, res.data.data.discountAmount);
         setPromoStatus("success");
       } else {
+        setPromo(null, 0);
         setPromoStatus("error");
       }
     } catch {
@@ -75,8 +114,8 @@ export const CheckoutSummary = () => {
           <div className="flex gap-2">
             <input 
               type="text" 
-              value={promoCode}
-              onChange={(e) => setPromoCode(e.target.value)}
+              value={localPromo}
+              onChange={(e) => setLocalPromo(e.target.value)}
               placeholder="Promo code"
               className="flex-1 bg-surface-container-high border-0 rounded-md focus:ring-1 focus:ring-primary px-4 py-3 text-xs uppercase tracking-widest placeholder:text-outline-variant/60 outline-none transition-all"
             />
@@ -106,28 +145,42 @@ export const CheckoutSummary = () => {
 
         {/* Totals */}
         <div className="space-y-3 pt-6 border-t border-outline-variant/10">
-          <div className="flex justify-between text-sm">
-            <span className="text-on-surface-variant font-label uppercase tracking-widest text-[10px]">Subtotal</span>
-            <span className="font-medium">{formatCurrency(subtotal)}</span>
-          </div>
-          {discountAmount > 0 && (
-            <div className="flex justify-between text-sm text-green-600">
-              <span className="font-label uppercase tracking-widest text-[10px]">Discount</span>
-              <span className="font-medium">-{formatCurrency(discountAmount)}</span>
+          {calculating ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <span className="ml-3 text-[10px] uppercase tracking-widest text-on-surface-variant">Calculating...</span>
+            </div>
+          ) : totals ? (
+            <>
+              <div className="flex justify-between text-sm">
+                <span className="text-on-surface-variant font-label uppercase tracking-widest text-[10px]">Subtotal</span>
+                <span className="font-medium">{formatCurrency(totals.subtotal)}</span>
+              </div>
+              {totals.discountAmount > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span className="font-label uppercase tracking-widest text-[10px]">Discount</span>
+                  <span className="font-medium">-{formatCurrency(totals.discountAmount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-on-surface-variant font-label uppercase tracking-widest text-[10px]">Shipping</span>
+                <span className="font-medium text-primary">{totals.shippingCost > 0 ? formatCurrency(totals.shippingCost) : "Free"}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-on-surface-variant font-label uppercase tracking-widest text-[10px]">Estimated Tax</span>
+                <span className="font-medium">{formatCurrency(totals.tax)}</span>
+              </div>
+              <div className="flex justify-between text-xl font-medium pt-4 border-t border-outline-variant/10 mt-4 tracking-tighter">
+                <span>Total</span>
+                <span className="text-primary">{formatCurrency(totals.total)}</span>
+              </div>
+            </>
+          ) : (
+            <div className="flex justify-between text-sm">
+              <span className="text-on-surface-variant font-label uppercase tracking-widest text-[10px]">Subtotal</span>
+              <span className="font-medium">{formatCurrency(subtotal)}</span>
             </div>
           )}
-          <div className="flex justify-between text-sm">
-            <span className="text-on-surface-variant font-label uppercase tracking-widest text-[10px]">Shipping</span>
-            <span className="font-medium text-primary">{shipping > 0 ? formatCurrency(shipping) : "Free"}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-on-surface-variant font-label uppercase tracking-widest text-[10px]">Estimated Tax</span>
-            <span className="font-medium">{formatCurrency(tax)}</span>
-          </div>
-          <div className="flex justify-between text-xl font-medium pt-4 border-t border-outline-variant/10 mt-4 tracking-tighter">
-            <span>Total</span>
-            <span className="text-primary">{formatCurrency(total)}</span>
-          </div>
         </div>
       </div>
 

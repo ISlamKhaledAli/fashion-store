@@ -20,42 +20,13 @@ export const ReviewStep = ({ shippingData, paymentIntentId, onSuccess, onBack }:
 
   const handlePlaceOrder = async () => {
     setLoading(true);
-    setError(null);
-
     try {
-      // Create the order in our backend with the pre-authorized paymentIntentId
-      const { items } = useCartStore.getState();
-      const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
-      const shipping = shippingData.shippingMethod === "standard" ? 0 : shippingData.shippingMethod === "express" ? 9.99 : 24.99;
-      const tax = subtotal * 0.1;
-      const total = subtotal + shipping + tax;
-
-      const orderData = {
-        addressId: shippingData.addressId,
-        stripePaymentId: paymentIntentId,
-        subtotal,
-        shipping,
-        tax,
-        total,
-        items: items.map(item => ({
-          variantId: item.variantId,
-          productId: item.productId,
-          quantity: item.quantity,
-          price: item.price
-        })),
-        notes: "Created via checkout flow"
-      };
-
-      const res = await orderApi.create(orderData);
-      
-      if (res.data.success) {
-        clearCart();
-        onSuccess(res.data.data.order.id);
-      } else {
-        setError("Order created but failed to synchronize. Please contact support.");
-      }
+      // Order is already created in PaymentStep, and payment is authorized.
+      // paymentIntentId prop now actually holds the orderId passed forward.
+      clearCart();
+      onSuccess(paymentIntentId);
     } catch (err: any) {
-      setError(err.response?.data?.message || "An unexpected error occurred during order creation.");
+      setError("An unexpected error occurred finalizing the order UI.");
     } finally {
       setLoading(false);
     }

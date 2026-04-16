@@ -84,7 +84,8 @@ export default function CheckoutPage() {
           >
             <PaymentStep 
               onNext={handlePaymentNext} 
-              onBack={() => setCurrentStep(1)} 
+              onBack={() => setCurrentStep(1)}
+              shippingMethod={shippingData?.shippingMethod || "standard"}
             />
           </motion.div>
         );
@@ -141,7 +142,7 @@ export default function CheckoutPage() {
             </AnimatePresence>
           </div>
 
-          <CheckoutSummary />
+          <CheckoutSummary shippingMethod={shippingData?.shippingMethod || "standard"} />
         </div>
       </main>
 

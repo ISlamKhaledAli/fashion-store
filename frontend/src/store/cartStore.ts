@@ -7,6 +7,9 @@ import { useAuthStore } from "./authStore";
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
+  promoCode: string | null;
+  discountAmount: number;
+  setPromo: (code: string | null, amount: number) => void;
   addItem: (item: CartItem) => void;
   setItems: (items: CartItem[]) => void;
   removeItem: (id: string) => void;
@@ -23,6 +26,9 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       isOpen: false,
+      promoCode: null,
+      discountAmount: 0,
+      setPromo: (code, amount) => set({ promoCode: code, discountAmount: amount }),
       addItem: async (newItem) => {
         const { items } = get();
         const { isAuthenticated } = useAuthStore.getState();
