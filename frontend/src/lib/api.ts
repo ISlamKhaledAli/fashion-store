@@ -103,6 +103,8 @@ export const adminApi = {
     api.get<ApiResponse<unknown>>("/admin/analytics/overview"),
   getRevenue: (params?: Record<string, unknown>) => 
     api.get<ApiResponse<unknown>>("/admin/analytics/revenue", { params }),
+  getTopProducts: () => 
+    api.get<ApiResponse<unknown>>("/admin/analytics/top-products"),
   getOrders: (params: { page?: number; limit?: number; search?: string; status?: OrderStatus }) => 
     api.get<ApiResponse<Order[]>>("/admin/orders", { params }),
   updateOrderStatus: (id: string, status: OrderStatus) => 
@@ -136,4 +138,14 @@ export const adminApi = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
+  getCategories: () =>
+    api.get<ApiResponse<Category[]>>("/admin/categories"),
+  createCategory: (data: Partial<Category>) =>
+    api.post<ApiResponse<Category>>("/categories", data),
+  updateCategory: (id: string, data: Partial<Category>) =>
+    api.put<ApiResponse<Category>>(`/categories/${id}`, data),
+  reorderCategories: (items: { id: string; position: number; parentId: string | null }[]) =>
+    api.post<ApiResponse<unknown>>("/admin/categories/reorder", { items }),
+  deleteCategory: (id: string) =>
+    api.delete<ApiResponse<unknown>>(`/categories/${id}`),
 };

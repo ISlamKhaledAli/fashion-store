@@ -1,6 +1,8 @@
 import { Router } from "express";
 import {
   getAdminOrders,
+  getAdminCategories,
+  reorderCategories,
   updateOrderStatus,
   getCustomers,
   updateCustomerStatus,
@@ -23,6 +25,8 @@ const router = Router();
 router.use(authMiddleware);
 router.use(adminMiddleware);
 
+router.get("/categories", getAdminCategories);
+router.post("/categories/reorder", reorderCategories);
 router.get("/orders", getAdminOrders);
 router.put("/orders/:id", updateOrderStatus);
 router.post("/orders/bulk-status", bulkUpdateOrdersStatus);

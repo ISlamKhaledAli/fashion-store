@@ -19,15 +19,16 @@ interface SelectProps {
   className?: string;
   labelPrefix?: string;
   error?: string;
+  placeholder?: string;
 }
 
-export const Select = ({ options, value, onChange, className, labelPrefix, error }: SelectProps) => {
+export const Select = ({ options, value, onChange, className, labelPrefix, error, placeholder }: SelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
   useClickOutside(containerRef, () => setIsOpen(false));
 
-  const selectedOption = options.find((opt) => opt.value === value) || options[0] || { label: "Select...", value: "" };
+  const selectedOption = options.find((opt) => opt.value === value) || { label: placeholder || "Select...", value: "" };
 
   return (
     <div ref={containerRef} className={cn("relative inline-block space-y-1", className)}>

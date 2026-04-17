@@ -13,8 +13,11 @@ export const updateCartItemSchema = z.object({
 export const categorySchema = z.object({
   name: z.string().min(1, "Name is required"),
   slug: z.string().min(1, "Slug is required"),
-  image: z.string().url().optional(),
-  parentId: z.string().optional(),
+  image: z.string().url().optional().or(z.literal("")),
+  parentId: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
+  status: z.enum(["ACTIVE", "HIDDEN"]).optional(),
+  position: z.number().int().optional(),
 });
 
 export const brandSchema = z.object({

@@ -12,6 +12,11 @@ export interface Category {
   name: string;
   slug: string;
   image?: string;
+  description?: string;
+  parentId?: string | null;
+  position?: number;
+  status?: 'ACTIVE' | 'HIDDEN';
+  children?: Category[];
   _count?: {
     products: number;
   };

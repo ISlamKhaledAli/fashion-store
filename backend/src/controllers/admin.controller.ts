@@ -5,6 +5,49 @@ import { getPagination, calculatePagination } from "../utils/pagination";
 import { createDiscountSchema } from "../validators/common.validator";
 import { NotFoundError } from "../utils/AppError";
 
+export const getAdminCategories = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const categories = await prisma.category.findMany({
+      include: {
+        _count: { select: { products: true } },
+      },
+    });
+    return sendResponse({ res, status: 200, success: true, data: categories });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const reorderCategories = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { items } = req.body;
+    if (!Array.isArray(items)) {
+      return sendResponse({ res, status: 400, success: false, message: "Invalid payload format" });
+    }
+
+    // Use a transaction to perform bulk updates efficiently
+    await prisma.$transaction(
+      items.map((item: { id: string; position: number; parentId: string | null }) =>
+        prisma.category.update({
+          where: { id: item.id },
+          data: {
+            position: item.position,
+            ...(item.parentId === null
+              ? { parent: { disconnect: true } }
+              : item.parentId
+              ? { parent: { connect: { id: item.parentId } } }
+              : {})
+          },
+        })
+      )
+    );
+
+    return sendResponse({ res, status: 200, success: true, message: "Categories reordered successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getAdminOrders = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { status, search, page, limit } = req.query;

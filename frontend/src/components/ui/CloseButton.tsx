@@ -20,7 +20,7 @@ export const CloseButton = ({ onClick, size = 20, className, ...props }: CloseBu
       onClick={onClick}
       className={cn(
         "p-2 rounded-full transition-colors duration-300",
-        "bg-transparent hover:bg-zinc-100 active:bg-zinc-200",
+        "bg-transparent hover:bg-zinc-100 active:bg-zinc-200 cursor-pointer",
         "text-zinc-500 hover:text-zinc-900",
         "focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2",
         className

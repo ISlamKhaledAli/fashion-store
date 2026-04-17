@@ -21,8 +21,13 @@ export const getCategories = async (req: Request, res: Response, next: NextFunct
 
 export const createCategory = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const validatedData = categorySchema.parse(req.body);
-    const category = await prisma.category.create({ data: validatedData });
+    const { parentId, ...rest } = categorySchema.parse(req.body);
+    const category = await prisma.category.create({ 
+      data: {
+        ...rest,
+        ...(parentId ? { parent: { connect: { id: parentId } } } : {})
+      } 
+    });
     return sendResponse({ res, status: 201, success: true, data: category });
   } catch (error) {
     next(error);
@@ -32,11 +37,18 @@ export const createCategory = async (req: Request, res: Response, next: NextFunc
 export const updateCategory = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const validatedData = categorySchema.partial().parse(req.body);
+    const { parentId, ...rest } = categorySchema.partial().parse(req.body);
 
     const category = await prisma.category.update({
       where: { id: String(id) },
-      data: validatedData,
+      data: {
+        ...rest,
+        ...(parentId === null 
+          ? { parent: { disconnect: true } } 
+          : parentId 
+            ? { parent: { connect: { id: parentId } } } 
+            : {})
+      },
     });
     return sendResponse({ res, status: 200, success: true, data: category });
   } catch (error) {

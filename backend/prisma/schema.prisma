@@ -49,9 +49,12 @@ model Address {
 
 model Category {
   id       String     @id @default(cuid())
-  name     String
-  slug     String     @unique
-  image    String?
+  name        String
+  slug        String     @unique
+  description String?
+  status      CategoryStatus @default(ACTIVE)
+  image       String?
+  position    Int        @default(0)
   parentId String?
   parent   Category?  @relation("SubCategories", fields: [parentId], references: [id])
   children Category[] @relation("SubCategories")
@@ -265,6 +268,11 @@ enum ProductStatus {
   ACTIVE
   DRAFT
   ARCHIVED
+}
+
+enum CategoryStatus {
+  ACTIVE
+  HIDDEN
 }
 
 enum PaymentStatus {
