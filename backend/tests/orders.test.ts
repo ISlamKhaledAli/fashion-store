@@ -41,6 +41,7 @@ describe("Orders API", () => {
       userId: user.id,
       addressId: address.id,
       subtotal: 100,
+      // This value must match SHIPPING_RATES.standard in pricing.ts
       shipping: 10,
       paymentStatus: "UNPAID",
       status: "PENDING",
@@ -72,7 +73,7 @@ describe("Orders API", () => {
       createPaymentIntent: jest.Mock;
     };
 
-    expect(stripeService.createPaymentIntent).toHaveBeenCalledWith(120, "usd", {
+    expect(stripeService.createPaymentIntent).toHaveBeenCalledWith(12000, "usd", {
       orderId: response.body.data.order.id,
     });
   });
@@ -118,5 +119,152 @@ describe("Orders API", () => {
     });
 
     expect(cancelledOrder?.status).toBe("CANCELLED");
+  });
+
+  it("rejects order if PaymentIntent amount does not match order total", async () => {
+    const { user, accessToken } = await createUser();
+    const address = await createAddress(user.id);
+    const { product, variant } = await createProductFixture({
+      price: 50,
+      stock: 10,
+    });
+
+    // Create cart items worth $100 (plus 10% tax + $10 shipping = $120)
+    const cart = await prisma.cart.create({ data: { userId: user.id } });
+    await prisma.cartItem.create({
+      data: { cartId: cart.id, variantId: variant.id, quantity: 2 },
+    });
+
+    const stripe = (await import("../src/services/stripe")).default;
+    (stripe.paymentIntents.retrieve as jest.Mock).mockResolvedValueOnce({
+      id: "pi_bad_amount",
+      amount: 1000, // Only $10.00
+      status: "succeeded",
+      metadata: { userId: user.id },
+    });
+
+    const response = await request(app)
+      .post("/api/orders")
+      .set("Authorization", bearerToken(accessToken))
+      .send({
+        addressId: address.id,
+        stripePaymentId: "pi_bad_amount",
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toContain("Payment amount mismatch");
+  });
+
+  it("rejects order if PaymentIntent belongs to different user", async () => {
+    const { user, accessToken } = await createUser();
+    const address = await createAddress(user.id);
+    const { variant } = await createProductFixture({ price: 50 });
+
+    const cart = await prisma.cart.create({ data: { userId: user.id } });
+    await prisma.cartItem.create({
+      data: { cartId: cart.id, variantId: variant.id, quantity: 2 },
+    });
+
+    const stripe = (await import("../src/services/stripe")).default;
+    (stripe.paymentIntents.retrieve as jest.Mock).mockResolvedValueOnce({
+      id: "pi_stolen",
+      amount: 12000, // Correct amount $120.00 (with $10 shipping)
+      status: "succeeded",
+      metadata: { userId: "someone_else" }, // Mismatched user
+    });
+
+    const response = await request(app)
+      .post("/api/orders")
+      .set("Authorization", bearerToken(accessToken))
+      .send({
+        addressId: address.id,
+        stripePaymentId: "pi_stolen",
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toContain("Payment ownership mismatch");
+  });
+
+  describe("Quantity Validation", () => {
+    it("rejects order with quantity: 0", async () => {
+      const { user, accessToken } = await createUser();
+      const address = await createAddress(user.id);
+      const { variant } = await createProductFixture({ price: 50 });
+
+      const response = await request(app)
+        .post("/api/orders")
+        .set("Authorization", bearerToken(accessToken))
+        .send({
+          addressId: address.id,
+          items: [{ variantId: variant.id, productId: variant.productId, quantity: 0, price: 50 }]
+        });
+
+      expect(response.status).toBe(400);
+      // Zod or controller error
+    });
+
+    it("rejects order with quantity: -1", async () => {
+      const { user, accessToken } = await createUser();
+      const address = await createAddress(user.id);
+      const { variant } = await createProductFixture({ price: 50 });
+
+      const response = await request(app)
+        .post("/api/orders")
+        .set("Authorization", bearerToken(accessToken))
+        .send({
+          addressId: address.id,
+          items: [{ variantId: variant.id, productId: variant.productId, quantity: -1, price: 50 }]
+        });
+
+      expect(response.status).toBe(400);
+    });
+
+    it("rejects order with quantity: 1.5 (non-integer)", async () => {
+      const { user, accessToken } = await createUser();
+      const address = await createAddress(user.id);
+      const { variant } = await createProductFixture({ price: 50 });
+
+      const response = await request(app)
+        .post("/api/orders")
+        .set("Authorization", bearerToken(accessToken))
+        .send({
+          addressId: address.id,
+          items: [{ variantId: variant.id, productId: variant.productId, quantity: 1.5, price: 50 }]
+        });
+
+      expect(response.status).toBe(400);
+    });
+
+    it("does not increase stock when order attempt is made with valid data", async () => {
+      const { user, accessToken } = await createUser();
+      const address = await createAddress(user.id);
+      const { variant } = await createProductFixture({ price: 50, stock: 10 });
+
+      // Valid order for 2 items
+      await request(app)
+        .post("/api/orders")
+        .set("Authorization", bearerToken(accessToken))
+        .send({
+          addressId: address.id,
+          // Use DB cart instead of items body to reach the decrement logic safely
+        });
+
+      // Wait, I'll use the cart flow to test the stock decrement safety
+      const cart = await prisma.cart.create({ data: { userId: user.id } });
+      await prisma.cartItem.create({
+        data: { cartId: cart.id, variantId: variant.id, quantity: 2 },
+      });
+
+      const response = await request(app)
+        .post("/api/orders")
+        .set("Authorization", bearerToken(accessToken))
+        .send({ addressId: address.id });
+
+      expect(response.status).toBe(201);
+      
+      const updatedVariant = await prisma.variant.findUnique({ where: { id: variant.id } });
+      expect(updatedVariant?.stock).toBe(8); // 10 - 2 = 8
+      expect(updatedVariant?.stock).not.toBeGreaterThan(10);
+    });
   });
 });

@@ -8,19 +8,7 @@ import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Textarea } from "../ui/Textarea";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
-
-interface Review {
-  id: string;
-  user?: {
-    name: string;
-    avatar?: string;
-  };
-  rating: number;
-  title?: string;
-  body: string;
-  createdAt: string;
-}
+import { Review } from "@/types";
 
 interface ProductReviewsProps {
   productId: string;
@@ -79,7 +67,7 @@ export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductRev
       if (res.data.success) {
         // Add new review to list immediately
         const newReview: Review = {
-          ...res.data.data,
+          ...(res.data.data as Review),
           user: { name: user?.name || "Anonymous", avatar: user?.avatar }
         };
         setReviews([newReview, ...reviews]);
@@ -90,8 +78,9 @@ export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductRev
         setBody("");
         setRating(5);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to submit review");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || "Failed to submit review");
     } finally {
       setIsSubmitting(false);
     }

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
 import { sendResponse } from "../utils/apiResponse";
 import { getPagination, calculatePagination } from "../utils/pagination";
+import { buildProductQuery } from "../utils/productQueryBuilder";
 import { createProductSchema, updateProductSchema } from "../validators/product.validator";
 import { NotFoundError } from "../utils/AppError";
 import { Prisma } from "@prisma/client";
@@ -19,82 +20,12 @@ export const getProducts = async (req: Request, res: Response, next: NextFunctio
       limit: Number(limit),
     });
 
-    const where: any = {};
-    
-    // Status filtering logic
-    if (status) {
-      if (status !== 'all') {
-        where.status = status;
-      }
-      // if 'all', we don't apply any status filter
-    } else {
-      // Default to ACTIVE for storefront safety
-      where.status = "ACTIVE";
-    }
-
-    if (category) {
-      const cats = String(category).split(",").map(c => c.trim());
-      // use OR with mode: insensitive to support multiple categories correctly
-      where.category = {
-        OR: cats.map(cat => ({
-          name: {
-            equals: cat,
-            mode: "insensitive"
-          }
-        }))
-      };
-    }
-
-    if (brand) {
-      where.brand = {
-        OR: [
-          { slug: { equals: String(brand), mode: "insensitive" } },
-          { name: { equals: String(brand), mode: "insensitive" } }
-        ]
-      };
-    }
-
-    if (featured !== undefined) {
-      where.featured = String(featured) === "true";
-    }
-
-    if (minPrice || maxPrice) {
-      where.price = {};
-      if (minPrice) where.price.gte = Number(minPrice);
-      if (maxPrice) where.price.lte = Number(maxPrice);
-    }
-
-    if (search) {
-      where.OR = [
-        { name: { contains: String(search), mode: "insensitive" } },
-        { description: { contains: String(search), mode: "insensitive" } },
-        { category: { name: { contains: String(search), mode: "insensitive" } } },
-        { brand: { name: { contains: String(search), mode: "insensitive" } } },
-        { tags: { some: { tag: { name: { contains: String(search), mode: "insensitive" } } } } }
-      ];
-    }
-    
-    if (color) {
-      const colors = String(color).split(",").map(c => c.trim());
-      where.variants = {
-        some: { 
-          color: { 
-            in: colors,
-            mode: "insensitive"
-          } 
-        }
-      };
-    }
+    const { where, orderBy, include } = buildProductQuery({
+      category, brand, featured, minPrice, maxPrice, search, sort, color, status,
+      adminMode: false
+    });
 
     console.log("[DEBUG] Prisma Where Clause:", JSON.stringify(where, null, 2));
-
-    const orderBy: any = {};
-    if (sort) {
-      const [field, order] = String(sort).split(":");
-      orderBy[field] = order || "asc";
-    } else {
-      orderBy.createdAt = "desc";
-    }
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({
@@ -102,17 +33,7 @@ export const getProducts = async (req: Request, res: Response, next: NextFunctio
         take,
         skip,
         orderBy,
-        include: {
-          category: { select: { name: true, slug: true } },
-          brand: { select: { name: true, slug: true } },
-          images: { where: { isMain: true }, take: 1 },
-          variants: { 
-            select: { id: true, size: true, color: true, colorHex: true, stock: true },
-            take: 1
-          },
-          _count: { select: { reviews: true } },
-          reviews: { select: { rating: true } },
-        },
+        include,
       }),
       prisma.product.count({ where }),
     ]);
@@ -467,42 +388,10 @@ export const getAdminProducts = async (req: Request, res: Response, next: NextFu
       limit: Number(limit),
     });
 
-    const where: any = {};
-    
-    if (status && status !== 'ALL' && status !== 'all') {
-      where.status = String(status).toUpperCase();
-    }
-
-    if (category) {
-      where.category = {
-        name: { equals: String(category), mode: "insensitive" }
-      };
-    }
-
-    if (brand) {
-      where.brand = {
-        OR: [
-          { slug: { equals: String(brand), mode: "insensitive" } },
-          { name: { equals: String(brand), mode: "insensitive" } }
-        ]
-      };
-    }
-
-    if (search) {
-      where.OR = [
-        { name: { contains: String(search), mode: "insensitive" } },
-        { description: { contains: String(search), mode: "insensitive" } },
-        { variants: { some: { sku: { contains: String(search), mode: "insensitive" } } } }
-      ];
-    }
-
-    const orderBy: any = {};
-    if (sort) {
-      const [field, order] = String(sort).split(":");
-      orderBy[field] = order || "asc";
-    } else {
-      orderBy.createdAt = "desc";
-    }
+    const { where, orderBy, include } = buildProductQuery({
+      category, brand, search, sort, status,
+      adminMode: true
+    });
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({
@@ -510,13 +399,7 @@ export const getAdminProducts = async (req: Request, res: Response, next: NextFu
         take,
         skip,
         orderBy,
-        include: {
-          category: { select: { name: true, slug: true } },
-          brand: { select: { name: true, slug: true } },
-          images: true, // all images
-          variants: true, // all variants
-          _count: { select: { reviews: true } },
-        },
+        include,
       }),
       prisma.product.count({ where }),
     ]);

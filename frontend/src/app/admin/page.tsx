@@ -13,6 +13,28 @@ import { Package, TrendingUp, Settings, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { toast } from "sonner";
 
+interface RevenuePoint {
+  date: string;
+  amount: number;
+}
+
+interface CustomerSummary {
+  name: string;
+  avatar?: string;
+}
+
+interface AnalyticsOverview {
+  totalRevenue: number;
+  revenueTrend: number;
+  ordersToday: number;
+  ordersTrend: number;
+  newCustomers: number;
+  customersTrend: number;
+  conversionRate: number;
+  conversionTrend: number;
+  statusCounts?: Record<string, number>;
+}
+
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
@@ -43,10 +65,10 @@ export default function AdminDashboard() {
     conversionTrend: 0,
   });
   
-  const [revenueData, setRevenueData] = useState<any[]>([]);
-  const [ordersStatusData, setOrdersStatusData] = useState<any[]>([]);
+  const [revenueData, setRevenueData] = useState<RevenuePoint[]>([]);
+  const [ordersStatusData, setOrdersStatusData] = useState<{ name: string; value: number }[]>([]);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
-  const [customersData, setCustomersData] = useState<any[]>([]);
+  const [customersData, setCustomersData] = useState<CustomerSummary[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   // 1. Initial Data Fetch
@@ -65,7 +87,7 @@ export default function AdminDashboard() {
         if (cancelled) return;
 
         if (analyticsRes.data.success) {
-          const data = analyticsRes.data.data as any;
+          const data = analyticsRes.data.data as AnalyticsOverview;
           setMetrics({
             totalRevenue: data.totalRevenue || 0,
             revenueTrend: data.revenueTrend || 0,
@@ -86,11 +108,11 @@ export default function AdminDashboard() {
         }
 
         if (ordersRes.data.success) {
-          setRecentOrders(ordersRes.data.data);
+          setRecentOrders(ordersRes.data.data as Order[]);
         }
 
         if (customersRes.data.success) {
-          setCustomersData(customersRes.data.data as any[]);
+          setCustomersData(customersRes.data.data as CustomerSummary[]);
         }
       } catch (error) {
         console.error("Failed to fetch admin dashboard overview:", error);
@@ -110,7 +132,7 @@ export default function AdminDashboard() {
       const days = range === "30D" ? 30 : 90;
       const res = await adminApi.getRevenue({ days });
       if (res.data.success) {
-        setRevenueData(res.data.data as any[]);
+        setRevenueData(res.data.data as RevenuePoint[]);
       }
     } catch (error) {
       console.error("Failed to fetch revenue analytics:", error);
@@ -182,7 +204,7 @@ export default function AdminDashboard() {
             <svg className="w-full h-full text-zinc-950 fill-none stroke-current stroke-[2]" viewBox="0 0 100 20">
               <path 
                 d={revenueData.length > 1 
-                  ? `M 0 ${20 - (revenueData[revenueData.length-7]?.amount / (Math.max(...revenueData.map(d => d.amount)) || 1) * 15 || 15)} ${revenueData.slice(-6).map((d, i) => `T ${(i+1)*20} ${20 - (d.amount / (Math.max(...revenueData.map(d => d.amount)) || 1) * 15 || 10)}`).join(' ')}`
+                  ? `M 0 ${20 - (revenueData[revenueData.length-7]?.amount / (Math.max(...revenueData.map(d => d.amount)) || 1) * 15 || 15)} ${revenueData.slice(-6).map((d, i) => `T ${(i+1)*20} ${20 - (d.amount / (Math.max(...revenueData.map(v => v.amount)) || 1) * 15 || 10)}`).join(' ')}`
                   : "M0 15 Q 10 5, 20 12 T 40 8 T 60 14 T 80 5 T 100 10"
                 } 
                 strokeLinecap="round" 
@@ -197,13 +219,19 @@ export default function AdminDashboard() {
           href="/admin/orders"
           sparkline={
             <div className="flex items-end gap-1 h-full opacity-20">
-              {(revenueData.length > 0 ? revenueData.slice(-7) : [40, 60, 30, 80, 50, 90, 70]).map((d, i) => (
-                <div 
-                  key={i} 
-                  className="bg-zinc-950 w-full rounded-sm" 
-                  style={{ height: `${typeof d === 'object' ? (d.amount / (Math.max(...revenueData.map(val => val.amount)) || 1) * 100) : d}%` }} 
-                />
-              ))}
+              {(revenueData.length > 0 ? revenueData.slice(-7) : [40, 60, 30, 80, 50, 90, 70]).map((d, i) => {
+                const height = typeof d === 'object' 
+                  ? ((d as RevenuePoint).amount / (Math.max(...revenueData.map(val => val.amount)) || 1) * 100) 
+                  : (d as number);
+                return (
+                  <div 
+                    key={i} 
+                    className="bg-zinc-950 w-full rounded-sm" 
+                    style={{ height: `${height}%` }} 
+                  />
+                );
+              })}
+
             </div>
           }
         />
@@ -212,7 +240,7 @@ export default function AdminDashboard() {
           value={metrics.newCustomers} 
           trend={metrics.customersTrend}
           href="/admin/customers"
-          avatars={customersData.map(c => ({
+          avatars={customersData.map((c: CustomerSummary) => ({
             name: c.name,
             avatar: c.avatar
           }))}

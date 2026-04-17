@@ -1,13 +1,7 @@
 import api from "./axios";
 import { 
-  ApiResponse, 
-  Product, 
-  Category, 
-  Brand,
-  Order, 
-  User, 
-  WishlistItem,
-  OrderStatus,
+  User, Category, Brand, Product, Order, 
+  WishlistItem, Address, Review, ApiResponse, OrderStatus 
 } from "@/types";
 
 export const authApi = {
@@ -31,7 +25,7 @@ export const productApi = {
   getFilters: () => 
     api.get<ApiResponse<{ colors: { name: string; hex: string }[] }>>("/products/filters"),
   getReviews: (productId: string) => 
-    api.get<ApiResponse<any[]>>(`/reviews/product/${productId}`),
+    api.get<ApiResponse<Review[]>>(`/reviews/product/${productId}`),
 };
 
 export const categoryApi = {
@@ -55,6 +49,8 @@ export const cartApi = {
   clear: () => api.delete<ApiResponse<unknown>>("/cart/clear"),
   validatePromo: (code: string, orderTotal: number) => 
     api.post<ApiResponse<{ valid: boolean; discountAmount: number; message?: string }>>("/discounts/validate", { code, orderTotal }),
+  getShippingMethods: () =>
+    api.get<ApiResponse<{ id: string; name: string; time: string; rate: number }[]>>("/cart/shipping-methods"),
   calculateTotals: (shippingMethod: string = "standard", promoCode?: string) =>
     api.post<ApiResponse<{
       subtotal: number;
@@ -87,17 +83,17 @@ export const wishlistApi = {
 
 export const reviewApi = {
   create: (data: { productId: string; rating: number; title: string; body: string }) =>
-    api.post<ApiResponse<any>>("/reviews", data),
+    api.post<ApiResponse<unknown>>("/reviews", data),
   getMine: (productId: string) =>
-    api.get<ApiResponse<any>>(`/reviews/mine/${productId}`),
+    api.get<ApiResponse<unknown>>(`/reviews/mine/${productId}`),
 };
 
 export const addressApi = {
-  getAll: () => api.get<ApiResponse<any[]>>("/addresses"),
+  getAll: () => api.get<ApiResponse<unknown[]>>("/addresses"),
   create: (data: Record<string, unknown>) => 
-    api.post<ApiResponse<any>>("/addresses", data),
+    api.post<ApiResponse<unknown>>("/addresses", data),
   update: (id: string, data: Record<string, unknown>) => 
-    api.put<ApiResponse<any>>(`/addresses/${id}`, data),
+    api.put<ApiResponse<unknown>>(`/addresses/${id}`, data),
   delete: (id: string) => 
     api.delete<ApiResponse<unknown>>(`/addresses/${id}`),
 };
@@ -112,9 +108,9 @@ export const adminApi = {
   updateOrderStatus: (id: string, status: OrderStatus) => 
     api.put<ApiResponse<Order>>(`/admin/orders/${id}`, { status }),
   bulkUpdateOrderStatus: (ids: string[], status: OrderStatus) =>
-    api.post<ApiResponse<any>>("/admin/orders/bulk-status", { ids, status }),
+    api.post<ApiResponse<unknown>>("/admin/orders/bulk-status", { ids, status }),
   bulkDeleteOrders: (ids: string[]) =>
-    api.post<ApiResponse<any>>("/admin/orders/bulk-delete", { ids }),
+    api.post<ApiResponse<unknown>>("/admin/orders/bulk-delete", { ids }),
   getCustomers: (params?: Record<string, unknown>) => 
     api.get<ApiResponse<unknown[]>>("/admin/customers", { params }),
   getProducts: (params?: Record<string, unknown>) => 

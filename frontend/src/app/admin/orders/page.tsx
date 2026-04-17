@@ -1,26 +1,20 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { 
   Search, 
-  SlidersHorizontal, 
   Download, 
-  Plus, 
   MoreVertical, 
-  ChevronLeft, 
   ChevronRight,
   Filter,
-  ArrowRight,
-  Trash2,
-  CheckCircle,
-  Truck
+  ArrowRight
 } from "lucide-react";
 import { adminApi } from "@/lib/api";
 import { Order, OrderStatus } from "@/types";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { BulkActionBar } from "@/components/admin/BulkActionBar";
-import { Skeleton } from "@/components/ui/Skeleton";
+
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -45,16 +39,16 @@ export default function AdminOrdersPage() {
   const fetchOrders = async (page = 1, isMounted: { current: boolean }) => {
     setLoading(true);
     try {
-      const params: any = { 
+      const params: { page?: number; limit?: number; search?: string; status?: OrderStatus } = { 
         page, 
         limit: 10,
         search: searchQuery || undefined,
-        status: statusFilter === "All" ? undefined : statusFilter.toUpperCase()
+        status: statusFilter === "All" ? undefined : statusFilter.toUpperCase() as OrderStatus
       };
       
       const res = await adminApi.getOrders(params);
       if (isMounted.current && res.data.success) {
-        setOrders(res.data.data);
+        setOrders(res.data.data as Order[]);
         if (res.data.pagination) {
           setPagination(res.data.pagination);
         }
@@ -169,8 +163,8 @@ export default function AdminOrdersPage() {
     try {
       const res = await adminApi.updateOrderStatus(id, status as OrderStatus);
       if (res.data.success) {
-        setOrders(prev => prev.map(o => o.id === id ? res.data.data : o));
-        if (selectedOrder?.id === id) setSelectedOrder(res.data.data);
+        setOrders(prev => prev.map(o => o.id === id ? res.data.data as Order : o));
+        if (selectedOrder?.id === id) setSelectedOrder(res.data.data as Order);
       }
     } catch (error) {
       console.error("Failed to update status");

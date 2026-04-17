@@ -22,7 +22,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
                   ? React.cloneElement(icon as React.ReactElement, { 
                       size: 18, 
                       strokeWidth: 1.5 
-                    } as any)
+                    } as Record<string, unknown>)
                   : icon}
               </div>
             )}
@@ -76,7 +76,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 ? React.cloneElement(icon as React.ReactElement, { 
                     size: 18, 
                     strokeWidth: 1.5 
-                  } as any)
+                  } as Record<string, unknown>)
                 : icon}
             </div>
           )}

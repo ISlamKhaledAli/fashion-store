@@ -12,15 +12,18 @@ export interface PricingOptions {
   shippingMethod?: "standard" | "express" | "overnight" | string;
 }
 
+export const SHIPPING_METHODS = [
+  { id: "standard", name: "Standard", time: "3-5 business days", rate: 10 },
+  { id: "express", name: "Express", time: "1-2 business days", rate: 9.99 },
+  { id: "overnight", name: "Overnight", time: "Next day delivery", rate: 24.99 },
+];
+
 /**
  * Calculates correct derived mathematical subsets applying limits against subtotal bounds.
  */
 export const calculateOrderTotals = ({ subtotal, discountAmount = 0, shippingMethod = "standard" }: PricingOptions) => {
-  const shippingRates: Record<string, number> = {
-    standard: 0,
-    express: 9.99,
-    overnight: 24.99
-  };
+  const method = SHIPPING_METHODS.find(m => m.id === shippingMethod) || SHIPPING_METHODS[0];
+  const shippingCost = method.rate;
 
   // Prevent illegal discount amounts overriding subtotal costs intrinsically 
   const appliedDiscount = Math.min(Math.max(0, discountAmount), subtotal);
@@ -29,8 +32,6 @@ export const calculateOrderTotals = ({ subtotal, discountAmount = 0, shippingMet
   
   // Explicitly mapping tax exclusively onto the POST-discount subtotal payload 
   const tax = discountedSubtotal * TAX_RATE;
-  
-  const shippingCost = shippingRates[shippingMethod] !== undefined ? shippingRates[shippingMethod] : shippingRates["standard"];
   
   const total = discountedSubtotal + tax + shippingCost;
 

@@ -98,6 +98,13 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
         FOR UPDATE
       `;
 
+      // Step 1a.5: Runtime guard against negative/invalid quantities (Second layer of defense)
+      for (const item of orderItems) {
+        if (item.quantity < 1 || !Number.isInteger(item.quantity)) {
+          throw new ValidationError(`Invalid quantity for item variant: ${item.variantId}`);
+        }
+      }
+
       // Step 1b: Verify stock and fetch fresh prices for ALL items
       for (const item of orderItems) {
         const variant = await tx.variant.findUnique({
@@ -161,6 +168,22 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
         shippingMethod
       });
 
+      // Step 1c: Verify PaymentIntent if provided (Security check)
+      if (stripePaymentId) {
+        const intent = await stripe.paymentIntents.retrieve(stripePaymentId);
+        const expectedAmount = Math.round(totals.total * 100); // cents
+
+        if (intent.amount !== expectedAmount) {
+          throw new ValidationError("Payment amount mismatch");
+        }
+        if (intent.status !== "succeeded") {
+          throw new ValidationError("Payment not completed");
+        }
+        if (intent.metadata.userId !== userId) {
+          throw new ValidationError("Payment ownership mismatch");
+        }
+      }
+
       // Step 2: Create Order
       const newOrder = await tx.order.create({
         data: {
@@ -184,13 +207,14 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
         },
       });
 
-      // Step 3: Decrement stock
-      for (const item of finalizedItems) {
-        await tx.variant.update({
-          where: { id: item.variantId },
-          data: { stock: { decrement: item.quantity } },
-        });
-      }
+        // Step 3: Decrement stock
+        for (const item of finalizedItems) {
+          // This must ALWAYS be a decrement with a positive validated quantity
+          await tx.variant.update({
+            where: { id: item.variantId },
+            data: { stock: { decrement: item.quantity } },
+          });
+        }
 
       // Step 4: Clear DB cart (if it exists)
       await tx.cartItem.deleteMany({ 

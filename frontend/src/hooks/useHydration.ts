@@ -5,7 +5,8 @@ export const useHydration = () => {
   
   useEffect(() => {
     setHydrated(true)
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // We only want this to run once on mount to mark hydration completion
   
   return hydrated
 }

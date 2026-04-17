@@ -105,9 +105,9 @@ export default function CartPage() {
         <div className="lg:w-[65%]">
           <div className="space-y-12">
             <AnimatePresence mode="popLayout">
-              {items.map((item) => (
+              {items.map((item, index) => (
                 <motion.div
-                  key={item.id || item.variantId || `cart-item-${Math.random()}`}
+                  key={item.id || item.variantId || `cart-item-${index}`}
                   layout
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}

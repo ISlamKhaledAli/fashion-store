@@ -13,6 +13,7 @@ const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
 
   // Sync local state if prop changes from outside (e.g. undo/reset)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalColor(value || "#000000");
   }, [value]);
 
@@ -32,7 +33,7 @@ const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
       <input
         type="color"
         value={localColor}
-        onInput={handleInput as any} // onInput is better for continuous updates in some browsers
+        onInput={handleInput as unknown as React.FormEventHandler<HTMLInputElement>} // onInput is better for continuous updates in some browsers
         onChange={handleInput} // fallback
         className="w-8 h-8 rounded-md border shadow-sm p-0 cursor-pointer hover:scale-110 transition-transform"
       />

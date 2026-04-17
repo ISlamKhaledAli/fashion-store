@@ -168,7 +168,7 @@ export default function ProductDetailPage({ params }: PageProps) {
       />
 
       {/* 6. You May Also Like Section */}
-      {/* @ts-ignore - category is populated from backend even if type doesn't reflect it */}
+      {/* @ts-expect-error - category is populated from backend even if type doesn't reflect it */}
       <YouMayAlsoLike categorySlug={product.category?.slug} excludeId={product.id} />
     </main>
   );

@@ -24,7 +24,7 @@ const COLORS: Record<string, string> = {
   CANCELLED: "#ef4444",   // red-500
 };
 
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
   return (
     <AnimatePresence>
       {active && payload && payload.length && (
@@ -47,6 +47,7 @@ const CustomTooltip = ({ active, payload }: any) => {
     </AnimatePresence>
   );
 };
+CustomTooltip.displayName = "CustomTooltip";
 
 export const OrdersDonut = ({ data, isLoading }: OrdersDonutProps) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);

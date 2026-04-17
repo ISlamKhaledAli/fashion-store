@@ -163,9 +163,9 @@ function ProductsContent() {
 
         if (res.data.success) {
           if (page === 1) {
-            setProducts(res.data.data);
+            setProducts(res.data.data as Product[]);
           } else {
-            setProducts(prev => [...prev, ...res.data.data]);
+            setProducts(prev => [...prev, ...res.data.data as Product[]]);
           }
           setTotalPages(res.data.pagination?.totalPages || 1);
           setTotalProducts(res.data.pagination?.total || 0);

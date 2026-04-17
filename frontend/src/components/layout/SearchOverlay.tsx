@@ -340,7 +340,7 @@ export const SearchOverlay = () => {
                       )})
                     ) : query ? (
                       <div className="col-span-full py-12 text-center text-on-surface-variant">
-                        No products found for "{query}"
+                        No products found for &ldquo;{query}&rdquo;
                       </div>
                     ) : (
                       <div className="col-span-full bg-surface-container-low p-8 flex flex-col md:flex-row items-center justify-between gap-8 group rounded-xl">

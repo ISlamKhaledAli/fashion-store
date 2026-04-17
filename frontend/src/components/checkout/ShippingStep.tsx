@@ -6,7 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
+import { cartApi } from "@/lib/api";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const shippingSchema = z.object({
   firstName: z.string().min(2, "First name is required"),
@@ -21,18 +23,38 @@ const shippingSchema = z.object({
 
 type ShippingFormData = z.infer<typeof shippingSchema>;
 
+interface ShippingMethod {
+  id: "standard" | "express" | "overnight";
+  name: string;
+  time: string;
+  rate: number;
+}
+
 interface ShippingStepProps {
   onNext: (data: ShippingFormData) => void;
   initialData?: Partial<ShippingFormData>;
 }
 
-const shippingMethods = [
-  { id: "standard", name: "Standard", time: "3-5 business days", price: "Free", value: 0 },
-  { id: "express", name: "Express", time: "1-2 business days", price: "$9.99", value: 9.99 },
-  { id: "overnight", name: "Overnight", time: "Next day delivery", price: "$24.99", value: 24.99 },
-];
-
 export const ShippingStep = ({ onNext, initialData }: ShippingStepProps) => {
+  const [shippingMethods, setShippingMethods] = React.useState<ShippingMethod[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchMethods = async () => {
+      try {
+        const res = await cartApi.getShippingMethods();
+        if (res.data.success) {
+          setShippingMethods(res.data.data as any);
+        }
+      } catch (err) {
+        console.error("Failed to fetch shipping methods", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMethods();
+  }, []);
+
   const {
     register,
     handleSubmit,
@@ -118,38 +140,48 @@ export const ShippingStep = ({ onNext, initialData }: ShippingStepProps) => {
         <div className="space-y-8">
           <h2 className="text-xl font-medium tracking-tight">Shipping Method</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {shippingMethods.map((method) => (
-              <label 
-                key={method.id} 
-                className="relative cursor-pointer group block"
-              >
-                <input
-                  type="radio"
-                  className="sr-only"
-                  value={method.id}
-                  checked={selectedMethod === method.id}
-                  onChange={() => setValue("shippingMethod", method.id as any)}
-                />
-                <div 
-                  className={cn(
-                    "p-6 border transition-all duration-300 h-full rounded-sm",
-                    selectedMethod === method.id 
-                      ? "border-primary bg-surface-container-lowest ring-1 ring-primary/10" 
-                      : "border-outline-variant/30 hover:border-outline-variant"
-                  )}
-                >
-                  <p className="text-[10px] font-bold tracking-widest uppercase mb-1">
-                    {method.name}
-                  </p>
-                  <p className="text-sm text-on-surface-variant mb-4">
-                    {method.time}
-                  </p>
-                  <p className="text-base font-medium">
-                    {method.price}
-                  </p>
+            {loading ? (
+              [1, 2, 3].map((i) => (
+                <div key={i} className="p-6 border border-outline-variant/10 rounded-sm space-y-4">
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-6 w-1/3" />
                 </div>
-              </label>
-            ))}
+              ))
+            ) : (
+              shippingMethods.map((method) => (
+                <label 
+                  key={method.id} 
+                  className="relative cursor-pointer group block"
+                >
+                  <input
+                    type="radio"
+                    className="sr-only"
+                    value={method.id}
+                    checked={selectedMethod === method.id}
+                    onChange={() => setValue("shippingMethod", method.id)}
+                  />
+                  <div 
+                    className={cn(
+                      "p-6 border transition-all duration-300 h-full rounded-sm",
+                      selectedMethod === method.id 
+                        ? "border-primary bg-surface-container-lowest ring-1 ring-primary/10" 
+                        : "border-outline-variant/30 hover:border-outline-variant"
+                    )}
+                  >
+                    <p className="text-[10px] font-bold tracking-widest uppercase mb-1">
+                      {method.name}
+                    </p>
+                    <p className="text-sm text-on-surface-variant mb-4">
+                      {method.time}
+                    </p>
+                    <p className="text-base font-medium">
+                      {method.rate === 0 ? "Free" : formatCurrency(method.rate)}
+                    </p>
+                  </div>
+                </label>
+              ))
+            )}
           </div>
         </div>
 

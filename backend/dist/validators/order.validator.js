@@ -4,6 +4,8 @@ exports.updateOrderStatusSchema = exports.createOrderSchema = void 0;
 const zod_1 = require("zod");
 exports.createOrderSchema = zod_1.z.object({
     addressId: zod_1.z.string().min(1, "Address is required"),
+    shippingMethod: zod_1.z.enum(["standard", "express", "overnight"]).default("standard"),
+    promoCode: zod_1.z.string().optional(),
     subtotal: zod_1.z.number().optional(),
     shipping: zod_1.z.number().optional(),
     tax: zod_1.z.number().optional(),

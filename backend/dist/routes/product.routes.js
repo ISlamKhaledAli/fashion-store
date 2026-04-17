@@ -7,7 +7,9 @@ const admin_1 = require("../middleware/admin");
 const router = (0, express_1.Router)();
 router.get("/", product_controller_1.getProducts);
 router.get("/filters", product_controller_1.getProductFilters);
-router.get("/:slug", product_controller_1.getProductBySlug);
+// Admin route to get full product by ID (must be before /:slug to avoid conflict)
+router.get("/admin/:id", auth_1.authMiddleware, admin_1.adminMiddleware, product_controller_1.getProductById);
+router.get("/:identifier", product_controller_1.getProductByIdentifier);
 // Admin only routes
 router.post("/", auth_1.authMiddleware, admin_1.adminMiddleware, product_controller_1.createProduct);
 router.put("/:id", auth_1.authMiddleware, admin_1.adminMiddleware, product_controller_1.updateProduct);

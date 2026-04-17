@@ -36,18 +36,17 @@ export const CheckoutSummary = ({ shippingMethod = "standard" }: { shippingMetho
         setTotals(res.data.data);
       }
     } catch {
-      // Fallback: show client-side estimate if API fails (e.g. guest user)
+      // Fallback: show minimal client-side estimate if API fails
+      // Note: We do NOT hardcode shipping rates here anymore.
       const discounted = Math.max(0, subtotal - discountAmount);
       const tax = Math.round(discounted * 0.10 * 100) / 100;
-      const shippingRates: Record<string, number> = { standard: 0, express: 9.99, overnight: 24.99 };
-      const ship = shippingRates[shippingMethod] ?? 0;
       setTotals({
         subtotal,
         discountAmount,
         discountedSubtotal: discounted,
-        shippingCost: ship,
+        shippingCost: 0, // Not estimating shipping
         tax,
-        total: Math.round((discounted + tax + ship) * 100) / 100,
+        total: Math.round((discounted + tax) * 100) / 100,
       });
     } finally {
       setCalculating(false);

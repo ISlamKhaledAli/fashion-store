@@ -1,40 +1,19 @@
 'use client'
 
-import React, { useEffect, useState, useRef } from "react"
+import React, { useRef } from "react"
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from "@/components/ui/Button"
+import { Product } from "@/types"
+import { useProductList } from "@/hooks/useProductList"
 
 interface Props {
   excludeId: string
 }
 
 export const HorizontalScroll = ({ excludeId }: Props) => {
-  const [products, setProducts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const { products, loading } = useProductList({ limit: 8, excludeId })
   const scrollRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    let isMounted = true
-    const fetchFeatured = async () => {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products?limit=8`)
-        const data = await res.json()
-        if (isMounted) {
-          const filtered = data.data
-            ?.filter((p: any) => p.id !== excludeId)
-            ?.slice(0, 8) || []
-          setProducts(filtered)
-        }
-      } catch (err) {
-        if (isMounted) setProducts([])
-      } finally {
-        if (isMounted) setLoading(false)
-      }
-    }
-    fetchFeatured()
-    return () => { isMounted = false }
-  }, [excludeId])
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -102,7 +81,7 @@ export const HorizontalScroll = ({ excludeId }: Props) => {
           className="flex gap-8 overflow-x-auto custom-scrollbar pb-12 snap-x"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {products.map((product: any, idx: number) => (
+          {products.map((product: Product, idx: number) => (
             <Link 
               key={product.id}
               href={`/products/${product.id}`}

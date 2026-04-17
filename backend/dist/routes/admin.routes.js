@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const admin_controller_1 = require("../controllers/admin.controller");
+const product_controller_1 = require("../controllers/product.controller");
 const auth_1 = require("../middleware/auth");
 const admin_1 = require("../middleware/admin");
 const router = (0, express_1.Router)();
@@ -9,6 +10,9 @@ router.use(auth_1.authMiddleware);
 router.use(admin_1.adminMiddleware);
 router.get("/orders", admin_controller_1.getAdminOrders);
 router.put("/orders/:id", admin_controller_1.updateOrderStatus);
+router.post("/orders/bulk-status", admin_controller_1.bulkUpdateOrdersStatus);
+router.post("/orders/bulk-delete", admin_controller_1.bulkDeleteOrders);
+router.get("/products", product_controller_1.getAdminProducts);
 router.get("/customers", admin_controller_1.getCustomers);
 router.get("/analytics/overview", admin_controller_1.getAnalyticsOverview);
 router.get("/analytics/revenue", admin_controller_1.getRevenueAnalytics);

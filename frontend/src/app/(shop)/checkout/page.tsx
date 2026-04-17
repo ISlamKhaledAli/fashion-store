@@ -19,6 +19,18 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || "");
 
 import { orderApi, addressApi } from "@/lib/api";
 
+interface ShippingFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  shippingMethod: "standard" | "express" | "overnight";
+  addressId?: string;
+}
+
 function CheckoutPageContent() {
   const searchParams = useSearchParams();
   const stepParam = searchParams.get("step");
@@ -28,7 +40,7 @@ function CheckoutPageContent() {
   const orderIdParam = searchParams.get("order_id");
 
   const [currentStep, setCurrentStep] = useState(1);
-  const [shippingData, setShippingData] = useState<any>(null);
+  const [shippingData, setShippingData] = useState<ShippingFormData | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<{ id: string } | null>(null);
@@ -38,6 +50,7 @@ function CheckoutPageContent() {
     const savedShipping = sessionStorage.getItem("checkout_shipping_data");
     if (savedShipping) {
       try {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setShippingData(JSON.parse(savedShipping));
       } catch (e) {}
     }
@@ -70,7 +83,7 @@ function CheckoutPageContent() {
     }
   }, [stepParam, returnFromStripe, clientSecretParam, paymentIntentParam, orderIdParam]);
 
-  const handleShippingNext = async (data: any) => {
+  const handleShippingNext = async (data: ShippingFormData) => {
     try {
       // Save address to backend to get an addressId
       const addressRes = await addressApi.create({
@@ -85,7 +98,8 @@ function CheckoutPageContent() {
       });
 
       if (addressRes.data.success) {
-        const newData = { ...data, addressId: addressRes.data.data.id };
+        const addressData = addressRes.data.data as { id: string };
+        const newData = { ...data, addressId: addressData.id };
         setShippingData(newData);
         sessionStorage.setItem("checkout_shipping_data", JSON.stringify(newData));
         setCurrentStep(2);
@@ -111,11 +125,11 @@ function CheckoutPageContent() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="lg:col-span-2"
           >
             <ShippingStep 
               onNext={handleShippingNext} 
-              initialData={shippingData} 
+              initialData={shippingData || undefined} 
             />
           </motion.div>
         );
@@ -126,7 +140,7 @@ function CheckoutPageContent() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="lg:col-span-2"
           >
             <PaymentStep 
               onNext={handlePaymentNext} 

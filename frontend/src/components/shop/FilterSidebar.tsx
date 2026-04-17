@@ -59,7 +59,7 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
           const rawColors = filterRes.data.data.colors;
           // Aggressively deduplicate by hex only — visually identical colors should appear once
           const seenHex = new Set<string>();
-          const uniqueColors = rawColors.filter((color: any) => {
+          const uniqueColors = rawColors.filter((color: { name: string; hex: string }) => {
             const hex = color.hex.toLowerCase().trim();
             if (seenHex.has(hex)) return false;
             seenHex.add(hex);

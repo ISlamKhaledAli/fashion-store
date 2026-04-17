@@ -18,6 +18,20 @@ import { ProductVariantsTable } from "./ProductVariantsTable";
 
 // --- Memoized Sections ---
 
+interface IdentitySectionProps {
+  name: string;
+  slug: string;
+  categoryId: string;
+  brandId: string;
+  description: string;
+  status: string;
+  categoryOptions: { label: string; value: string }[];
+  brandOptions: { label: string; value: string }[];
+  onNameChange: (val: string) => void;
+  onFieldChange: (field: string, val: any) => void;
+  errors: any;
+}
+
 const IdentitySection = memo(({ 
   name, 
   slug,
@@ -30,7 +44,7 @@ const IdentitySection = memo(({
   onNameChange, 
   onFieldChange,
   errors
-}: any) => (
+}: IdentitySectionProps) => (
   <section className="space-y-8">
     <div className="flex items-center gap-4">
       <div className="h-[1px] flex-1 bg-zinc-100" />
@@ -91,41 +105,39 @@ const IdentitySection = memo(({
         required
       />
 
-      <div className="flex items-center justify-between gap-4 px-5 py-4 bg-white border border-zinc-200 rounded-xl shadow-sm">
-        <div className="flex flex-col">
+      <div className="flex items-center justify-between gap-6 px-5 py-4 bg-white border border-zinc-200 rounded-xl shadow-sm">
+        <div className="flex flex-col flex-1">
           <h4 className="text-sm font-semibold tracking-wide text-zinc-950">Publication Status</h4>
-          <p className="text-xs text-zinc-500 mt-1">Toggle visibility on the main archival feed</p>
+          <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Toggle visibility on the main archival feed</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button
+        <div className="flex items-center gap-4">
+          <button
             type="button"
-            variant="none"
-            size="none"
             onClick={() => onFieldChange("status", status === 'ACTIVE' ? 'DRAFT' : 'ACTIVE')}
             disabled={status === 'ARCHIVED'}
             className={cn(
-              "w-12 h-6 rounded-full relative transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2",
+              "w-12 h-6 rounded-full relative transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 shrink-0",
               status === 'ACTIVE' ? "bg-black" : "bg-zinc-300",
               status === 'ARCHIVED' && "opacity-50 cursor-not-allowed"
             )}
           >
             <motion.div 
               initial={false}
-              animate={{ x: status === 'ACTIVE' ? 24 : 4 }}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow pointer-events-none" 
+              animate={{ x: status === 'ACTIVE' ? 24 : 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm pointer-events-none" 
             />
-          </Button>
+          </button>
           
           <Button
             type="button"
             variant={status === 'ARCHIVED' ? 'primary' : 'outline'}
             onClick={() => onFieldChange("status", status === 'ARCHIVED' ? 'DRAFT' : 'ARCHIVED')}
             className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium transition",
+              "px-4 py-2 h-9 rounded-lg text-[11px] font-bold uppercase tracking-widest transition shrink-0",
               status === 'ARCHIVED' 
-                ? "bg-archived text-white border-archived hover:bg-archived-hover shadow-sm" 
-                : "border-zinc-300 hover:bg-zinc-100"
+                ? "bg-stone-900 text-white border-stone-900 hover:bg-stone-800" 
+                : "border-zinc-200 hover:bg-zinc-50"
             )}
           >
             {status === 'ARCHIVED' ? "Archived" : "Archive"}
@@ -135,8 +147,16 @@ const IdentitySection = memo(({
     </div>
   </section>
 ));
+IdentitySection.displayName = "IdentitySection";
 
-const PricingSection = memo(({ price, comparePrice, cost, margin, onFieldChange, errors }: any) => (
+const PricingSection = memo(({ price, comparePrice, cost, margin, onFieldChange, errors }: {
+  price: number;
+  comparePrice?: number;
+  cost?: number;
+  margin: string;
+  onFieldChange: (field: string, val: number) => void;
+  errors: any;
+}) => (
   <section className="space-y-8">
     <div className="flex items-center gap-4">
       <div className="h-[1px] flex-1 bg-zinc-100" />
@@ -176,8 +196,14 @@ const PricingSection = memo(({ price, comparePrice, cost, margin, onFieldChange,
     </div>
   </section>
 ));
+PricingSection.displayName = "PricingSection";
 
-const MediaSection = memo(({ images, onUpload, onSetMain, onRemove }: any) => (
+const MediaSection = memo(({ images, onUpload, onSetMain, onRemove }: {
+  images: any[];
+  onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSetMain: (idx: number) => void;
+  onRemove: (idx: number) => void;
+}) => (
   <section className="space-y-8">
     <div className="flex items-center gap-4">
       <div className="h-[1px] flex-1 bg-zinc-100" />
@@ -246,6 +272,7 @@ const MediaSection = memo(({ images, onUpload, onSetMain, onRemove }: any) => (
     </div>
   </section>
 ));
+MediaSection.displayName = "MediaSection";
 
 const FormSkeleton = () => (
   <div className="space-y-16 animate-in fade-in duration-500">
@@ -313,8 +340,8 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
           categoryApi.getAll(),
           brandApi.getAll()
         ]);
-        if (catRes.data.success) setCategories(catRes.data.data);
-        if (brandRes.data.success) setBrands(brandRes.data.data);
+        if (catRes.data.success) setCategories(catRes.data.data as Category[]);
+        if (brandRes.data.success) setBrands(brandRes.data.data as Brand[]);
       } catch (err) {
         console.error("Failed to fetch meta data", err);
       }
@@ -329,17 +356,17 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
         try {
           const res = await adminApi.getProductById(product.id);
           if (res.data.success) {
-            const full = res.data.data;
+            const full = res.data.data as Product;
             setFormData({
               name: full.name,
               slug: full.slug,
               description: full.description,
               price: full.price,
-              comparePrice: (full as any).comparePrice || (full as any).comparePrice || 0,
-              cost: (full as any).cost || 0,
+              comparePrice: full.comparePrice || 0,
+              cost: full.cost || 0,
               categoryId: full.categoryId,
               brandId: full.brandId,
-              status: (full as any).status || "ACTIVE",
+              status: (full.status as "ACTIVE" | "DRAFT" | "ARCHIVED") || "ACTIVE",
               images: full.images,
               variants: full.variants,
             });
@@ -353,10 +380,10 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
             description: product.description,
             price: product.price,
             comparePrice: product.comparePrice || 0,
-            cost: 0,
+            cost: product.cost || 0,
             categoryId: product.categoryId,
             brandId: product.brandId,
-            status: (product as any).status || "ACTIVE",
+            status: (product.status as "ACTIVE" | "DRAFT" | "ARCHIVED") || "ACTIVE",
             images: product.images,
             variants: product.variants,
           });

@@ -1,10 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clearCart = exports.removeFromCart = exports.updateCartItem = exports.addToCart = exports.getCart = void 0;
+exports.calculateTotals = exports.clearCart = exports.removeFromCart = exports.updateCartItem = exports.addToCart = exports.getCart = void 0;
 const prisma_1 = require("../lib/prisma");
 const apiResponse_1 = require("../utils/apiResponse");
 const common_validator_1 = require("../validators/common.validator");
 const AppError_1 = require("../utils/AppError");
+const pricing_1 = require("../utils/pricing");
 const getCart = async (req, res, next) => {
     try {
         const userId = req.user?.id;
@@ -115,3 +116,77 @@ const clearCart = async (req, res, next) => {
     }
 };
 exports.clearCart = clearCart;
+/**
+ * POST /api/cart/calculate
+ *
+ * Server-authoritative pricing calculation endpoint.
+ * The frontend must NEVER compute totals locally — this is the single source of truth.
+ *
+ * @route POST /api/cart/calculate
+ * @group Cart - Operations about the shopping cart
+ * @param {object} req.body - Calculation inputs
+ * @param {string} [req.body.shippingMethod=standard] - One of "standard" | "express" | "overnight"
+ * @param {string} [req.body.promoCode] - Optional promotional discount code
+ * @returns {object} 200 - Calculated pricing breakdown
+ * @returns {number} return.subtotal - Sum of (price × quantity) for all cart items
+ * @returns {number} return.discountAmount - Applied discount (capped at subtotal)
+ * @returns {number} return.discountedSubtotal - subtotal minus discountAmount
+ * @returns {number} return.shippingCost - Cost for the chosen shipping method
+ * @returns {number} return.tax - 10% tax on discountedSubtotal
+ * @returns {number} return.total - Final amount (discountedSubtotal + tax + shipping), rounded to 2 decimals
+ */
+const calculateTotals = async (req, res, next) => {
+    try {
+        const userId = req.user?.id;
+        const { shippingMethod = "standard", promoCode } = req.body || {};
+        // 1. Read server-side cart
+        const cart = await prisma_1.prisma.cart.findUnique({
+            where: { userId },
+            include: {
+                items: {
+                    include: {
+                        variant: { include: { product: true } },
+                    },
+                },
+            },
+        });
+        let subtotal = 0;
+        if (cart && cart.items.length > 0) {
+            for (const item of cart.items) {
+                subtotal += item.variant.product.price * item.quantity;
+            }
+        }
+        else {
+            throw new AppError_1.ValidationError("Your cart is empty");
+        }
+        // 2. Validate promo code against DB if provided
+        let rawDiscountAmount = 0;
+        if (promoCode) {
+            const discountRecord = await prisma_1.prisma.discount.findUnique({ where: { code: promoCode } });
+            if (discountRecord && discountRecord.isActive) {
+                const isNotExpired = !discountRecord.expiresAt || new Date() <= discountRecord.expiresAt;
+                const isNotOverused = !discountRecord.maxUses || discountRecord.usedCount < discountRecord.maxUses;
+                const meetsMinOrder = !discountRecord.minOrder || subtotal >= discountRecord.minOrder;
+                if (isNotExpired && isNotOverused && meetsMinOrder) {
+                    if (discountRecord.type.toLowerCase() === "fixed") {
+                        rawDiscountAmount = discountRecord.value;
+                    }
+                    else if (discountRecord.type.toLowerCase() === "percentage" || discountRecord.type.toLowerCase() === "percent") {
+                        rawDiscountAmount = subtotal * (discountRecord.value / 100);
+                    }
+                }
+            }
+        }
+        // 3. Single canonical calculation
+        const totals = (0, pricing_1.calculateOrderTotals)({
+            subtotal,
+            discountAmount: rawDiscountAmount,
+            shippingMethod,
+        });
+        return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data: totals });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.calculateTotals = calculateTotals;

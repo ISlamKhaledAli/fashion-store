@@ -19,7 +19,7 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
       set({ isLoading: true });
       const res = await wishlistApi.getAll();
       if (res.data.success) {
-        set({ items: res.data.data });
+        set({ items: res.data.data as WishlistItem[] });
       }
     } catch (err) {
       console.error("Failed to fetch wishlist:", err);
@@ -31,7 +31,7 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
     try {
       const res = await wishlistApi.add(productId);
       if (res.data.success) {
-        set((state) => ({ items: [...state.items, res.data.data] }));
+        set((state) => ({ items: [...state.items, res.data.data as WishlistItem] }));
       }
     } catch (err) {
       console.error("Failed to add to wishlist:", err);

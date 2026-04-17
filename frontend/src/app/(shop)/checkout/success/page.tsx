@@ -15,6 +15,7 @@ function SuccessContent() {
   useEffect(() => {
     const orderParam = searchParams.get("orderId");
     if (orderParam) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setOrderId(orderParam);
     }
     clearCart();

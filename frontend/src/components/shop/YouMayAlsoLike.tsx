@@ -1,7 +1,8 @@
 'use client'
-import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { Product } from '@/types'
+import { useProductList } from '@/hooks/useProductList'
 
 interface Props {
   categorySlug: string
@@ -9,37 +10,13 @@ interface Props {
 }
 
 export const YouMayAlsoLike = ({ categorySlug, excludeId }: Props) => {
-  const [products, setProducts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (!categorySlug) return
-    
-    let isMounted = true;
-    const fetchRelated = async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/products?category=${categorySlug}&limit=8`
-        )
-        const data = await res.json()
-        
-        if (isMounted) {
-          // exclude current product and take max 4
-          const filtered = data.data
-            ?.filter((p: any) => p.id !== excludeId)
-            ?.slice(0, 4) || []
-          setProducts(filtered)
-        }
-      } catch (err) {
-        if (isMounted) setProducts([])
-      } finally {
-        if (isMounted) setLoading(false)
-      }
-    }
-
-    fetchRelated()
-    return () => { isMounted = false; }
-  }, [categorySlug, excludeId])
+  const { products: allProducts, loading } = useProductList({ 
+    limit: 8, 
+    excludeId, 
+    category: categorySlug 
+  })
+  
+  const products = allProducts.slice(0, 4)
 
   if (loading) {
     return (
@@ -72,7 +49,7 @@ export const YouMayAlsoLike = ({ categorySlug, excludeId }: Props) => {
         </h2>
         
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-          {products.map((product: any, idx: number) => (
+          {products.map((product: Product, idx: number) => (
             <Link 
               key={product.id} 
               href={`/products/${product.id}`}

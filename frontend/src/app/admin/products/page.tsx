@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { toast } from "sonner";
-import { Search, Plus, Filter, Edit, Archive, Trash2, Package } from "lucide-react";
+import { Search, Plus, Edit, Archive, Trash2, Package } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
 
 const ProductFormPanel = React.lazy(() => import("@/components/admin/ProductFormPanel").then(module => ({ default: module.ProductFormPanel })));
@@ -34,7 +34,7 @@ const ProductRow = React.memo(({
 }) => {
   const totalStock = product.variants.reduce((acc, v) => acc + v.stock, 0);
   const isLowStock = totalStock <= 5 && totalStock > 0;
-  const status = (product as any).status || "ACTIVE";
+  const status = product.status || "ACTIVE";
 
   return (
     <tr 
@@ -117,6 +117,7 @@ const ProductRow = React.memo(({
     </tr>
   );
 });
+ProductRow.displayName = "ProductRow";
 
 const MobileProductRow = React.memo(({ 
   product, 
@@ -127,7 +128,7 @@ const MobileProductRow = React.memo(({
 }) => {
   const totalStock = product.variants.reduce((acc, v) => acc + v.stock, 0);
   const isLowStock = totalStock <= 5 && totalStock > 0;
-  const status = (product as any).status || "ACTIVE";
+  const status = product.status || "ACTIVE";
 
   return (
     <div 
@@ -181,6 +182,7 @@ const MobileProductRow = React.memo(({
     </div>
   );
 });
+MobileProductRow.displayName = "MobileProductRow";
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -202,7 +204,7 @@ export default function AdminProductsPage() {
     try {
       const res = await adminApi.getProducts({ limit: 100, status: 'all' });
       if (isMounted.current && res.data.success) {
-        setProducts(res.data.data);
+        setProducts(res.data.data as Product[]);
       }
     } catch (err) {
       if (isMounted.current) {
@@ -233,7 +235,7 @@ export default function AdminProductsPage() {
     return products.filter((p) => {
       const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           p.variants.some(v => v.sku?.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchesTab = activeTab === "ALL" || (p as any).status === activeTab;
+      const matchesTab = activeTab === "ALL" || p.status === activeTab;
       return matchesSearch && matchesTab;
     });
   }, [products, searchQuery, activeTab]);
@@ -301,14 +303,7 @@ export default function AdminProductsPage() {
           </div>
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="rounded-lg border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-100 font-medium shadow-sm transition-all flex-1 sm:flex-none"
-            icon={<Filter size={16} />}
-          >
-            Filters
-          </Button>
+
           <Button 
             variant="primary" 
             size="sm"

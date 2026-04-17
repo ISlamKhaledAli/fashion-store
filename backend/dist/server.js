@@ -30,3 +30,4 @@ async function startServer() {
 if (require.main === module) {
     void startServer();
 }
+exports.default = app_module_1.default;

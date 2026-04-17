@@ -16,13 +16,13 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 interface RevenueChartProps {
-  data: any[];
+  data: Record<string, any>[];
   isLoading?: boolean;
   range: "30D" | "90D";
   onRangeChange: (range: "30D" | "90D") => void;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
   return (
     <AnimatePresence>
       {active && payload && payload.length && (
@@ -34,7 +34,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           className="bg-zinc-950 border border-zinc-800 p-3 shadow-2xl rounded-xl backdrop-blur-md pointer-events-none z-50 min-w-[140px]"
         >
           <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1.5">
-            {new Date(label).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            {new Date(label as string).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </p>
           <div className="flex items-baseline gap-1.5">
             <span className="text-xl font-bold text-white leading-none">
@@ -47,6 +47,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     </AnimatePresence>
   );
 };
+CustomTooltip.displayName = "CustomTooltip";
 
 export const RevenueChart = ({ data, isLoading, range, onRangeChange }: RevenueChartProps) => {
   if (isLoading) {

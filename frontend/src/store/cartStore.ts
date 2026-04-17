@@ -15,7 +15,7 @@ interface CartState {
   setItems: (items: CartItem[]) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
-  syncFromServer: (serverCart: any) => void;
+  syncFromServer: (serverCart: unknown) => void;
   clearCart: () => void;
   toggleDrawer: (open?: boolean) => void;
   getTotalItems: () => number;
@@ -72,10 +72,26 @@ export const useCartStore = create<CartState>()(
         }
       },
       setItems: (items) => set({ items }),
-      syncFromServer: (serverData) => {
-        if (!serverData?.items) return;
+      syncFromServer: (serverData: unknown) => {
+        const data = serverData as { items?: any[] };
+        if (!data?.items) return;
         
-        const mappedItems = serverData.items.map((i: any) => ({
+        const mappedItems = data.items.map((i: {
+          id: string;
+          variantId: string;
+          variant: {
+            stock?: number;
+            size: string;
+            color: string;
+            product: {
+              id: string;
+              name: string;
+              price: number;
+              images?: { url: string }[];
+            };
+          };
+          quantity: number;
+        }) => ({
           id: i.id,
           cartItemId: i.id,
           variantId: i.variantId,

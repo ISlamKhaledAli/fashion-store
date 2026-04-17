@@ -10,8 +10,10 @@ const stripe = new stripe_1.default(validateEnv_1.env.STRIPE_SECRET_KEY, {
     apiVersion: "2026-03-25.dahlia",
 });
 const createPaymentIntent = async (amount, currency = "usd", metadata = {}) => {
+    if (!Number.isInteger(amount))
+        throw new Error('PaymentIntent amount must be an integer');
     return await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Stripe works in cents
+        amount,
         currency,
         metadata,
     });

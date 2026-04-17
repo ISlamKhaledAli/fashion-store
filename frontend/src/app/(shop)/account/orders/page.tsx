@@ -28,7 +28,7 @@ export default function OrdersPage() {
       try {
         const res = await orderApi.getMine();
         if (res.data.success) {
-          setOrders(res.data.data);
+          setOrders(res.data.data as Order[]);
         }
       } catch (err) {
         console.error("Failed to fetch orders", err);
@@ -295,7 +295,7 @@ function OrderCard({ order, isExpanded, onToggle, onCancel, onTrack, onReturn }:
                         {order.status === "PENDING" && (
                           <Button 
                             variant="none" size="none"
-                            onClick={(e: any) => { e.stopPropagation(); onCancel(); }}
+                            onClick={(e: React.MouseEvent) => { e.stopPropagation(); onCancel(); }}
                             className="bg-transparent text-on-surface px-8 py-3 rounded-md text-sm font-medium outline outline-1 outline-outline-variant/30 hover:bg-surface-container-low transition-colors"
                           >
                             Cancel Order

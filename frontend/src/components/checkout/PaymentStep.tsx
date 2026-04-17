@@ -50,11 +50,33 @@ const CheckoutForm = ({ onNext, onBack, paymentIntentId, addressId, shippingMeth
         return;
       }
 
+      // 2. Confirm the payment with Stripe FIRST
+      const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/checkout?step=review&return_from_stripe=true`,
+        },
+        redirect: "if_required",
+      });
+
+      if (confirmError) {
+        setError(confirmError.message || "Payment confirmation failed");
+        setLoading(false);
+        return;
+      }
+
+      if (!paymentIntent || (paymentIntent.status !== "succeeded" && paymentIntent.status !== "processing")) {
+        setError("Payment was not completed. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      // 3. Create the order AFTER payment is confirmed
       let orderId = "";
       try {
         const orderRes = await api.post("/orders", {
           addressId,
-          stripePaymentId: paymentIntentId,
+          stripePaymentId: paymentIntent.id,
           notes: "Created via checkout flow",
           shippingMethod,
           promoCode: promoCode || undefined,
@@ -66,34 +88,16 @@ const CheckoutForm = ({ onNext, onBack, paymentIntentId, addressId, shippingMeth
           setLoading(false);
           return;
         }
-      } catch (err: any) {
-        setError(err.response?.data?.message || "Order creation failed. Please check your cart.");
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { message?: string } } };
+        setError(error.response?.data?.message || "Order creation failed. Please check your cart.");
         setLoading(false);
         return;
       }
 
-      // 2. Confirm the payment with Stripe immediately
-      const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        clientSecret: (stripe as any)._clientSecret, // elements.submit() ensures this is ready
-        confirmParams: {
-          return_url: `${window.location.origin}/checkout?step=review&return_from_stripe=true&order_id=${orderId}`,
-        },
-        redirect: "if_required",
-      });
-
-      if (confirmError) {
-        setError(confirmError.message || "Payment confirmation failed");
-        setLoading(false);
-        return;
-      }
-
-      if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing" || paymentIntent.status === "requires_action" || paymentIntent.status === "requires_capture")) {
-        // Success! Pass the order ID up to the parent
-        // Note: we pass the orderId in place of paymentIntentId so the Review step gets it
-        onNext(paymentIntent.client_secret || "", orderId);
-      }
-    } catch (err: any) {
+      // 4. Success — pass the order ID up to the parent
+      onNext(paymentIntent.client_secret || "", orderId);
+    } catch (err: unknown) {
       setError("An unexpected error occurred during payment.");
     } finally {
       setLoading(false);
@@ -158,7 +162,7 @@ export const PaymentStep = ({ onNext, onBack, shippingMethod = "standard" }: Pay
         }
 
         const addressRes = await addressApi.getAll();
-        const addresses = addressRes.data.data;
+        const addresses = addressRes.data.data as { id: string }[];
         if (!addresses || addresses.length === 0) {
           setError("No confirmed address found. Please go back to shipping.");
           setLoading(false);
@@ -183,8 +187,9 @@ export const PaymentStep = ({ onNext, onBack, shippingMethod = "standard" }: Pay
           setClientSecret(res.data.data.clientSecret);
           setPaymentIntentId(res.data.data.paymentIntentId);
         }
-      } catch (err: any) {
-        setError(err.response?.data?.message || "Failed to initialize payment. Please try again.");
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { message?: string } } };
+        setError(error.response?.data?.message || "Failed to initialize payment. Please try again.");
 
       } finally {
         setLoading(false);

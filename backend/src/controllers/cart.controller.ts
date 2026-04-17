@@ -3,7 +3,15 @@ import { prisma } from "../lib/prisma";
 import { sendResponse } from "../utils/apiResponse";
 import { addToCartSchema, updateCartItemSchema } from "../validators/common.validator";
 import { NotFoundError, ValidationError } from "../utils/AppError";
-import { calculateOrderTotals } from "../utils/pricing";
+import { calculateOrderTotals, SHIPPING_METHODS } from "../utils/pricing";
+
+export const getShippingMethods = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    return sendResponse({ res, status: 200, success: true, data: SHIPPING_METHODS });
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const getCart = async (req: Request, res: Response, next: NextFunction) => {
   try {

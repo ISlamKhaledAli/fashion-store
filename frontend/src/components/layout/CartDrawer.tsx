@@ -89,9 +89,9 @@ export const CartDrawer = () => {
                 </div>
               ) : (
                 <AnimatePresence mode="popLayout">
-                  {items.map((item) => (
+                  {items.map((item, index) => (
                     <motion.div
-                      key={item.id || item.variantId || `cart-item-${Math.random()}`}
+                      key={item.id || item.variantId || `cart-item-${index}`}
                       layout
                       initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
                       animate={{ opacity: 1, y: 0 }}

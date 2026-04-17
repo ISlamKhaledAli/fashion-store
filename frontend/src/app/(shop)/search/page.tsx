@@ -88,7 +88,7 @@ function SearchContent() {
     else setIsLoading(true);
 
     try {
-      const params: any = {
+      const params: Record<string, unknown> = {
         search: query,
         category: state.category.join(","),
         brand: state.brand.join(","),
@@ -102,9 +102,9 @@ function SearchContent() {
       const res = await productApi.getAll(params);
       if (res.data.success) {
         if (isLoadMore) {
-          setProducts((prev) => [...prev, ...res.data.data]);
+          setProducts((prev) => [...prev, ...res.data.data as Product[]]);
         } else {
-          setProducts(res.data.data);
+          setProducts(res.data.data as Product[]);
           setTotalCount(res.data.pagination?.total || 0);
         }
       }
@@ -182,7 +182,7 @@ function SearchContent() {
             </span>
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
               <h1 className="text-4xl md:text-6xl font-medium tracking-tighter text-on-surface leading-tight">
-                Results for "<span className="italic font-light italic-font">{query}</span>" 
+                Results for &ldquo;<span className="italic font-light italic-font">{query}</span>&rdquo; 
                 <span className="text-on-surface-variant font-light ml-4">
                   — {isLoading ? "..." : totalCount} products
                 </span>
@@ -241,7 +241,7 @@ function SearchContent() {
                 </div>
                 <h2 className="text-2xl font-medium tracking-tight mb-4 text-on-surface">No pieces found</h2>
                 <p className="text-on-surface-variant text-sm leading-relaxed mb-8">
-                    We couldn't find any products matching Your search for "{query}". 
+                    We couldn&apos;t find any products matching Your search for &ldquo;{query}&rdquo;. 
                     Try adjusting your filters or searching for something else.
                 </p>
                 <div className="flex flex-col gap-3 w-full">

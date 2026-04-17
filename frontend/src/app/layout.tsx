@@ -29,6 +29,7 @@ export default function RootLayout({
         <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f9f9fb" />
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#f9f9fb" />
         <meta name="darkreader-lock" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"

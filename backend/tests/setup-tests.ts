@@ -13,6 +13,13 @@ jest.mock("../src/services/stripe", () => ({
   default: {
     paymentIntents: {
       create: jest.fn(),
+      retrieve: jest.fn(async (id: string) => ({
+        id: id,
+        amount: 12000, // $120.00 in cents
+        status: "succeeded",
+        metadata: { userId: "mock-user-id" },
+      })),
+      update: jest.fn(),
     },
     webhooks: {
       constructEvent: jest.fn(),

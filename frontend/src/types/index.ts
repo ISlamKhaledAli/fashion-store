@@ -56,6 +56,7 @@ export interface Product {
   variants: Variant[];
   avgRating?: number | null;
   reviewCount?: number;
+  status?: string;
   createdAt: string;
 }
 
@@ -137,6 +138,18 @@ export interface PaginationData {
   limit: number;
   total: number;
   totalPages: number;
+}
+
+export interface Review {
+  id: string;
+  user?: {
+    name: string;
+    avatar?: string;
+  };
+  rating: number;
+  title?: string;
+  body: string;
+  createdAt: string;
 }
 
 export interface ApiResponse<T> {

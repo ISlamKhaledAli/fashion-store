@@ -1,10 +1,16 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.cancelOrder = exports.createOrder = exports.getOrderById = exports.getOrders = void 0;
+const client_1 = require("@prisma/client");
 const prisma_1 = require("../lib/prisma");
 const apiResponse_1 = require("../utils/apiResponse");
 const order_validator_1 = require("../validators/order.validator");
 const stripe_1 = require("../services/stripe");
+const stripe_2 = __importDefault(require("../services/stripe"));
+const pricing_1 = require("../utils/pricing");
 const AppError_1 = require("../utils/AppError");
 const getOrders = async (req, res, next) => {
     try {
@@ -49,7 +55,7 @@ exports.getOrderById = getOrderById;
 const createOrder = async (req, res, next) => {
     try {
         const userId = req.user?.id;
-        const { addressId, notes, stripePaymentId, items: inputItems } = order_validator_1.createOrderSchema.parse(req.body);
+        const { addressId, notes, stripePaymentId, shippingMethod, promoCode, items: inputItems } = order_validator_1.createOrderSchema.parse(req.body);
         let orderItems = [];
         // 1. Determine Source of Truth for items (Request Body has priority for Zustand/Local carts)
         if (inputItems && inputItems.length > 0) {
@@ -83,7 +89,14 @@ const createOrder = async (req, res, next) => {
         const order = await prisma_1.prisma.$transaction(async (tx) => {
             let subtotal = 0;
             const finalizedItems = [];
-            // Step 1: Verify stock and fetch fresh prices for ALL items
+            // Step 1a: Lock variants row explicitly to ensure atomic check-and-decrement validation limits
+            const variantIds = orderItems.map(item => item.variantId).sort();
+            await tx.$queryRaw `
+        SELECT id FROM "variants" 
+        WHERE id IN (${client_1.Prisma.join(variantIds)}) 
+        FOR UPDATE
+      `;
+            // Step 1b: Verify stock and fetch fresh prices for ALL items
             for (const item of orderItems) {
                 const variant = await tx.variant.findUnique({
                     where: { id: item.variantId },
@@ -104,22 +117,55 @@ const createOrder = async (req, res, next) => {
                     price: itemPrice,
                 });
             }
-            const shipping = 10;
-            const tax = subtotal * 0.1;
-            const total = subtotal + shipping + tax;
+            let rawDiscountAmount = 0;
+            if (promoCode) {
+                const discountRecord = await tx.discount.findUnique({ where: { code: promoCode } });
+                if (!discountRecord || !discountRecord.isActive) {
+                    throw new AppError_1.ValidationError("Invalid promo code");
+                }
+                if (discountRecord.expiresAt && new Date() > discountRecord.expiresAt) {
+                    throw new AppError_1.ValidationError("Promo code has expired");
+                }
+                if (discountRecord.maxUses && discountRecord.usedCount >= discountRecord.maxUses) {
+                    throw new AppError_1.ValidationError("Promo code usage limit exceeded");
+                }
+                if (discountRecord.minOrder && subtotal < discountRecord.minOrder) {
+                    throw new AppError_1.ValidationError(`Promo code requires minimum order of $${discountRecord.minOrder}`);
+                }
+                if (discountRecord.type.toLowerCase() === "fixed") {
+                    rawDiscountAmount = discountRecord.value;
+                }
+                else if (discountRecord.type.toLowerCase() === "percentage" || discountRecord.type.toLowerCase() === "percent") {
+                    rawDiscountAmount = subtotal * (discountRecord.value / 100);
+                }
+                // Increment count
+                await tx.discount.update({
+                    where: { id: discountRecord.id },
+                    data: { usedCount: { increment: 1 } }
+                });
+            }
+            const totals = (0, pricing_1.calculateOrderTotals)({
+                subtotal,
+                discountAmount: rawDiscountAmount,
+                shippingMethod
+            });
             // Step 2: Create Order
             const newOrder = await tx.order.create({
                 data: {
                     userId,
                     addressId,
-                    subtotal,
-                    shipping,
-                    tax,
-                    total,
+                    subtotal: totals.subtotal,
+                    // @ts-ignore - Bypass frozen TS dev cache
+                    discountAmount: totals.discountAmount,
+                    // @ts-ignore
+                    promoCode,
+                    shipping: totals.shippingCost,
+                    tax: totals.tax,
+                    total: totals.total,
                     notes,
                     stripePaymentId,
-                    paymentStatus: stripePaymentId ? "PAID" : "UNPAID",
-                    status: stripePaymentId ? "PROCESSING" : "PENDING",
+                    paymentStatus: "UNPAID",
+                    status: "PENDING",
                     items: {
                         create: finalizedItems
                     },
@@ -144,8 +190,14 @@ const createOrder = async (req, res, next) => {
         });
         // 3. Handle Payment Intent
         let clientSecret = null;
-        if (!stripePaymentId) {
-            const paymentIntent = await (0, stripe_1.createPaymentIntent)(order.total, "usd", { orderId: order.id });
+        if (stripePaymentId) {
+            await stripe_2.default.paymentIntents.update(stripePaymentId, {
+                metadata: { orderId: order.id }
+            });
+        }
+        else {
+            const amountInCents = Math.round(order.total * 100);
+            const paymentIntent = await (0, stripe_1.createPaymentIntent)(amountInCents, "usd", { orderId: order.id });
             clientSecret = paymentIntent.client_secret;
         }
         return (0, apiResponse_1.sendResponse)({
