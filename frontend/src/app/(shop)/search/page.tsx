@@ -91,6 +91,7 @@ function SearchContent() {
       const params: any = {
         search: query,
         category: state.category.join(","),
+        brand: state.brand.join(","),
         color: state.color.join(","),
         maxPrice: state.maxPrice,
         sort: state.sort,
@@ -120,6 +121,8 @@ function SearchContent() {
     const params: Partial<FilterState> = {};
     const cat = searchParams.get("category");
     if (cat) params.category = cat.split(",");
+    const brand = searchParams.get("brand");
+    if (brand) params.brand = brand.split(",");
     const color = searchParams.get("color");
     if (color) params.color = color.split(",");
     const max = searchParams.get("maxPrice");
@@ -141,6 +144,7 @@ function SearchContent() {
     const params = new URLSearchParams();
     params.set("q", query);
     if (state.category.length) params.set("category", state.category.join(","));
+    if (state.brand.length) params.set("brand", state.brand.join(","));
     if (state.color.length) params.set("color", state.color.join(","));
     if (state.maxPrice < 2000) params.set("maxPrice", state.maxPrice.toString());
     params.set("sort", state.sort);

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/store/authStore";
 import { StepProgress } from "@/components/checkout/StepProgress";
@@ -19,12 +19,56 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || "");
 
 import { orderApi, addressApi } from "@/lib/api";
 
-export default function CheckoutPage() {
+function CheckoutPageContent() {
+  const searchParams = useSearchParams();
+  const stepParam = searchParams.get("step");
+  const returnFromStripe = searchParams.get("return_from_stripe");
+  const clientSecretParam = searchParams.get("payment_intent_client_secret");
+  const paymentIntentParam = searchParams.get("payment_intent");
+  const orderIdParam = searchParams.get("order_id");
+
   const [currentStep, setCurrentStep] = useState(1);
   const [shippingData, setShippingData] = useState<any>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<{ id: string } | null>(null);
+
+  useEffect(() => {
+    // 1. Restore minimal state from sessionStorage securely
+    const savedShipping = sessionStorage.getItem("checkout_shipping_data");
+    if (savedShipping) {
+      try {
+        setShippingData(JSON.parse(savedShipping));
+      } catch (e) {}
+    }
+
+    // 2. Handle Stripe redirect
+    if (stepParam === "review" && (returnFromStripe === "true" || paymentIntentParam)) {
+      if (!clientSecretParam) return;
+
+      const validatePayment = async () => {
+        const stripe = await stripePromise;
+        if (!stripe) return;
+
+        const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecretParam);
+
+        if (paymentIntent && (
+          paymentIntent.status === "succeeded" || 
+          paymentIntent.status === "processing" || 
+          paymentIntent.status === "requires_capture"
+        )) {
+          setClientSecret(clientSecretParam);
+          setPaymentIntentId(orderIdParam || paymentIntent.id);
+          setCurrentStep(3);
+        } else {
+          // Payment failed, return to payment step
+          setCurrentStep(2);
+        }
+      };
+
+      validatePayment();
+    }
+  }, [stepParam, returnFromStripe, clientSecretParam, paymentIntentParam, orderIdParam]);
 
   const handleShippingNext = async (data: any) => {
     try {
@@ -41,7 +85,9 @@ export default function CheckoutPage() {
       });
 
       if (addressRes.data.success) {
-        setShippingData({ ...data, addressId: addressRes.data.data.id });
+        const newData = { ...data, addressId: addressRes.data.data.id };
+        setShippingData(newData);
+        sessionStorage.setItem("checkout_shipping_data", JSON.stringify(newData));
         setCurrentStep(2);
       }
     } catch (error) {
@@ -213,5 +259,17 @@ export default function CheckoutPage() {
       </footer>
     </div>
     </ProtectedRoute>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <CheckoutPageContent />
+    </Suspense>
   );
 }

@@ -24,8 +24,8 @@ interface Review {
 
 interface ProductReviewsProps {
   productId: string;
-  avgRating: number;
-  reviewCount: number;
+  avgRating?: number | null;
+  reviewCount?: number;
 }
 
 export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductReviewsProps) => {
@@ -104,20 +104,20 @@ export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductRev
           <div className="space-y-4">
             <h2 className="text-3xl font-medium tracking-tight">User Reviews</h2>
             <div className="space-y-2">
-              <div className="text-6xl font-bold tracking-tighter">{avgRating.toFixed(1)}</div>
+              <div className="text-6xl font-bold tracking-tighter">{avgRating != null ? avgRating.toFixed(1) : "—"}</div>
               <div className="flex text-primary">
                 {[...Array(5)].map((_, i) => (
                   <span 
                     key={i} 
                     className="material-symbols-outlined text-2xl" 
-                    style={{ fontVariationSettings: `'FILL' ${i < Math.floor(avgRating) ? 1 : 0}` }}
+                    style={{ fontVariationSettings: `'FILL' ${avgRating != null && i < Math.floor(avgRating) ? 1 : 0}` }}
                   >
                     star
                   </span>
                 ))}
               </div>
               <p className="text-xs text-on-surface-variant uppercase tracking-[0.2em] font-bold">
-                Based on {reviews.length} Reviews
+                {reviews.length > 0 ? `Based on ${reviews.length} Reviews` : "No reviews yet"}
               </p>
             </div>
           </div>

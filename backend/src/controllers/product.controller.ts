@@ -68,6 +68,9 @@ export const getProducts = async (req: Request, res: Response, next: NextFunctio
       where.OR = [
         { name: { contains: String(search), mode: "insensitive" } },
         { description: { contains: String(search), mode: "insensitive" } },
+        { category: { name: { contains: String(search), mode: "insensitive" } } },
+        { brand: { name: { contains: String(search), mode: "insensitive" } } },
+        { tags: { some: { tag: { name: { contains: String(search), mode: "insensitive" } } } } }
       ];
     }
     
@@ -108,6 +111,7 @@ export const getProducts = async (req: Request, res: Response, next: NextFunctio
             take: 1
           },
           _count: { select: { reviews: true } },
+          reviews: { select: { rating: true } },
         },
       }),
       prisma.product.count({ where }),
@@ -115,13 +119,23 @@ export const getProducts = async (req: Request, res: Response, next: NextFunctio
 
     console.log(`[DEBUG] Found ${products.length} products (Total: ${total})`);
 
+    const formattedProducts = products.map((p: any) => {
+      const reviewCount = p._count?.reviews || 0;
+      const avgRating = reviewCount > 0 
+        ? p.reviews.reduce((acc: number, r: any) => acc + r.rating, 0) / reviewCount 
+        : null;
+      
+      const { reviews, _count, ...rest } = p;
+      return { ...rest, reviewCount, avgRating };
+    });
+
     const pagination = calculatePagination(total, currentPage, take);
 
     return sendResponse({
       res,
       status: 200,
       success: true,
-      data: products,
+      data: formattedProducts,
       pagination,
     });
   } catch (error) {
@@ -167,15 +181,16 @@ export const getProductByIdentifier = async (req: Request, res: Response, next: 
     }
 
     // Calculate average rating
-    const avgRating = product.reviews.length > 0
-      ? product.reviews.reduce((acc: number, rev: any) => acc + rev.rating, 0) / product.reviews.length
-      : 0;
+    const reviewCount = product.reviews.length;
+    const avgRating = reviewCount > 0
+      ? product.reviews.reduce((acc: number, rev: any) => acc + rev.rating, 0) / reviewCount
+      : null;
 
     return sendResponse({
       res,
       status: 200,
       success: true,
-      data: { ...product, avgRating },
+      data: { ...product, avgRating, reviewCount },
     });
   } catch (error) {
     next(error);
@@ -203,11 +218,16 @@ export const getProductById = async (req: Request, res: Response, next: NextFunc
       throw new NotFoundError("Product not found");
     }
 
+    const reviewCount = product.reviews.length;
+    const avgRating = reviewCount > 0
+      ? product.reviews.reduce((acc: number, rev: any) => acc + rev.rating, 0) / reviewCount
+      : null;
+
     return sendResponse({
       res,
       status: 200,
       success: true,
-      data: product,
+      data: { ...product, avgRating, reviewCount },
     });
   } catch (error) {
     next(error);
@@ -222,7 +242,7 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
     const product = await prisma.product.create({
       data: {
         ...productData as any,
-        slug: productData.name.toLowerCase().replace(/ /g, "-") + "-" + Date.now(),
+        slug: productData.slug || productData.name.toLowerCase().replace(/ /g, "-") + "-" + Date.now(),
         variants: {
           create: variants,
         },
@@ -280,13 +300,15 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
     const product = await prisma.$transaction(async (tx) => {
       // 1. Handle variants separately if provided
       if (variants) {
-        const existingVariantIds = existing.variants.map(v => v.id);
-        const incomingVariantIds = variants.filter(v => v.id).map(v => v.id!);
+        const incomingSkus = variants.map((v: any) => v.sku).filter(Boolean);
+        const incomingIds = variants.map((v: any) => v.id).filter(Boolean);
 
-        // Delete removed variants
-        const variantIdsToDelete = existingVariantIds.filter(
-          eid => !incomingVariantIds.includes(eid)
+        // Delete removed variants correctly
+        const variantsToDelete = existing.variants.filter(
+          (ev: any) => !incomingIds.includes(ev.id) && !incomingSkus.includes(ev.sku)
         );
+        const variantIdsToDelete = variantsToDelete.map((v: any) => v.id);
+
         if (variantIdsToDelete.length > 0) {
           await tx.cartItem.deleteMany({
             where: { variantId: { in: variantIdsToDelete } },
@@ -296,35 +318,33 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
           });
         }
 
-        // Update existing variants (two-pass for SKU swaps)
-        for (const v of variants) {
-          if (v.id && existingVariantIds.includes(v.id)) {
+        // Two-pass to avoid SKU unique constraint conflicts
+        for (const ev of existing.variants) {
+          if (!variantIdsToDelete.includes(ev.id)) {
             await tx.variant.update({
-              where: { id: v.id },
-              data: { sku: `_tmp_${v.id}_${Date.now()}` },
+              where: { id: ev.id },
+              data: { sku: `_tmp_${ev.id}_${Date.now()}` },
             });
           }
         }
 
         for (const v of variants) {
-          if (v.id && existingVariantIds.includes(v.id)) {
-            const { id: variantId, ...data } = v;
+          const existingVariant = existing.variants.find(
+            (ev: any) => (v.id && ev.id === v.id) || (v.sku && ev.sku === v.sku)
+          );
+
+          const { id: _ignore, ...data } = v as any;
+
+          if (existingVariant) {
             await tx.variant.update({
-              where: { id: variantId },
-              data: data as any,
+              where: { id: existingVariant.id },
+              data: data,
+            });
+          } else {
+            await tx.variant.create({
+              data: { ...data, productId: String(id) },
             });
           }
-        }
-
-        // Create new variants
-        const newVariants = variants
-          .filter(v => !v.id)
-          .map(({ id: _id, ...rest }) => ({
-            ...rest,
-            productId: String(id),
-          }));
-        if (newVariants.length > 0) {
-          await tx.variant.createMany({ data: newVariants as any });
         }
       }
 
@@ -436,3 +456,81 @@ export const getProductFilters = async (req: Request, res: Response, next: NextF
   }
 };
 
+export const getAdminProducts = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { 
+      category, brand, search, sort, page, limit, status 
+    } = req.query;
+
+    const { skip, limit: take, page: currentPage } = getPagination({
+      page: Number(page),
+      limit: Number(limit),
+    });
+
+    const where: any = {};
+    
+    if (status && status !== 'ALL' && status !== 'all') {
+      where.status = String(status).toUpperCase();
+    }
+
+    if (category) {
+      where.category = {
+        name: { equals: String(category), mode: "insensitive" }
+      };
+    }
+
+    if (brand) {
+      where.brand = {
+        OR: [
+          { slug: { equals: String(brand), mode: "insensitive" } },
+          { name: { equals: String(brand), mode: "insensitive" } }
+        ]
+      };
+    }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: String(search), mode: "insensitive" } },
+        { description: { contains: String(search), mode: "insensitive" } },
+        { variants: { some: { sku: { contains: String(search), mode: "insensitive" } } } }
+      ];
+    }
+
+    const orderBy: any = {};
+    if (sort) {
+      const [field, order] = String(sort).split(":");
+      orderBy[field] = order || "asc";
+    } else {
+      orderBy.createdAt = "desc";
+    }
+
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        take,
+        skip,
+        orderBy,
+        include: {
+          category: { select: { name: true, slug: true } },
+          brand: { select: { name: true, slug: true } },
+          images: true, // all images
+          variants: true, // all variants
+          _count: { select: { reviews: true } },
+        },
+      }),
+      prisma.product.count({ where }),
+    ]);
+
+    const pagination = calculatePagination(total, currentPage, take);
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      data: products,
+      pagination,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

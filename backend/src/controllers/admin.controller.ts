@@ -7,7 +7,7 @@ import { NotFoundError } from "../utils/AppError";
 
 export const getAdminOrders = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { status, page, limit } = req.query;
+    const { status, search, page, limit } = req.query;
     const { skip, limit: take, page: currentPage } = getPagination({
       page: Number(page),
       limit: Number(limit),
@@ -15,6 +15,14 @@ export const getAdminOrders = async (req: Request, res: Response, next: NextFunc
 
     const where: any = {};
     if (status) where.status = status;
+
+    if (search) {
+      where.OR = [
+        { id: { contains: String(search), mode: "insensitive" } },
+        { user: { name: { contains: String(search), mode: "insensitive" } } },
+        { user: { email: { contains: String(search), mode: "insensitive" } } },
+      ];
+    }
 
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
@@ -53,7 +61,10 @@ export const updateOrderStatus = async (req: Request, res: Response, next: NextF
 
     const order = await prisma.order.update({
       where: { id: String(id) },
-      data: { status },
+      data: { 
+        status,
+        shippedAt: status === "SHIPPED" ? new Date() : undefined
+      },
     });
 
     return sendResponse({ res, status: 200, success: true, data: order });
@@ -61,6 +72,50 @@ export const updateOrderStatus = async (req: Request, res: Response, next: NextF
     if (error instanceof Error && (error as any).code === "P2025") {
       throw new NotFoundError("Order not found");
     }
+    next(error);
+  }
+};
+
+export const bulkUpdateOrdersStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { ids, status } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return sendResponse({ res, status: 400, success: false, message: "Order IDs are required" });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      return await tx.order.updateMany({
+        where: { id: { in: ids } },
+        data: { 
+          status,
+          shippedAt: status === "SHIPPED" ? new Date() : undefined
+        },
+      });
+    });
+
+    return sendResponse({ res, status: 200, success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const bulkDeleteOrders = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return sendResponse({ res, status: 400, success: false, message: "Order IDs are required" });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      return await tx.order.deleteMany({
+        where: { id: { in: ids } },
+      });
+    });
+
+    return sendResponse({ res, status: 200, success: true, data: result });
+  } catch (error) {
     next(error);
   }
 };

@@ -12,12 +12,13 @@ import { Button } from "@/components/ui/Button";
 
 export default function CartPage() {
   const { 
-    items, 
-    removeItem, 
+    items,
+    removeItem,
     updateQuantity, 
     getTotalPrice, 
     getTotalItems,
-    setPromo
+    setPromo,
+    syncingIds
   } = useCartStore();
   const { isAuthenticated } = useAuthStore();
   
@@ -147,21 +148,27 @@ export default function CartPage() {
                               const newQty = Math.max(1, item.quantity - 1);
                               if (newQty !== item.quantity) {
                                 updateQuantity(item.id, newQty);
-                                if (item.cartItemId) cartApi.updateQuantity(item.cartItemId, newQty).catch(() => {});
                               }
                             }}
+                            disabled={syncingIds.includes(item.id)}
                             className="text-on-surface-variant hover:text-on-surface transition-colors flex items-center justify-center p-2"
                             icon={<span className="material-symbols-outlined text-sm">remove</span>}
                           />
-                          <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
+                          <span className="text-sm font-medium w-8 text-center shrink-0">
+                            {syncingIds.includes(item.id) ? (
+                              <div className="h-3 w-3 animate-spin rounded-full border border-primary border-t-transparent mx-auto" />
+                            ) : (
+                              item.quantity
+                            )}
+                          </span>
                           <Button 
                             variant="none"
                             size="none"
                             onClick={() => {
                               const newQty = item.quantity + 1;
                               updateQuantity(item.id, newQty);
-                              if (item.cartItemId) cartApi.updateQuantity(item.cartItemId, newQty).catch(() => {});
                             }}
+                            disabled={syncingIds.includes(item.id)}
                             className="text-on-surface-variant hover:text-on-surface transition-colors flex items-center justify-center p-2"
                             icon={<span className="material-symbols-outlined text-sm">add</span>}
                           />
@@ -181,8 +188,8 @@ export default function CartPage() {
                           size="none"
                           onClick={() => {
                             removeItem(item.id);
-                            if (item.cartItemId) cartApi.removeItem(item.cartItemId).catch(() => {});
                           }}
+                          disabled={syncingIds.includes(item.id)}
                           className="mt-6 text-on-surface-variant hover:text-error transition-colors duration-300 group/del p-2"
                           icon={<span className="material-symbols-outlined group-hover/del:scale-110 transition-transform" data-icon="delete">delete</span>}
                         />

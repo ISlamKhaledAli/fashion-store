@@ -11,6 +11,7 @@ import { useWishlistStore } from "@/store/wishlistStore";
 import { useRouter } from "next/navigation";
 import { Button } from "../ui/Button";
 import { flyToCart } from "@/lib/animations";
+import { RatingDisplay } from "../ui/RatingDisplay";
 
 
 interface ProductCardProps {
@@ -98,27 +99,7 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
     }
   };
 
-  const renderStars = (rating: number = 0, count: number = 0) => {
-    const fullStars = Math.floor(rating) || 5; 
-    return (
-      <div className="flex items-center gap-1">
-        {[...Array(5)].map((_, i) => (
-          <Star 
-            key={i} 
-            size={10} 
-            className={cn(
-              "transition-all duration-300",
-              i < fullStars ? "fill-primary text-primary" : "text-outline-variant"
-            )}
-            strokeWidth={1.5}
-          />
-        ))}
-        <span className="text-[10px] text-on-surface-variant ml-1">
-          ({count})
-        </span>
-      </div>
-    );
-  };
+  // Removed renderStars in favor of RatingDisplay
 
   if (isListView) {
     return (
@@ -175,7 +156,7 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
           <div className="flex items-center gap-6">
             <span className="text-xl font-bold tracking-tighter">{formatCurrency(product.price)}</span>
             <div className="h-4 w-px bg-outline-variant" />
-            {renderStars(product.avgRating, product.reviewCount)}
+            <RatingDisplay rating={product.avgRating} count={product.reviewCount} />
           </div>
 
           <div className="flex flex-wrap gap-4 pt-4">
@@ -329,7 +310,7 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
               <h3 className="text-sm font-medium tracking-tight">{product.name}</h3>
               <span className="text-sm font-medium">{formatCurrency(product.price)}</span>
             </div>
-            {renderStars(product.avgRating, product.reviewCount)}
+            <RatingDisplay rating={product.avgRating} count={product.reviewCount} />
           </div>
         </Link>
       </article>

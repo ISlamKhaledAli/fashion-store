@@ -8,7 +8,7 @@ import { OrdersDonut } from "@/components/admin/OrdersDonut";
 import { RecentOrdersTable } from "@/components/admin/RecentOrdersTable";
 import { OrderDetailPanel } from "@/components/admin/OrderDetailPanel";
 import { adminApi } from "@/lib/api";
-import { Order } from "@/types";
+import { Order, OrderStatus } from "@/types";
 import { Package, TrendingUp, Settings, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { toast } from "sonner";
@@ -121,12 +121,12 @@ export default function AdminDashboard() {
 
   const handleUpdateOrderStatus = useCallback(async (id: string, status: string) => {
     try {
-      const res = await adminApi.updateOrder(id, { status });
+      const res = await adminApi.updateOrderStatus(id, status as OrderStatus);
       if (res.data.success) {
         toast.success(`Order status updated to ${status}`);
         // Update local state if the order is currently visible
-        setRecentOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
-        setSelectedOrder(prev => prev?.id === id ? { ...prev, status } : prev);
+        setRecentOrders(prev => prev.map(o => o.id === id ? { ...o, status: status as OrderStatus } : o));
+        setSelectedOrder(prev => prev?.id === id ? (prev ? { ...prev, status: status as OrderStatus } : null) : prev);
       }
     } catch (error) {
       toast.error("Failed to update order status");

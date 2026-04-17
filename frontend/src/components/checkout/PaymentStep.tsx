@@ -77,7 +77,7 @@ const CheckoutForm = ({ onNext, onBack, paymentIntentId, addressId, shippingMeth
         elements,
         clientSecret: (stripe as any)._clientSecret, // elements.submit() ensures this is ready
         confirmParams: {
-          return_url: `${window.location.origin}/checkout?step=review`,
+          return_url: `${window.location.origin}/checkout?step=review&return_from_stripe=true&order_id=${orderId}`,
         },
         redirect: "if_required",
       });

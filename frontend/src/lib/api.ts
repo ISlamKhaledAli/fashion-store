@@ -7,6 +7,7 @@ import {
   Order, 
   User, 
   WishlistItem,
+  OrderStatus,
 } from "@/types";
 
 export const authApi = {
@@ -106,36 +107,25 @@ export const adminApi = {
     api.get<ApiResponse<unknown>>("/admin/analytics/overview"),
   getRevenue: (params?: Record<string, unknown>) => 
     api.get<ApiResponse<unknown>>("/admin/analytics/revenue", { params }),
-  getOrders: (params: Record<string, unknown>) => 
+  getOrders: (params: { page?: number; limit?: number; search?: string; status?: OrderStatus }) => 
     api.get<ApiResponse<Order[]>>("/admin/orders", { params }),
-  updateOrderStatus: (id: string, status: string) => 
+  updateOrderStatus: (id: string, status: OrderStatus) => 
     api.put<ApiResponse<Order>>(`/admin/orders/${id}`, { status }),
+  bulkUpdateOrderStatus: (ids: string[], status: OrderStatus) =>
+    api.post<ApiResponse<any>>("/admin/orders/bulk-status", { ids, status }),
+  bulkDeleteOrders: (ids: string[]) =>
+    api.post<ApiResponse<any>>("/admin/orders/bulk-delete", { ids }),
   getCustomers: (params?: Record<string, unknown>) => 
     api.get<ApiResponse<unknown[]>>("/admin/customers", { params }),
+  getProducts: (params?: Record<string, unknown>) => 
+    api.get<ApiResponse<Product[]>>("/admin/products", { params }),
   getProductById: (id: string) =>
     api.get<ApiResponse<Product>>(`/products/admin/${id}`),
   createProduct: (data: Record<string, unknown>) => 
     api.post<ApiResponse<Product>>("/products", data),
   updateProduct: (id: string, data: Record<string, unknown>) => {
-    // Map frontend fields (like discountPrice) to backend expected schema (comparePrice)
-    // and omit extraneous fields
-    const { 
-      name, description, price, cost, categoryId, brandId, status, 
-      featured, variants, discountPrice 
-    } = data as any;
-    
-    return api.put<ApiResponse<Product>>(`/products/${id}`, {
-      name,
-      description,
-      price,
-      comparePrice: discountPrice,
-      cost,
-      categoryId,
-      brandId,
-      status,
-      featured,
-      variants,
-    });
+    // Rely on product.validator.ts on the backend to strip unused fields
+    return api.put<ApiResponse<Product>>(`/products/${id}`, data);
   },
   deleteProduct: (id: string) => 
     api.delete<ApiResponse<unknown>>(`/products/${id}`),

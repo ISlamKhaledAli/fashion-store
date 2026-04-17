@@ -20,6 +20,7 @@ import { ProductVariantsTable } from "./ProductVariantsTable";
 
 const IdentitySection = memo(({ 
   name, 
+  slug,
   categoryId, 
   brandId, 
   description, 
@@ -45,6 +46,14 @@ const IdentitySection = memo(({
         placeholder="e.g. Sculptural Trench Coat"
         error={errors?.name}
         required
+      />
+
+      <Input
+        label="Custom Slug"
+        value={slug}
+        onChange={(e) => onFieldChange("slug", e.target.value)}
+        placeholder="e.g. sculptural-trench-coat"
+        error={errors?.slug}
       />
 
       <div className="grid grid-cols-2 gap-6 items-end">
@@ -127,7 +136,7 @@ const IdentitySection = memo(({
   </section>
 ));
 
-const PricingSection = memo(({ price, discountPrice, cost, margin, onFieldChange, errors }: any) => (
+const PricingSection = memo(({ price, comparePrice, cost, margin, onFieldChange, errors }: any) => (
   <section className="space-y-8">
     <div className="flex items-center gap-4">
       <div className="h-[1px] flex-1 bg-zinc-100" />
@@ -153,8 +162,8 @@ const PricingSection = memo(({ price, discountPrice, cost, margin, onFieldChange
       <Input
         label="Compare"
         type="number"
-        value={discountPrice}
-        onChange={(e) => onFieldChange("discountPrice", parseFloat(e.target.value) || 0)}
+        value={comparePrice}
+        onChange={(e) => onFieldChange("comparePrice", parseFloat(e.target.value) || 0)}
         icon={<span className="text-xs font-bold">$</span>}
       />
       <Input
@@ -283,7 +292,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     slug: "",
     description: "",
     price: 0,
-    discountPrice: 0,
+    comparePrice: 0,
     cost: 0,
     categoryId: "",
     brandId: "",
@@ -326,7 +335,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
               slug: full.slug,
               description: full.description,
               price: full.price,
-              discountPrice: (full as any).discountPrice || (full as any).comparePrice || 0,
+              comparePrice: (full as any).comparePrice || (full as any).comparePrice || 0,
               cost: (full as any).cost || 0,
               categoryId: full.categoryId,
               brandId: full.brandId,
@@ -343,7 +352,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
             slug: product.slug,
             description: product.description,
             price: product.price,
-            discountPrice: product.discountPrice || 0,
+            comparePrice: product.comparePrice || 0,
             cost: 0,
             categoryId: product.categoryId,
             brandId: product.brandId,
@@ -362,7 +371,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
         slug: "",
         description: "",
         price: 0,
-        discountPrice: 0,
+        comparePrice: 0,
         cost: 0,
         categoryId: "",
         brandId: "",

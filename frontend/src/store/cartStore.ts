@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import { CartItem } from "@/types";
 import { cartApi } from "@/lib/api";
 import { useAuthStore } from "./authStore";
+import { toast } from "sonner";
 
 interface CartState {
   items: CartItem[];
@@ -19,6 +20,7 @@ interface CartState {
   toggleDrawer: (open?: boolean) => void;
   getTotalItems: () => number;
   getTotalPrice: () => number;
+  syncingIds: string[];
 }
 
 export const useCartStore = create<CartState>()(
@@ -28,40 +30,45 @@ export const useCartStore = create<CartState>()(
       isOpen: false,
       promoCode: null,
       discountAmount: 0,
+      syncingIds: [],
       setPromo: (code, amount) => set({ promoCode: code, discountAmount: amount }),
       addItem: async (newItem) => {
-        const { items } = get();
+        const { items, syncingIds } = get();
         const { isAuthenticated } = useAuthStore.getState();
         
-        // 1. Always update local state first (Optimistic)
         const existingItem = items.find((item) => item.variantId === newItem.variantId);
+        const tempId = newItem.id || `temp-${Date.now()}`;
+        
+        const previousItems = items;
         let updatedItems;
 
         if (existingItem) {
           updatedItems = items.map((item) =>
             item.variantId === newItem.variantId
-              ? { ...item, id: item.id || `guest-${Date.now()}`, quantity: item.quantity + newItem.quantity }
+              ? { ...item, quantity: item.quantity + newItem.quantity }
               : item
           );
         } else {
-          updatedItems = [...items, { ...newItem, id: newItem.id || `guest-${Date.now()}-${Math.random().toString(36).slice(2)}` }];
+          updatedItems = [...items, { ...newItem, id: tempId }];
         }
         
-        set({ items: updatedItems });
+        set({ items: updatedItems, syncingIds: [...syncingIds, tempId] });
 
-        // 2. Only sync with server if logged in
         if (isAuthenticated) {
           try {
             await cartApi.addItem(newItem.variantId, newItem.quantity);
-            
-            // Sync with server to get official IDs
             const serverCart = await cartApi.get();
             if (serverCart.data.success) {
               get().syncFromServer(serverCart.data.data);
             }
           } catch (err) {
-            console.error("Failed to sync cart with server:", err);
+            set({ items: previousItems });
+            toast.error("Failed to add item to cart. Please try again.");
+          } finally {
+            set((state) => ({ syncingIds: state.syncingIds.filter(id => id !== tempId) }));
           }
+        } else {
+          set((state) => ({ syncingIds: state.syncingIds.filter(id => id !== tempId) }));
         }
       },
       setItems: (items) => set({ items }),
@@ -86,38 +93,58 @@ export const useCartStore = create<CartState>()(
       },
       removeItem: async (id) => {
         const { isAuthenticated } = useAuthStore.getState();
-        const item = get().items.find(i => i.id === id);
+        const { items, syncingIds } = get();
+        const item = items.find(i => i.id === id);
+        const previousItems = items;
         
         // Update locally
-        set({ items: get().items.filter((i) => i.id !== id) });
+        set({ 
+          items: items.filter((i) => i.id !== id),
+          syncingIds: [...syncingIds, id]
+        });
         
         // Sync server
         if (isAuthenticated && item?.cartItemId) {
           try {
             await cartApi.removeItem(item.cartItemId);
           } catch (err) {
-            console.error("Failed to remove item from server:", err);
+            set({ items: previousItems });
+            toast.error("Failed to remove item. Please try again.");
+          } finally {
+            set((state) => ({ syncingIds: state.syncingIds.filter(sid => sid !== id) }));
           }
+        } else {
+          set((state) => ({ syncingIds: state.syncingIds.filter(sid => sid !== id) }));
         }
       },
       updateQuantity: async (id, quantity) => {
         const { isAuthenticated } = useAuthStore.getState();
-        const item = get().items.find(i => i.id === id);
+        const { items, syncingIds } = get();
+        const item = items.find(i => i.id === id);
+        const previousItems = items;
         
+        if (!item) return;
+
         // Update locally
         set({
-          items: get().items.map((i) =>
+          items: items.map((i) =>
             i.id === id ? { ...i, quantity } : i
           ),
+          syncingIds: [...syncingIds, id]
         });
         
         // Sync server
-        if (isAuthenticated && item?.cartItemId) {
+        if (isAuthenticated && item.cartItemId) {
           try {
             await cartApi.updateQuantity(item.cartItemId, quantity);
           } catch (err) {
-            console.error("Failed to update quantity on server:", err);
+            set({ items: previousItems });
+            toast.error("Failed to update quantity. Please try again.");
+          } finally {
+            set((state) => ({ syncingIds: state.syncingIds.filter(sid => sid !== id) }));
           }
+        } else {
+          set((state) => ({ syncingIds: state.syncingIds.filter(sid => sid !== id) }));
         }
       },
       clearCart: () => set({ items: [] }),

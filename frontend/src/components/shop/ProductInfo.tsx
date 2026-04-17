@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "../ui/Button";
 import { flyToCart } from "@/lib/animations";
 import { toast } from "sonner";
+import { RatingDisplay } from "../ui/RatingDisplay";
 
 interface ProductInfoProps {
   product: Product;
@@ -120,22 +121,7 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
         <h1 className="text-[32px] font-medium leading-tight text-on-surface">
           {product.name}
         </h1>
-        <div className="flex items-center gap-3 mt-3">
-          <div className="flex text-primary">
-            {[...Array(5)].map((_, i) => (
-              <span 
-                key={i} 
-                className="material-symbols-outlined text-sm" 
-                style={{ fontVariationSettings: `'FILL' ${i < Math.floor(product.avgRating) ? 1 : 0}` }}
-              >
-                star
-              </span>
-            ))}
-          </div>
-          <span className="text-xs font-label uppercase tracking-widest text-on-surface-variant">
-            {product.reviewCount} Reviews
-          </span>
-        </div>
+        <RatingDisplay rating={product.avgRating} count={product.reviewCount} size={14} className="mt-3" />
       </div>
 
       <div className="text-[28px] font-bold text-on-surface">

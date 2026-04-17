@@ -200,7 +200,7 @@ export default function AdminProductsPage() {
   const fetchProducts = async (isMounted: { current: boolean }) => {
     setLoading(true);
     try {
-      const res = await productApi.getAll({ limit: 100, status: 'all' });
+      const res = await adminApi.getProducts({ limit: 100, status: 'all' });
       if (isMounted.current && res.data.success) {
         setProducts(res.data.data);
       }

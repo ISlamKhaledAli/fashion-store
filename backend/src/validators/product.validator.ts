@@ -16,9 +16,11 @@ const imageSchema = z.object({
 
 export const createProductSchema = z.object({
   name: z.string().min(1, "Name is required"),
+  slug: z.string().optional(),
   description: z.string().optional(),
   price: z.number().positive("Price must be positive"),
-  comparePrice: z.number().optional(),
+  comparePrice: z.number().optional().nullable(),
+  cost: z.number().min(0).optional().nullable(),
   categoryId: z.string().min(1, "Category is required"),
   brandId: z.string().optional(),
   status: z.enum(["ACTIVE", "DRAFT", "ARCHIVED"]).default("DRAFT"),
@@ -29,6 +31,7 @@ export const createProductSchema = z.object({
 
 export const updateProductSchema = z.object({
   name: z.string().min(1).optional(),
+  slug: z.string().optional(),
   description: z.string().optional().nullable(),
   price: z.number().min(0).optional(),
   comparePrice: z.number().min(0).optional().nullable(),

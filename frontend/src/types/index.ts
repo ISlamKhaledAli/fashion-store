@@ -45,7 +45,8 @@ export interface Product {
   slug: string;
   description: string;
   price: number;
-  discountPrice?: number;
+  comparePrice?: number;
+  cost?: number;
   featured: boolean;
   categoryId: string;
   brandId: string;
@@ -53,8 +54,8 @@ export interface Product {
   brand?: Brand;
   images: ProductImage[];
   variants: Variant[];
-  avgRating: number;
-  reviewCount: number;
+  avgRating?: number | null;
+  reviewCount?: number;
   createdAt: string;
 }
 
@@ -107,6 +108,9 @@ export interface Address {
   phone?: string;
 }
 
+export type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
+export type PaymentStatus = 'UNPAID' | 'PAID' | 'FAILED' | 'REFUNDED';
+
 export interface Order {
   id: string;
   userId: string;
@@ -116,8 +120,8 @@ export interface Order {
     avatar?: string;
   };
   address?: Address;
-  status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
-  paymentStatus: 'UNPAID' | 'PAID' | 'FAILED' | 'REFUNDED';
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
   subtotal: number;
   shipping: number;
   tax: number;

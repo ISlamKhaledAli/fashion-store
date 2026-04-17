@@ -9,7 +9,10 @@ import {
   getInventory,
   createDiscount,
   getDiscounts,
+  bulkUpdateOrdersStatus,
+  bulkDeleteOrders,
 } from "../controllers/admin.controller";
+import { getAdminProducts } from "../controllers/product.controller";
 import { authMiddleware } from "../middleware/auth";
 import { adminMiddleware } from "../middleware/admin";
 
@@ -20,6 +23,9 @@ router.use(adminMiddleware);
 
 router.get("/orders", getAdminOrders);
 router.put("/orders/:id", updateOrderStatus);
+router.post("/orders/bulk-status", bulkUpdateOrdersStatus);
+router.post("/orders/bulk-delete", bulkDeleteOrders);
+router.get("/products", getAdminProducts);
 router.get("/customers", getCustomers);
 router.get("/analytics/overview", getAnalyticsOverview);
 router.get("/analytics/revenue", getRevenueAnalytics);

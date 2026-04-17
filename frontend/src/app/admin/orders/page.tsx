@@ -11,10 +11,13 @@ import {
   ChevronLeft, 
   ChevronRight,
   Filter,
-  ArrowRight
+  ArrowRight,
+  Trash2,
+  CheckCircle,
+  Truck
 } from "lucide-react";
 import { adminApi } from "@/lib/api";
-import { Order } from "@/types";
+import { Order, OrderStatus } from "@/types";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { BulkActionBar } from "@/components/admin/BulkActionBar";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -22,6 +25,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // Optimized Imports
 const OrderDetailPanel = React.lazy(() => import("@/components/admin/OrderDetailPanel").then(module => ({ default: module.OrderDetailPanel })));
@@ -99,8 +103,41 @@ export default function AdminOrdersPage() {
   };
 
   const handleBulkAction = async (action: string) => {
-    // Implement bulk API calls here
-    if (action === "export") {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+
+    if (action === "ship") {
+      try {
+        setLoading(true);
+        const res = await adminApi.bulkUpdateOrderStatus(ids, "SHIPPED");
+        if (res.data.success) {
+          toast.success(`Marked ${ids.length} orders as shipped`);
+          const isMounted = { current: true };
+          await fetchOrders(pagination.page, isMounted);
+        }
+      } catch (error) {
+        toast.error("Failed to update orders");
+      } finally {
+        setLoading(false);
+      }
+    } else if (action === "delete") {
+      if (!window.confirm(`Are you sure you want to delete ${ids.length} orders? This action cannot be undone.`)) {
+        return;
+      }
+      try {
+        setLoading(true);
+        const res = await adminApi.bulkDeleteOrders(ids);
+        if (res.data.success) {
+          toast.success(`Deleted ${ids.length} orders`);
+          const isMounted = { current: true };
+          await fetchOrders(1, isMounted);
+        }
+      } catch (error) {
+        toast.error("Failed to delete orders");
+      } finally {
+        setLoading(false);
+      }
+    } else if (action === "export") {
       handleExport();
     }
     setSelectedIds(new Set());
@@ -130,7 +167,7 @@ export default function AdminOrdersPage() {
 
   const handleUpdateStatus = React.useCallback(async (id: string, status: string) => {
     try {
-      const res = await adminApi.updateOrderStatus(id, status);
+      const res = await adminApi.updateOrderStatus(id, status as OrderStatus);
       if (res.data.success) {
         setOrders(prev => prev.map(o => o.id === id ? res.data.data : o));
         if (selectedOrder?.id === id) setSelectedOrder(res.data.data);

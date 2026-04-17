@@ -116,16 +116,34 @@ export const SearchOverlay = () => {
       const totalItems = products.length + categories.length + (query ? 0 : recentSearces.length);
       
       if (e.key === "ArrowDown") {
+        e.preventDefault();
         setSelectedIndex((prev) => (prev < totalItems - 1 ? prev + 1 : prev));
       } else if (e.key === "ArrowUp") {
+        e.preventDefault();
         setSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
       } else if (e.key === "Enter") {
+        e.preventDefault();
         if (selectedIndex === -1) {
           handleSearch(query);
         } else {
-          // Logic for selecting items based on index (simplified: just search if it's recent, or navigate if it's product/category)
-          // For brevity, we'll just trigger the main search for now or you can add specific navigation
-          handleSearch(query);
+          const items = [
+            ...categories.map(c => ({ type: 'category' as const, data: c })),
+            ...(!query ? recentSearces.map(s => ({ type: 'recent' as const, data: s })) : []),
+            ...products.map(p => ({ type: 'product' as const, data: p }))
+          ];
+          const item = items[selectedIndex];
+          if (!item) {
+            handleSearch(query);
+          } else if (item.type === 'category') {
+            onClose();
+            router.push(`/products?category=${(item.data as Category).name}`);
+          } else if (item.type === 'recent') {
+            setQuery(item.data as string);
+            handleSearch(item.data as string);
+          } else if (item.type === 'product') {
+            onClose();
+            router.push(`/products/${(item.data as Product).id}`);
+          }
         }
       }
     };
@@ -227,15 +245,15 @@ export const SearchOverlay = () => {
                   <motion.section variants={itemVariants}>
                     <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-6">Categories</h3>
                     <div className="flex flex-col gap-4">
-                      {categories.map((cat) => (
+                      {categories.map((cat, idx) => (
                         <Link
                           key={cat.id}
                           href={`/products?category=${cat.name}`}
                           onClick={onClose}
-                          className="group flex items-center justify-between py-1"
+                          className={cn("group flex items-center justify-between py-1 px-2 -mx-2 rounded-lg transition-colors", selectedIndex === idx ? "bg-surface-container-high" : "")}
                         >
                           <span className="text-sm group-hover:translate-x-1 transition-transform duration-500">{cat.name}</span>
-                          <ExternalLink size={14} className="text-outline-variant opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <ExternalLink size={14} className={cn("text-outline-variant transition-opacity", selectedIndex === idx ? "opacity-100" : "opacity-0 group-hover:opacity-100")} />
                         </Link>
                       ))}
                     </div>
@@ -245,19 +263,23 @@ export const SearchOverlay = () => {
                     <motion.section variants={itemVariants} className="pt-8 border-t border-outline-variant/10">
                       <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-6">Recent Searches</h3>
                       <div className="flex flex-wrap gap-2">
-                        {recentSearces.map((term) => (
+                        {recentSearces.map((term, idx) => {
+                          const isSelected = selectedIndex === categories.length + idx;
+                          return (
                           <div
                             key={term}
                             onClick={() => handleSearch(term)}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-surface-container-low text-xs rounded-full cursor-pointer hover:bg-surface-container-high transition-colors group"
+                            className={cn("flex items-center gap-2 px-3 py-1.5 text-xs rounded-full cursor-pointer hover:bg-surface-container-high transition-colors group", 
+                              isSelected ? "bg-surface-container-high ring-1 ring-outline" : "bg-surface-container-low"
+                            )}
                           >
                             <Clock size={12} className="text-on-surface-variant" />
                             <span>{term}</span>
-                            <Button variant="none" size="none" onClick={(e) => removeRecent(e, term)} className="opacity-0 group-hover:opacity-100 hover:text-error transition-opacity">
+                            <Button variant="none" size="none" onClick={(e) => removeRecent(e, term)} className={cn("transition-opacity hover:text-error", isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
                               <X size={12} />
                             </Button>
                           </div>
-                        ))}
+                        )})}
                       </div>
                     </motion.section>
                   )}
@@ -291,17 +313,19 @@ export const SearchOverlay = () => {
                         </div>
                       ))
                     ) : products.length > 0 ? (
-                      products.map((product) => (
+                      products.map((product, idx) => {
+                        const isSelected = selectedIndex === categories.length + (!query ? recentSearces.length : 0) + idx;
+                        return (
                         <motion.div
                           key={product.id}
                           variants={itemVariants}
-                          className="group cursor-pointer"
+                          className={cn("group cursor-pointer p-4 -m-4 rounded-xl transition-all", isSelected ? "bg-surface-container-low ring-1 ring-outline" : "")}
                           onClick={() => {
                             onClose();
                             router.push(`/products/${product.id}`);
                           }}
                         >
-                          <div className="aspect-[3/4] overflow-hidden bg-surface-container-low mb-4 relative">
+                          <div className="aspect-[3/4] overflow-hidden bg-surface-container mb-4 relative rounded-md">
                             <Image
                               src={product.images[0]?.url || "/placeholder-product.png"}
                               alt={product.name}
@@ -313,7 +337,7 @@ export const SearchOverlay = () => {
                           <p className="text-xs text-on-surface-variant mb-2">{product.category?.name}</p>
                           <p className="text-sm font-semibold">${product.price.toFixed(2)}</p>
                         </motion.div>
-                      ))
+                      )})
                     ) : query ? (
                       <div className="col-span-full py-12 text-center text-on-surface-variant">
                         No products found for "{query}"
