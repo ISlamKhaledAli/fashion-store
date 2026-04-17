@@ -4,7 +4,7 @@ import { sendResponse } from "../utils/apiResponse";
 import { getPagination, calculatePagination } from "../utils/pagination";
 import { buildProductQuery } from "../utils/productQueryBuilder";
 import { createProductSchema, updateProductSchema } from "../validators/product.validator";
-import { NotFoundError } from "../utils/AppError";
+import { NotFoundError, ConflictError } from "../utils/AppError";
 import { Prisma } from "@prisma/client";
 
 export const getProducts = async (req: Request, res: Response, next: NextFunction) => {
@@ -335,16 +335,24 @@ export const deleteProduct = async (req: Request, res: Response, next: NextFunct
     const existing = await prisma.product.findUnique({ where: { id: String(id) } });
     if (!existing) throw new NotFoundError("Product not found");
 
-    await prisma.product.update({
-      where: { id: String(id) },
-      data: { status: "ARCHIVED" },
+    // Check if product is part of any orders
+    const orderItemsCount = await prisma.orderItem.count({
+      where: { productId: String(id) }
+    });
+
+    if (orderItemsCount > 0) {
+      throw new ConflictError("Cannot hard-delete product because it is part of existing orders. Please archive it instead.");
+    }
+
+    await prisma.product.delete({
+      where: { id: String(id) }
     });
 
     return sendResponse({
       res,
       status: 200,
       success: true,
-      message: "Product archived successfully",
+      message: "Product permanently deleted",
     });
   } catch (error) {
     next(error);
