@@ -121,6 +121,8 @@ export const adminApi = {
     api.delete<ApiResponse<unknown>>(`/admin/customers/${id}`),
   getProducts: (params?: Record<string, unknown>) => 
     api.get<ApiResponse<Product[]>>("/admin/products", { params }),
+  getBrands: () =>
+    api.get<ApiResponse<Brand[]>>("/brands"),
   getProductById: (id: string) =>
     api.get<ApiResponse<Product>>(`/products/admin/${id}`),
   createProduct: (data: Record<string, unknown>) => 
@@ -148,4 +150,10 @@ export const adminApi = {
     api.post<ApiResponse<unknown>>("/admin/categories/reorder", { items }),
   deleteCategory: (id: string) =>
     api.delete<ApiResponse<unknown>>(`/categories/${id}`),
+  createBrand: (data: Partial<Brand>) =>
+    api.post<ApiResponse<Brand>>("/brands", data),
+  updateBrand: (id: string, data: Partial<Brand>) =>
+    api.put<ApiResponse<Brand>>(`/brands/${id}`, data),
+  deleteBrand: (id: string) =>
+    api.delete<ApiResponse<unknown>>(`/brands/${id}`),
 };

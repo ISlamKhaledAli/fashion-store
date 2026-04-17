@@ -66,9 +66,17 @@ const ProductRow = React.memo(({
         </div>
       </td>
       <td className="px-8 py-8">
-        <StatusBadge status="ARCHIVED" className="bg-zinc-50/50">
-          {product.category?.name || "Uncategorized"}
-        </StatusBadge>
+        <div className="flex flex-col gap-1.5">
+          <StatusBadge status="ARCHIVED" className="bg-zinc-50/50 w-fit">
+            {product.category?.name || "Uncategorized"}
+          </StatusBadge>
+          {product.brand && (
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-zinc-100 bg-white w-fit shadow-sm">
+              <span className="text-[10px] font-bold text-zinc-400">BY</span>
+              <span className="text-[10px] font-black uppercase text-zinc-950 tracking-tight">{product.brand.name}</span>
+            </div>
+          )}
+        </div>
       </td>
       <td className="px-8 py-8 text-right">
         <p className="text-base font-black text-zinc-950 tracking-tighter tabular-nums">{formatCurrency(product.price)}</p>
@@ -152,10 +160,15 @@ const MobileProductRow = React.memo(({
             <p className="text-sm font-black text-zinc-950 tabular-nums">{formatCurrency(product.price)}</p>
           </div>
           <p className="text-[10px] font-bold font-mono text-zinc-400 tracking-widest uppercase mt-1">REF: {product.variants[0]?.sku || "N/A"}</p>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <StatusBadge status="ARCHIVED" className="px-2 py-0.5 text-[9px]">
               {product.category?.name || "Uncategorized"}
             </StatusBadge>
+            {product.brand && (
+              <span className="px-2 py-0.5 rounded-md border border-zinc-100 bg-white text-[9px] font-bold text-zinc-950 shadow-sm uppercase tracking-tighter">
+                {product.brand.name}
+              </span>
+            )}
             <StatusBadge status={status} className="px-2 py-0.5 text-[9px]" />
           </div>
         </div>

@@ -64,11 +64,15 @@ model Category {
 }
 
 model Brand {
-  id       String    @id @default(cuid())
-  name     String
-  slug     String    @unique
-  logo     String?
-  products Product[]
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  logo        String?
+  status      BrandStatus @default(ACTIVE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+  products    Product[]
 
   @@map("brands")
 }
@@ -273,6 +277,11 @@ enum ProductStatus {
 enum CategoryStatus {
   ACTIVE
   HIDDEN
+}
+
+enum BrandStatus {
+  ACTIVE
+  INACTIVE
 }
 
 enum PaymentStatus {

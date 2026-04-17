@@ -328,6 +328,30 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     variants: [] as Partial<Variant>[],
   });
 
+  const flatCategoryOptions = useMemo(() => {
+    const flatten = (cats: Category[], level = 0): { label: string; value: string }[] => {
+      return cats.reduce((acc: { label: string; value: string }[], cat) => {
+        acc.push({ 
+          label: level > 0 ? `${"\u00A0".repeat(level * 4)} ${cat.name}` : cat.name, 
+          value: cat.id 
+        });
+        if (cat.children && cat.children.length > 0) {
+          acc.push(...flatten(cat.children, level + 1));
+        }
+        return acc;
+      }, []);
+    };
+    return [
+      { label: "Select Category", value: "" },
+      ...flatten(categories)
+    ];
+  }, [categories]);
+
+  const brandOptions = useMemo(() => [
+    { label: "Select Brand (Optional)", value: "" },
+    ...brands.map(b => ({ label: b.name, value: b.id }))
+  ], [brands]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -486,7 +510,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     const errors: Record<string, string> = {};
     if (!formData.name.trim()) errors.name = "Title is required for the archive";
     if (!formData.categoryId) errors.categoryId = "Section classification required";
-    if (!formData.brandId) errors.brandId = "Source attribution required";
+    // brandId is optional
     if (!formData.description.trim()) errors.description = "Editorial copy cannot be blank";
     if (formData.price <= 0) errors.price = "Valuation must be positive";
     
@@ -543,9 +567,6 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     formData.price > 0 ? (((formData.price - formData.cost) / formData.price) * 100).toFixed(0) : "0",
   [formData.price, formData.cost]);
 
-  const categoryOptions = useMemo(() => categories.map(c => ({ label: c.name, value: c.id })), [categories]);
-  const brandOptions = useMemo(() => brands.map(b => ({ label: b.name, value: b.id })), [brands]);
-
   if (!mounted) return null;
 
   return createPortal(
@@ -588,7 +609,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
                 <>
                   <IdentitySection 
                     {...formData}
-                    categoryOptions={categoryOptions}
+                    categoryOptions={flatCategoryOptions}
                     brandOptions={brandOptions}
                     onNameChange={handleNameChange}
                     onFieldChange={handleFieldChange}

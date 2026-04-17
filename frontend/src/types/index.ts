@@ -27,6 +27,11 @@ export interface Brand {
   name: string;
   slug: string;
   logo?: string;
+  description?: string;
+  status?: 'ACTIVE' | 'INACTIVE';
+  _count?: {
+    products: number;
+  };
 }
 
 export interface ProductImage {

@@ -23,7 +23,9 @@ export const categorySchema = z.object({
 export const brandSchema = z.object({
   name: z.string().min(1, "Name is required"),
   slug: z.string().min(1, "Slug is required"),
-  logo: z.string().url().optional(),
+  logo: z.string().url().optional().or(z.literal("")),
+  description: z.string().optional().nullable(),
+  status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
 });
 
 export const createDiscountSchema = z.object({
