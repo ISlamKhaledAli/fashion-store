@@ -122,12 +122,32 @@ export const bulkDeleteOrders = async (req: Request, res: Response, next: NextFu
 
 export const getCustomers = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const { search, status } = req.query;
+
+    const where: any = { role: "CUSTOMER" };
+    
+    if (status && status !== "ALL") {
+      where.status = status;
+    }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: String(search), mode: "insensitive" } },
+        { email: { contains: String(search), mode: "insensitive" } },
+      ];
+    }
+
     const customers = await prisma.user.findMany({
-      where: { role: "CUSTOMER" },
+      where,
       include: {
         _count: { select: { orders: true } },
-        orders: { select: { total: true } },
+        orders: { 
+          select: { id: true, total: true, status: true, createdAt: true },
+          orderBy: { createdAt: "desc" },
+          take: 5
+        },
       },
+      orderBy: { createdAt: "desc" },
     });
 
     const customersWithStats = customers.map(user => {
@@ -136,12 +156,53 @@ export const getCustomers = async (req: Request, res: Response, next: NextFuncti
         id: user.id,
         name: user.name,
         email: user.email,
-        orderCount: user._count.orders,
+        phone: user.phone,
+        avatar: user.avatar,
+        status: user.status,
+        joinDate: user.createdAt,
+        totalOrders: user._count.orders,
         totalSpent,
+        orders: user.orders.map(o => ({
+          id: o.id,
+          total: o.total,
+          status: o.status,
+          date: o.createdAt
+        }))
       };
     });
 
     return sendResponse({ res, status: 200, success: true, data: customersWithStats });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateCustomerStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const user = await prisma.user.update({
+      where: { id: String(id) },
+      data: { status },
+    });
+
+    return sendResponse({ res, status: 200, success: true, data: user });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteCustomer = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    // Optional: Check if user has orders before deleting, or use cascade
+    await prisma.user.delete({
+      where: { id: String(id) },
+    });
+
+    return sendResponse({ res, status: 200, success: true, message: "Customer profile purged" });
   } catch (error) {
     next(error);
   }

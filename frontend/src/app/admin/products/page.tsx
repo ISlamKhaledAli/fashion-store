@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/Badge";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { toast } from "sonner";
 import { Search, Plus, Edit, Archive, Trash2, Package } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
@@ -199,8 +198,6 @@ export default function AdminProductsPage() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [productToDelete, setProductToDelete] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchProducts = async (isMounted: { current: boolean }) => {
     setLoading(true);
@@ -265,26 +262,18 @@ export default function AdminProductsPage() {
     }
   }, []);
 
-  const handleDeleteClick = React.useCallback((id: string) => {
-    setProductToDelete(id);
-  }, []);
-
-  const handleConfirmDelete = async () => {
-    if (!productToDelete) return;
-    setIsDeleting(true);
+  const handleDelete = React.useCallback(async (id: string) => {
+    if (!confirm("Are you sure you want to permanently delete this piece? This action cannot be undone.")) return;
     try {
-      await adminApi.deleteProduct(productToDelete);
+      await adminApi.deleteProduct(id);
       toast.success("Piece purged from archives");
       const isMounted = { current: true };
       fetchProducts(isMounted);
     } catch (err: any) {
       const errorMsg = err.response?.data?.message || "Critical failure. Data persists.";
       toast.error(errorMsg);
-    } finally {
-      setIsDeleting(false);
-      setProductToDelete(null);
     }
-  };
+  }, []);
 
   const toggleAll = React.useCallback(() => {
     if (selectedIds.length === filteredProducts.length) {
@@ -412,7 +401,7 @@ export default function AdminProductsPage() {
                     onToggle={toggleOne}
                     onEdit={handleEdit}
                     onArchive={handleArchive}
-                    onDelete={handleDeleteClick}
+                    onDelete={handleDelete}
                   />
                 ))
               ) : (
@@ -483,17 +472,6 @@ export default function AdminProductsPage() {
           onSuccess={() => fetchProducts({ current: true })}
         />
       </React.Suspense>
-    <ConfirmDialog 
-        isOpen={!!productToDelete}
-        onClose={() => !isDeleting && setProductToDelete(null)}
-        onConfirm={handleConfirmDelete}
-        title="Permanently Delete Product?"
-        description="This action is destructive and cannot be undone. Are you sure you want to permanently remove this piece from your catalog?"
-        confirmText="Delete Product"
-        cancelText="Cancel"
-        confirmBrand="danger"
-        isLoading={isDeleting}
-      />
     </div>
   );
 }

@@ -3,6 +3,8 @@ import {
   getAdminOrders,
   updateOrderStatus,
   getCustomers,
+  updateCustomerStatus,
+  deleteCustomer,
   getAnalyticsOverview,
   getRevenueAnalytics,
   getTopProducts,
@@ -27,6 +29,8 @@ router.post("/orders/bulk-status", bulkUpdateOrdersStatus);
 router.post("/orders/bulk-delete", bulkDeleteOrders);
 router.get("/products", getAdminProducts);
 router.get("/customers", getCustomers);
+router.put("/customers/:id/status", updateCustomerStatus);
+router.delete("/customers/:id", deleteCustomer);
 router.get("/analytics/overview", getAnalyticsOverview);
 router.get("/analytics/revenue", getRevenueAnalytics);
 router.get("/analytics/top-products", getTopProducts);

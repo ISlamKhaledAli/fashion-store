@@ -4,6 +4,7 @@ export interface User {
   email: string;
   role: 'CUSTOMER' | 'ADMIN';
   avatar?: string;
+  status: 'ACTIVE' | 'BANNED';
 }
 
 export interface Category {
@@ -158,4 +159,24 @@ export interface ApiResponse<T> {
   data: T;
   pagination?: PaginationData;
   errors?: unknown[];
+}
+
+export interface CustomerOrder {
+  id: string;
+  date: string;
+  status: OrderStatus;
+  total: number;
+}
+
+export interface AdminCustomer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  avatar?: string;
+  totalOrders: number;
+  totalSpent: number;
+  joinDate: string;
+  status: 'ACTIVE' | 'BANNED';
+  orders?: CustomerOrder[];
 }

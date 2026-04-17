@@ -36,6 +36,7 @@ const statusVariants: Record<string, VariantConfig> = {
   SHIPPED: { bg: "bg-zinc-100 text-zinc-600 border-zinc-200" },
   PAID: { bg: "bg-green-100 text-green-700 border-green-200", glow: true },
   CANCELLED: { bg: "bg-red-50 text-red-700 border-red-100/50" },
+  BANNED: { bg: "bg-red-50 text-red-700 border-red-100/50", glow: true },
 };
 
 export const StatusBadge = ({ status, className, children }: StatusBadgeProps) => {

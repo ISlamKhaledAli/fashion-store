@@ -1,7 +1,7 @@
 import api from "./axios";
 import { 
   User, Category, Brand, Product, Order, 
-  WishlistItem, Address, Review, ApiResponse, OrderStatus 
+  WishlistItem, Address, Review, ApiResponse, OrderStatus, AdminCustomer
 } from "@/types";
 
 export const authApi = {
@@ -112,7 +112,11 @@ export const adminApi = {
   bulkDeleteOrders: (ids: string[]) =>
     api.post<ApiResponse<unknown>>("/admin/orders/bulk-delete", { ids }),
   getCustomers: (params?: Record<string, unknown>) => 
-    api.get<ApiResponse<unknown[]>>("/admin/customers", { params }),
+    api.get<ApiResponse<AdminCustomer[]>>("/admin/customers", { params }),
+  updateCustomerStatus: (id: string, status: 'ACTIVE' | 'BANNED') =>
+    api.put<ApiResponse<unknown>>(`/admin/customers/${id}/status`, { status }),
+  deleteCustomer: (id: string) =>
+    api.delete<ApiResponse<unknown>>(`/admin/customers/${id}`),
   getProducts: (params?: Record<string, unknown>) => 
     api.get<ApiResponse<Product[]>>("/admin/products", { params }),
   getProductById: (id: string) =>
