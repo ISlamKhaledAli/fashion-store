@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { StatusBadge } from "./StatusBadge";
+import { TableImage } from "./TableImage";
+import { PriceDisplay } from "./PriceDisplay";
 
 interface RecentOrdersTableProps {
   orders: Order[];
@@ -31,15 +33,11 @@ const OrderRow = React.memo(({ order, onClick }: { order: Order; onClick?: (orde
       </td>
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center overflow-hidden border border-zinc-100 shadow-sm transition-transform group-hover/row:scale-110">
-            {order.user?.avatar ? (
-              <img src={order.user.avatar} className="w-full h-full object-cover" alt={order.user.name} />
-            ) : (
-              <span className="text-[10px] font-black text-zinc-400">
-                {order.user?.name?.split(' ').map((n: string) => n[0]).join('') || "U"}
-              </span>
-            )}
-          </div>
+          <TableImage 
+            src={order.user?.avatar}
+            alt={order.user?.name}
+            containerClassName="w-8 h-8 rounded-full border border-zinc-100 shadow-sm transition-transform group-hover/row:scale-110"
+          />
           <div className="flex flex-col">
             <span className="text-sm font-medium text-zinc-950 truncate max-w-[140px]">
               {order.user?.name || "Anonymous User"}
@@ -59,9 +57,7 @@ const OrderRow = React.memo(({ order, onClick }: { order: Order; onClick?: (orde
         </div>
       </td>
       <td className="px-6 py-4">
-        <span className="text-sm font-bold text-zinc-950 tabular-nums">
-          ${order.total.toLocaleString(undefined, { minimumFractionDigits: 1 })}
-        </span>
+        <PriceDisplay amount={order.total} size="sm" />
       </td>
       <td className="px-6 py-4">
         <StatusBadge status={order.status} />

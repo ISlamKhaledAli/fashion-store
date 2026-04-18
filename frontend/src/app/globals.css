@@ -85,6 +85,10 @@ html {
 }
 
 /* Cinematic Utilities */
+.cinematic-shadow {
+  box-shadow: 0 20px 50px rgba(26, 28, 29, 0.05);
+}
+
 .cinematic-ease {
   transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -154,4 +158,29 @@ html {
 
 .animate-soft-glow {
   animation: softGlow 2.5s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Admin Table Imagery — Global "Vibrant" Interaction System
+   ═══════════════════════════════════════════════════════════════ */
+
+.vibrant-img {
+  filter: grayscale(60%) brightness(85%);
+  transition: filter 0.4s ease, transform 0.4s ease;
+  will-change: filter, transform;
+}
+
+/* Respond to ANY hoverable ancestor: table rows, group containers, named groups */
+tr:hover .vibrant-img,
+.group:hover .vibrant-img,
+[class*="group/"]:hover .vibrant-img,
+.vibrant-img.is-active {
+  filter: grayscale(0%) brightness(100%);
+  transform: scale(1.08);
+}
+
+/* Support data-attribute active state for programmatic control */
+[data-active="true"] .vibrant-img {
+  filter: grayscale(0%) brightness(100%);
+  transform: scale(1.08);
 }

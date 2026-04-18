@@ -57,14 +57,12 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
         const filterRes = await productApi.getFilters();
         if (filterRes.data.success) {
           const rawColors = filterRes.data.data.colors;
-          // Aggressively deduplicate by hex only — visually identical colors should appear once
-          const seenHex = new Set<string>();
-          const uniqueColors = rawColors.filter((color: { name: string; hex: string }) => {
-            const hex = color.hex.toLowerCase().trim();
-            if (seenHex.has(hex)) return false;
-            seenHex.add(hex);
-            return true;
-          });
+          // Deduplicate by normalized color name as requested
+          const uniqueColors = rawColors.filter((color: { name: string; hex: string }, index: number, self: any[]) => 
+            index === self.findIndex((c: any) => 
+              c.name.toLowerCase().trim() === color.name.toLowerCase().trim()
+            )
+          );
           
           setColors(uniqueColors.map((c: { name: string; hex: string }) => ({
             name: c.name,
@@ -160,21 +158,24 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
         <section className="max-w-full pb-4">
           <h3 className="text-[11px] font-bold uppercase tracking-widest mb-4">Colors</h3>
           <div className="flex flex-wrap gap-3 p-1">
-            {colors.map((color) => (
-              <Button 
-                key={color.name}
-                variant="none"
-                size="none"
-                onClick={() => dispatch({ type: "toggle_color", payload: color.name })}
-                className={cn(
-                  "w-6 h-6 rounded-full ring-1 transition-all hover:scale-110 cursor-pointer",
-                  state.color.includes(color.name) ? "ring-offset-2 ring-primary" : "ring-stone-200"
-                )}
-                style={{ backgroundColor: color.hex }}
-                title={color.name}
-                aria-label={`Filter by color ${color.name}`}
-              />
-            ))}
+            {colors.map((color) => {
+              const isSelected = state.color.some(c => c.toLowerCase().trim() === color.name.toLowerCase().trim());
+              return (
+                <Button 
+                  key={color.name}
+                  variant="none"
+                  size="none"
+                  onClick={() => dispatch({ type: "toggle_color", payload: color.name })}
+                  className={cn(
+                    "w-6 h-6 rounded-full ring-1 transition-all hover:scale-110 cursor-pointer",
+                    isSelected ? "ring-offset-2 ring-primary" : "ring-stone-200"
+                  )}
+                  style={{ backgroundColor: color.hex }}
+                  title={color.name}
+                  aria-label={`Filter by color ${color.name}`}
+                />
+              );
+            })}
           </div>
         </section>
       </div>

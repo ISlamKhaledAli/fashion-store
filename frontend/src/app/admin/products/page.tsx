@@ -11,23 +11,22 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { toast } from "sonner";
-import { Search, Plus, Edit, Archive, Trash2, Package } from "lucide-react";
+import { Search, Plus, Edit, Archive, Trash2, Package, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
+import { TableImage } from "@/components/admin/TableImage";
+import { AdminTabs, AdminTab } from "@/components/admin/AdminTabs";
+import { PriceDisplay } from "@/components/admin/PriceDisplay";
 
 const ProductFormPanel = React.lazy(() => import("@/components/admin/ProductFormPanel").then(module => ({ default: module.ProductFormPanel })));
 
 // Optimized Atomic Components
 const ProductRow = React.memo(({ 
   product, 
-  isSelected, 
-  onToggle, 
   onEdit, 
   onArchive, 
   onDelete 
 }: { 
   product: Product; 
-  isSelected: boolean; 
-  onToggle: (id: string) => void; 
   onEdit: (p: Product) => void;
   onArchive: (id: string, status: string) => void;
   onDelete: (id: string) => void;
@@ -44,21 +43,13 @@ const ProductRow = React.memo(({
         (totalStock === 0 || isLowStock) && "border-l-4 border-l-warning bg-warning/5 border-b-warning/30"
       )}
     >
-      <td className="px-8 py-8" onClick={(e) => e.stopPropagation()}>
-        <Checkbox 
-          checked={isSelected} 
-          onCheckedChange={() => onToggle(product.id)}
-        />
-      </td>
       <td className="px-8 py-8">
         <div className="flex items-center gap-6">
-          <div className="w-16 h-20 bg-zinc-100 rounded-sm overflow-hidden flex-shrink-0 shadow-sm transition-all group-hover/row:scale-[1.05] group-hover/row:shadow-xl group-hover/row:z-10">
-             <img 
-              src={product.images.find(img => img.isMain)?.url || product.images[0]?.url || ""} 
-              className="w-full h-full object-cover transition-transform duration-700"
-              alt={product.name}
-            />
-          </div>
+          <TableImage 
+            src={product.images.find(img => img.isMain)?.url || product.images[0]?.url}
+            alt={product.name}
+            containerClassName="w-16 h-20 rounded-sm shadow-sm group-hover/row:shadow-xl group-hover/row:z-10"
+          />
           <div className="space-y-1">
             <p className="text-base font-bold text-zinc-950 tracking-tight group-hover/row:translate-x-1 transition-transform">{product.name}</p>
              <p className="text-[10px] font-bold font-mono text-zinc-400 tracking-widest uppercase">REF: {product.variants[0]?.sku || "N/A"}</p>
@@ -79,20 +70,7 @@ const ProductRow = React.memo(({
         </div>
       </td>
       <td className="px-8 py-8 text-right">
-        <p className="text-base font-black text-zinc-950 tracking-tighter tabular-nums">{formatCurrency(product.price)}</p>
-      </td>
-      <td className="px-8 py-8 text-center">
-        {totalStock === 0 ? (
-          <StatusBadge status="OUT_OF_STOCK" />
-        ) : isLowStock ? (
-          <StatusBadge status="DEPLETING" className="text-sm font-medium tracking-wide">
-            {totalStock.toString().padStart(2, '0')} UNITS
-          </StatusBadge>
-        ) : (
-          <StatusBadge status="ACTIVE" className="bg-zinc-50 border-zinc-100 text-zinc-950 text-sm font-medium tracking-wide">
-            {totalStock.toString().padStart(2, '0')} UNITS
-          </StatusBadge>
-        )}
+        <PriceDisplay amount={product.price} />
       </td>
       <td className="px-8 py-8">
         <StatusBadge status={status} />
@@ -147,17 +125,15 @@ const MobileProductRow = React.memo(({
       onClick={() => onEdit(product)}
     >
       <div className="flex gap-4">
-        <div className="w-16 h-20 bg-zinc-100 rounded-sm overflow-hidden flex-shrink-0 shadow-sm">
-          <img 
-            src={product.images.find(img => img.isMain)?.url || product.images[0]?.url || ""} 
-            className="w-full h-full object-cover"
-            alt={product.name}
-          />
-        </div>
+        <TableImage 
+          src={product.images.find(img => img.isMain)?.url || product.images[0]?.url}
+          alt={product.name}
+          containerClassName="w-16 h-20 rounded-sm shadow-sm"
+        />
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start gap-2">
             <p className="text-sm font-bold text-zinc-950 truncate">{product.name}</p>
-            <p className="text-sm font-black text-zinc-950 tabular-nums">{formatCurrency(product.price)}</p>
+            <PriceDisplay amount={product.price} size="sm" />
           </div>
           <p className="text-[10px] font-bold font-mono text-zinc-400 tracking-widest uppercase mt-1">REF: {product.variants[0]?.sku || "N/A"}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -175,19 +151,7 @@ const MobileProductRow = React.memo(({
       </div>
 
       <div className="flex items-center justify-between border-t border-zinc-50 pt-4">
-        <div className="flex items-center gap-1">
-          {totalStock === 0 ? (
-            <StatusBadge status="OUT_OF_STOCK" className="px-2 py-1 text-[10px] font-medium" />
-          ) : isLowStock ? (
-            <StatusBadge status="DEPLETING" className="px-2 py-1 text-[10px] font-medium">
-               {totalStock} UNITS
-            </StatusBadge>
-          ) : (
-            <StatusBadge status="ACTIVE" className="px-2 py-1 text-[10px] font-medium bg-zinc-50 text-zinc-950">
-              {totalStock} UNITS
-            </StatusBadge>
-          )}
-        </div>
+        <div />
         <div className="flex items-center gap-2">
           <Edit size={16} className="text-zinc-400" />
         </div>
@@ -210,7 +174,8 @@ export default function AdminProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
 
   const fetchProducts = async (isMounted: { current: boolean }) => {
     setLoading(true);
@@ -253,6 +218,20 @@ export default function AdminProductsPage() {
     });
   }, [products, searchQuery, activeTab]);
 
+  const paginatedProducts = useMemo(() => {
+    const start = (page - 1) * itemsPerPage;
+    return filteredProducts.slice(start, start + itemsPerPage);
+  }, [filteredProducts, page]);
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
+  const tabList: AdminTab[] = useMemo(() => [
+    { id: "ALL",      label: "All",      count: products.length },
+    { id: "ACTIVE",   label: "Active",   count: products.filter(p => p.status === "ACTIVE").length },
+    { id: "DRAFT",    label: "Draft",    count: products.filter(p => p.status === "DRAFT").length },
+    { id: "ARCHIVED", label: "Archived", count: products.filter(p => p.status === "ARCHIVED").length },
+  ], [products]);
+
   const handleEdit = React.useCallback((product: Product) => {
     setSelectedProduct(product);
     setIsPanelOpen(true);
@@ -289,19 +268,6 @@ export default function AdminProductsPage() {
     }
   }, []);
 
-  const toggleAll = React.useCallback(() => {
-    if (selectedIds.length === filteredProducts.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(filteredProducts.map(p => p.id));
-    }
-  }, [selectedIds, filteredProducts]);
-
-  const toggleOne = React.useCallback((id: string) => {
-    setSelectedIds((prev) => 
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
-  }, []);
 
   return (
     <div className="space-y-6 sm:space-y-8 lg:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
@@ -332,29 +298,14 @@ export default function AdminProductsPage() {
       </div>
 
       {/* Control Bar */}
-      <div className="flex flex-col lg:flex-row justify-between items-center gap-8 border-b border-zinc-100 pb-4">
-        <div className="flex gap-x-12 w-full lg:w-auto overflow-x-auto no-scrollbar scroll-smooth">
-          {TABS.map((tab) => (
-            <Button
-              key={tab}
-              variant="none"
-              onClick={() => setActiveTab(tab)}
-              className={cn(
-                "pb-4 text-[10px] font-black uppercase tracking-[0.3em] transition-all relative whitespace-nowrap group",
-                activeTab === tab ? "text-zinc-950" : "text-zinc-400 hover:text-zinc-600"
-              )}
-            >
-              {tab}
-              {activeTab === tab && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-950" />
-              )}
-              <div className={cn(
-                "absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-200 scale-x-0 group-hover:scale-x-100 transition-transform origin-left",
-                activeTab === tab && "hidden"
-              )} />
-            </Button>
-          ))}
-        </div>
+      <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
+        <AdminTabs
+          tabs={tabList}
+          activeTab={activeTab}
+          onTabChange={(id) => setActiveTab(id)}
+          layoutId="productsTabUnderline"
+          className="flex-1 lg:flex-none"
+        />
         <div className="w-full lg:w-[320px] xl:w-[400px]">
           <Input
             placeholder="Search by name, SKU..."
@@ -373,16 +324,9 @@ export default function AdminProductsPage() {
           <table className="w-full text-left border-collapse min-w-[900px]">
             <thead className="bg-zinc-50/50 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 border-b border-zinc-100">
               <tr>
-                <th className="px-8 py-5 w-20">
-                  <Checkbox 
-                    checked={selectedIds.length === filteredProducts.length && filteredProducts.length > 0} 
-                    onCheckedChange={toggleAll}
-                  />
-                </th>
                 <th className="px-8 py-5">Piece Specification</th>
                 <th className="px-8 py-5">Classification</th>
-                <th className="px-8 py-5 text-right">Value</th>
-                <th className="px-8 py-5 text-center">Availability</th>
+                <th className="px-8 py-5 text-right">Price</th>
                 <th className="px-8 py-5">Stance</th>
                 <th className="px-8 py-5 text-right pr-12">Actions</th>
               </tr>
@@ -391,7 +335,6 @@ export default function AdminProductsPage() {
               {loading ? (
                 Array(6).fill(0).map((_, i) => (
                   <tr key={i}>
-                    <td className="px-8 py-8"><Skeleton className="h-5 w-5 rounded-md" /></td>
                     <td className="px-8 py-8 flex items-center gap-6">
                       <Skeleton className="w-16 h-20 rounded-md" />
                       <div className="space-y-3">
@@ -401,18 +344,15 @@ export default function AdminProductsPage() {
                     </td>
                     <td className="px-8 py-8"><Skeleton className="h-6 w-32 rounded-full" /></td>
                     <td className="px-8 py-8"><Skeleton className="h-5 w-16 ml-auto" /></td>
-                    <td className="px-8 py-8"><Skeleton className="h-5 w-16 mx-auto" /></td>
                     <td className="px-8 py-8"><Skeleton className="h-6 w-24 rounded-full" /></td>
                     <td className="px-8 py-8"><Skeleton className="h-5 w-12 ml-auto" /></td>
                   </tr>
                 ))
-              ) : filteredProducts.length > 0 ? (
-                filteredProducts.map((p) => (
+              ) : paginatedProducts.length > 0 ? (
+                paginatedProducts.map((p) => (
                   <ProductRow 
                     key={p.id}
                     product={p}
-                    isSelected={selectedIds.includes(p.id)}
-                    onToggle={toggleOne}
                     onEdit={handleEdit}
                     onArchive={handleArchive}
                     onDelete={handleDelete}
@@ -420,7 +360,7 @@ export default function AdminProductsPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-8 py-44 text-center">
+                  <td colSpan={5} className="px-8 py-44 text-center">
                     <div className="flex flex-col items-center gap-6 max-w-sm mx-auto">
                       <div className="p-8 bg-zinc-50 rounded-full shadow-inner">
                         <Package size={64} strokeWidth={1} className="text-zinc-200" />
@@ -462,8 +402,8 @@ export default function AdminProductsPage() {
                 </div>
               </div>
             ))
-          ) : filteredProducts.length > 0 ? (
-            filteredProducts.map((p) => (
+          ) : paginatedProducts.length > 0 ? (
+            paginatedProducts.map((p) => (
               <MobileProductRow 
                 key={p.id}
                 product={p}
@@ -475,6 +415,47 @@ export default function AdminProductsPage() {
               No pieces found in archive
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Footer Pagination */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-6 mt-8">
+        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+          Showing {Math.min(filteredProducts.length, (page - 1) * itemsPerPage + 1)} to {Math.min(filteredProducts.length, page * itemsPerPage)} of {filteredProducts.length.toLocaleString()} results
+        </span>
+        <div className="flex gap-2">
+          <Button 
+            variant="none"
+            size="none"
+            disabled={page === 1}
+            onClick={() => { setPage(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            className="w-10 h-10 flex items-center justify-center rounded-lg border border-zinc-200 hover:bg-zinc-50 disabled:opacity-30 transition-all font-bold"
+          >
+            <ChevronLeft size={18} />
+          </Button>
+          {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => (
+            <Button 
+              variant="none"
+              size="none"
+              key={i}
+              onClick={() => { setPage(i + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              className={cn(
+                "w-10 h-10 flex items-center justify-center rounded-lg font-bold text-xs transition-all",
+                page === i + 1 ? "bg-zinc-900 text-white" : "text-zinc-500 hover:bg-zinc-50"
+              )}
+            >
+              {i + 1}
+            </Button>
+          ))}
+          <Button 
+            variant="none"
+            size="none"
+            disabled={page === totalPages || totalPages === 0}
+            onClick={() => { setPage(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            className="w-10 h-10 flex items-center justify-center rounded-lg border border-zinc-200 hover:bg-zinc-50 disabled:opacity-30 transition-all font-bold"
+          >
+            <ChevronRight size={18} />
+          </Button>
         </div>
       </div>
 

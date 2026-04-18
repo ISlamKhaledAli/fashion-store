@@ -13,6 +13,7 @@ import {
   ChevronLeft, 
   ChevronRight,
   Tags,
+  Tag,
   Warehouse,
   FolderTree,
   Award,
@@ -39,7 +40,7 @@ const navLinks = [
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { name: "Categories", href: "/admin/categories", icon: FolderTree },
-  { name: "Brands", href: "/admin/brands", icon: Award },
+  { name: "Brands", href: "/admin/brands", icon: Tag },
   { name: "Inventory", href: "/admin/inventory", icon: Warehouse },
   { name: "Discounts", href: "/admin/discounts", icon: Tags },
 ];

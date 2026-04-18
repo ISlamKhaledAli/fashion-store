@@ -1,28 +1,31 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { 
   Search, 
   Download, 
   MoreVertical, 
   ChevronRight,
   Filter,
-  ArrowRight
+  ArrowRight,
+  ChevronLeft
 } from "lucide-react";
 import { adminApi } from "@/lib/api";
 import { Order, OrderStatus } from "@/types";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { BulkActionBar } from "@/components/admin/BulkActionBar";
+import { TableImage } from "@/components/admin/TableImage";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { AdminTabs } from "@/components/admin/AdminTabs";
+import { PriceDisplay } from "@/components/admin/PriceDisplay";
 
 // Optimized Imports
-const OrderDetailPanel = React.lazy(() => import("@/components/admin/OrderDetailPanel").then(module => ({ default: module.OrderDetailPanel })));
+import { OrderDetailPanel } from "@/components/admin/OrderDetailPanel";
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -33,7 +36,11 @@ export default function AdminOrdersPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("All");
+  
+  // Drawer State
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  
   const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 1 });
 
   const fetchOrders = async (page = 1, isMounted: { current: boolean }) => {
@@ -78,15 +85,22 @@ export default function AdminOrdersPage() {
   }, [searchQuery, statusFilter]);
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === orders.length) {
-      setSelectedIds(new Set());
+    const newSelected = new Set(selectedIds);
+    const visibleIds = orders.map(o => o.id);
+    const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.has(id));
+
+    if (allVisibleSelected) {
+      // Deselect all visible
+      visibleIds.forEach(id => newSelected.delete(id));
     } else {
-      setSelectedIds(new Set(orders.map(o => o.id)));
+      // Select all visible
+      visibleIds.forEach(id => newSelected.add(id));
     }
+    
+    setSelectedIds(newSelected);
   };
 
-  const toggleSelect = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const toggleSelect = (id: string) => {
     const newSelected = new Set(selectedIds);
     if (newSelected.has(id)) {
       newSelected.delete(id);
@@ -138,10 +152,18 @@ export default function AdminOrdersPage() {
   };
 
   const handleExport = () => {
+    const idsToExport = Array.from(selectedIds);
+    const ordersToExport = orders.filter(o => idsToExport.includes(o.id));
+    
+    if (ordersToExport.length === 0) {
+      toast.error("No orders selected for export");
+      return;
+    }
+
     const headers = ["Order ID", "Customer", "Email", "Status", "Date", "Total"];
     const csvContent = [
       headers.join(","),
-      ...orders.map(o => [
+      ...ordersToExport.map(o => [
         `"${o.id}"`,
         `"${o.user?.name || ''}"`,
         `"${o.user?.email || ''}"`,
@@ -176,30 +198,18 @@ export default function AdminOrdersPage() {
       {/* Filters bar */}
       <div className="flex flex-col gap-4 items-stretch sm:items-center sm:flex-row justify-between mb-6 lg:mb-8 border-b border-zinc-100 pb-4">
         <div className="flex items-center gap-4 sm:gap-8 overflow-x-auto no-scrollbar">
-          <nav className="flex gap-4 sm:gap-8">
-            {["All", "Processing", "Shipped", "Delivered"].map((status) => (
-              <Button
-                key={status}
-                variant="none"
-                size="none"
-                onClick={() => setStatusFilter(status)}
-                className={cn(
-                  "text-sm font-bold py-2 transition-all relative",
-                  statusFilter === status 
-                    ? "text-zinc-900" 
-                    : "text-zinc-400 hover:text-zinc-600"
-                )}
-              >
-                {status + (status === "All" ? " Orders" : "")}
-                {statusFilter === status && (
-                  <motion.div 
-                    layoutId="activeTab"
-                    className="absolute -bottom-[17px] left-0 right-0 h-0.5 bg-zinc-900"
-                  />
-                )}
-              </Button>
-            ))}
-          </nav>
+          <AdminTabs
+            tabs={[
+              { id: "All",        label: "All Orders" },
+              { id: "Processing", label: "Processing" },
+              { id: "Shipped",    label: "Shipped" },
+              { id: "Delivered",  label: "Delivered" },
+            ]}
+            activeTab={statusFilter}
+            onTabChange={setStatusFilter}
+            layoutId="ordersTabUnderline"
+            className="border-b-0 px-0"
+          />
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -232,7 +242,7 @@ export default function AdminOrdersPage() {
               <tr className="bg-zinc-50/50 text-zinc-500 text-[10px] uppercase tracking-[0.2em] font-black border-b border-zinc-100">
                 <th className="px-6 py-5 w-12 text-center">
                   <Checkbox 
-                    checked={selectedIds.size === orders.length && orders.length > 0}
+                    checked={orders.length > 0 && orders.every(o => selectedIds.has(o.id))}
                     onCheckedChange={toggleSelectAll}
                   />
                 </th>
@@ -280,16 +290,16 @@ export default function AdminOrdersPage() {
                 orders.map((order) => (
                   <tr 
                     key={order.id} 
-                    onClick={() => setSelectedOrder(order)}
+                    onClick={() => { setSelectedOrder(order); setIsPanelOpen(true); }}
                     className={cn(
                       "hover:bg-zinc-50/80 transition-all group cursor-pointer border-l-4",
                       selectedOrder?.id === order.id ? "bg-zinc-50/50 border-zinc-900" : "border-transparent"
                     )}
                   >
-                    <td className="px-6 py-5 text-center" onClick={(e) => toggleSelect(order.id, e)}>
+                    <td className="px-6 py-5 text-center" onClick={(e) => e.stopPropagation()}>
                       <Checkbox 
                         checked={selectedIds.has(order.id)}
-                        onCheckedChange={() => {}} // Controlled by row click logic
+                        onCheckedChange={() => toggleSelect(order.id)}
                       />
                     </td>
                     <td className="px-6 py-5 font-mono text-xs font-bold text-zinc-900">
@@ -297,13 +307,11 @@ export default function AdminOrdersPage() {
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-[10px] font-bold text-zinc-500 border border-zinc-200 shrink-0">
-                          {order.user?.avatar ? (
-                            <img src={order.user.avatar} className="w-full h-full object-cover rounded-full" alt="" />
-                          ) : (
-                            order.user?.name ? order.user.name.split(' ').map(n => n[0]).join('') : "U"
-                          )}
-                        </div>
+                        <TableImage 
+                          src={order.user?.avatar}
+                          alt={order.user?.name}
+                          containerClassName="w-8 h-8 rounded-full border border-zinc-200"
+                        />
                         <div className="flex flex-col min-w-0">
                           <span className="text-sm font-bold text-zinc-900 truncate">{order.user?.name || "Unknown Customer"}</span>
                           <span className="text-[10px] text-zinc-400 font-medium truncate">{order.user?.email || "No email provided"}</span>
@@ -316,8 +324,8 @@ export default function AdminOrdersPage() {
                     <td className="px-6 py-5 text-xs text-zinc-500 font-medium">
                       {new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </td>
-                    <td className="px-6 py-5 text-sm font-black text-zinc-900">
-                      ${order.total.toLocaleString()}
+                    <td className="px-6 py-5">
+                      <PriceDisplay amount={order.total} />
                     </td>
                     <td className="px-6 py-5 text-right pr-8">
                       <div className="flex items-center justify-end gap-2">
@@ -374,23 +382,29 @@ export default function AdminOrdersPage() {
                   "p-6 space-y-4 hover:bg-zinc-50/50 transition-all cursor-pointer relative",
                   selectedOrder?.id === order.id ? "bg-zinc-50/80" : ""
                 )}
-                onClick={() => setSelectedOrder(order)}
+                onClick={() => { setSelectedOrder(order); setIsPanelOpen(true); }}
               >
                 <div className="flex justify-between items-center">
-                  <span className="font-mono text-xs font-bold text-zinc-900 uppercase tracking-tighter">
-                    #{order.id.slice(-6).toUpperCase()}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Checkbox 
+                        checked={selectedIds.has(order.id)}
+                        onCheckedChange={() => toggleSelect(order.id)}
+                      />
+                    </div>
+                    <span className="font-mono text-xs font-bold text-zinc-900 uppercase tracking-tighter">
+                      #{order.id.slice(-6).toUpperCase()}
+                    </span>
+                  </div>
                   <StatusBadge status={order.status} />
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-xs font-bold text-zinc-500 border border-zinc-200 shrink-0">
-                    {order.user?.avatar ? (
-                      <img src={order.user.avatar} className="w-full h-full object-cover rounded-full" alt="" />
-                    ) : (
-                      order.user?.name ? order.user.name.split(' ').map(n => n[0]).join('') : "U"
-                    )}
-                  </div>
+                  <TableImage 
+                    src={order.user?.avatar}
+                    alt={order.user?.name}
+                    containerClassName="w-10 h-10 rounded-full border border-zinc-200"
+                  />
                   <div className="flex flex-col min-w-0">
                     <span className="text-sm font-bold text-zinc-900 truncate">{order.user?.name || "Unknown Customer"}</span>
                     <span className="text-[10px] text-zinc-400 font-medium truncate">{order.user?.email || "No email"}</span>
@@ -406,9 +420,7 @@ export default function AdminOrdersPage() {
                    </div>
                    <div className="flex flex-col items-end">
                     <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest text-right">Settlement</span>
-                    <span className="text-sm font-black text-zinc-900 tabular-nums">
-                      ${order.total.toLocaleString()}
-                    </span>
+                    <PriceDisplay amount={order.total} size="sm" />
                    </div>
                 </div>
 
@@ -421,34 +433,54 @@ export default function AdminOrdersPage() {
         </div>
 
         {/* Pagination */}
-        <div className="px-4 sm:px-8 py-4 lg:py-5 bg-zinc-50/30 border-t border-zinc-100 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div className="px-8 py-6 bg-zinc-50/30 border-t border-zinc-100 flex flex-col sm:flex-row justify-between items-center gap-6">
           <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
-            Showing {orders.length} of {pagination.total} orders
+            Showing {(pagination.page - 1) * 10 + 1} to {Math.min(pagination.total, pagination.page * 10)} of {pagination.total.toLocaleString()} results
           </span>
           <div className="flex gap-2">
             <Button 
-              variant="outline"
-              size="sm"
+              variant="none"
+              size="none"
               disabled={pagination.page === 1}
               onClick={() => {
                 const isMounted = { current: true };
                 fetchOrders(pagination.page - 1, isMounted);
+                window.scrollTo({ top: 0, behavior: "smooth" });
               }}
-              className="px-4 py-2 bg-white border border-zinc-200 rounded-lg text-xs font-bold text-zinc-500 hover:text-zinc-900 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-sm"
+              className="w-10 h-10 flex items-center justify-center rounded-lg border border-zinc-200 hover:bg-zinc-50 disabled:opacity-30 transition-all font-bold"
             >
-              Previous
+              <ChevronLeft size={18} />
             </Button>
+            {Array.from({ length: Math.min(5, pagination.totalPages) }).map((_, i) => (
+              <Button 
+                variant="none"
+                size="none"
+                key={i}
+                onClick={() => {
+                  const isMounted = { current: true };
+                  fetchOrders(i + 1, isMounted);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className={cn(
+                  "w-10 h-10 flex items-center justify-center rounded-lg font-bold text-xs transition-all",
+                  pagination.page === i + 1 ? "bg-zinc-900 text-white" : "text-zinc-500 hover:bg-zinc-50"
+                )}
+              >
+                {i + 1}
+              </Button>
+            ))}
             <Button 
-              variant="primary"
-              size="sm"
-              disabled={pagination.page === pagination.totalPages}
+              variant="none"
+              size="none"
+              disabled={pagination.page === pagination.totalPages || pagination.totalPages === 0}
               onClick={() => {
                 const isMounted = { current: true };
                 fetchOrders(pagination.page + 1, isMounted);
+                window.scrollTo({ top: 0, behavior: "smooth" });
               }}
-              className="px-4 py-2 bg-zinc-900 text-white rounded-lg text-xs font-bold hover:opacity-90 disabled:opacity-30 disabled:pointer-events-none transition-all shadow-sm"
+              className="w-10 h-10 flex items-center justify-center rounded-lg border border-zinc-200 hover:bg-zinc-50 disabled:opacity-30 transition-all font-bold"
             >
-              Next
+              <ChevronRight size={18} />
             </Button>
           </div>
         </div>
@@ -460,13 +492,12 @@ export default function AdminOrdersPage() {
         onAction={handleBulkAction}
       />
 
-      <React.Suspense fallback={null}>
-        <OrderDetailPanel 
-          order={selectedOrder} 
-          onClose={() => setSelectedOrder(null)} 
-          onUpdateStatus={handleUpdateStatus}
-        />
-      </React.Suspense>
+      <OrderDetailPanel 
+        order={selectedOrder}
+        isOpen={isPanelOpen} 
+        onClose={() => setIsPanelOpen(false)} 
+        onUpdateStatus={handleUpdateStatus}
+      />
     </div>
   );
 }

@@ -6,7 +6,11 @@ import { NotFoundError } from "../utils/AppError";
 
 export const getBrands = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const brands = await prisma.brand.findMany();
+    const brands = await prisma.brand.findMany({
+      include: {
+        _count: { select: { products: true } }
+      }
+    });
     return sendResponse({ res, status: 200, success: true, data: brands });
   } catch (error) {
     next(error);

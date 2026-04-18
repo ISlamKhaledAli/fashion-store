@@ -17,6 +17,8 @@ interface MetricCardProps {
   avatars?: { name: string; avatar?: string; }[];
   progressBar?: number;
   href?: string;
+  icon?: React.ReactNode;
+  color?: string;
 }
 
 const AnimatedNumber = ({ value, prefix = "", suffix = "" }: { value: number; prefix?: string; suffix?: string }) => {
@@ -34,14 +36,29 @@ const AnimatedNumber = ({ value, prefix = "", suffix = "" }: { value: number; pr
 
   useEffect(() => {
     return springValue.on("change", (latest) => {
+      // Force 2 decimals for currency ($)
+      const isCurrency = prefix === "$";
       setDisplayValue(latest.toLocaleString(undefined, { 
-        minimumFractionDigits: value % 1 === 0 ? 0 : 2,
-        maximumFractionDigits: value % 1 === 0 ? 0 : 2 
+        minimumFractionDigits: isCurrency ? 2 : (value % 1 === 0 ? 0 : 2),
+        maximumFractionDigits: isCurrency ? 2 : (value % 1 === 0 ? 0 : 2) 
       }));
     });
-  }, [springValue, value]);
+  }, [springValue, value, prefix]);
 
-  return <span>{prefix}{displayValue}{suffix}</span>;
+  const [whole, decimal] = displayValue.split('.');
+
+  if (prefix === "$") {
+    return (
+      <span className="inline-flex items-baseline tabular-nums">
+        <span className="text-zinc-500 mr-[1px] select-none text-[0.6em] font-medium leading-none align-baseline">{prefix}</span>
+        <span className="text-zinc-950">{whole}</span>
+        {decimal && <span className="text-zinc-400 font-medium tracking-tight text-[0.8em]">.{decimal}</span>}
+        {suffix && <span className="ml-1 text-zinc-400">{suffix}</span>}
+      </span>
+    );
+  }
+
+  return <span className="tabular-nums">{prefix}{displayValue}{suffix}</span>;
 };
 
 export const MetricCard = ({ 
@@ -54,7 +71,9 @@ export const MetricCard = ({
   sparkline, 
   avatars,
   progressBar,
-  href
+  href,
+  icon,
+  color
 }: MetricCardProps) => {
   const CardContent = (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-zinc-100 flex flex-col gap-2 relative overflow-hidden group/card min-h-[170px] transition-all duration-500 hover:shadow-xl hover:shadow-zinc-200/50 hover:-translate-y-1.5 active:scale-[0.98]">
@@ -62,7 +81,14 @@ export const MetricCard = ({
       <div className="absolute -right-4 -top-4 w-24 h-24 bg-zinc-50 rounded-full blur-3xl group-hover/card:bg-zinc-100 transition-colors duration-500" />
       
       <div className="flex justify-between items-start relative z-10">
-        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 leading-none group-hover/card:text-zinc-500 transition-colors">{title}</span>
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 opacity-60 leading-none group-hover/card:text-zinc-500 transition-colors uppercase">{title}</span>
+          {icon && (
+            <div className={cn("inline-flex items-center", color || "text-zinc-400")}>
+              {icon}
+            </div>
+          )}
+        </div>
         {trend !== undefined && (
           <span className={cn(
             "text-[10px] font-black flex items-center px-2 py-1 rounded-full border",

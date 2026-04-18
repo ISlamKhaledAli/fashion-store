@@ -2,6 +2,7 @@
 
 import React from "react";
 import { OrderItem } from "@/types";
+import { PriceDisplay } from "../PriceDisplay";
 
 interface OrderSummaryProps {
   items: OrderItem[];
@@ -24,9 +25,7 @@ export const OrderSummary = React.memo(({ items }: OrderSummaryProps) => {
             <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">
               Qty: {item.quantity} • {item.variant?.size} / {item.variant?.color}
             </div>
-            <div className="text-sm font-black mt-1 text-zinc-900 tabular-nums">
-              ${item.price.toLocaleString()}
-            </div>
+            <PriceDisplay amount={item.price} size="sm" />
           </div>
         </div>
       ))}

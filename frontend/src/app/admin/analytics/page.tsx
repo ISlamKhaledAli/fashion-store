@@ -1,377 +1,373 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+
 import { 
-  AreaChart, Area, BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
-} from "recharts";
-import { AnimatePresence } from "framer-motion";
-import { MetricCard } from "@/components/admin/MetricCard";
+  Calendar, ChevronDown, TrendingUp, TrendingDown, Globe 
+} from "lucide-react";
+import { adminApi } from "@/lib/api";
+import { toast } from "sonner";
+import { formatCurrency, cn } from "@/lib/utils";
+import { PriceDisplay } from "@/components/admin/PriceDisplay";
+
 import { RevenueChart } from "@/components/admin/RevenueChart";
 import { OrdersDonut } from "@/components/admin/OrdersDonut";
-import { adminApi } from "@/lib/api";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { TopProductsTable } from "@/components/admin/TopProductsTable";
+import { CategoryRevenueChart } from "@/components/admin/CategoryRevenueChart";
 import { Button } from "@/components/ui/Button";
-import { 
-  TrendingUp, Users, ShoppingBag, DollarSign,
-  ArrowRight, User as UserIcon, BarChart3
-} from "lucide-react";
-import { formatCurrency, cn } from "@/lib/utils";
-
-// --- Types ---
-
-interface RevenuePoint {
-  date: string;
-  amount: number;
-}
-
-interface AnalyticsOverview {
-  totalRevenue: number;
-  todayRevenue: number;
-  totalOrders: number;
-  totalCustomers: number;
-  conversionRate: number;
-  ordersToday: number;
-  newCustomers: number;
-  statusCounts?: Record<string, number>;
-}
-
-interface TopProduct {
-  id: string;
-  name: string;
-  quantity: number;
-  revenue: number;
-}
-
-interface CustomerSummary {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  totalSpent: number;
-}
-
-// --- Shared Tooltip ---
-
-const ChartTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number | string; name: string }[]; label?: string }) => (
-  <AnimatePresence>
-    {active && payload && payload.length && (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 5 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 5 }}
-        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] as const }}
-        className="bg-zinc-950 border border-zinc-800 p-3 shadow-2xl rounded-xl backdrop-blur-md pointer-events-none z-50 min-w-[140px]"
-      >
-        <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1.5">
-          {label}
-        </p>
-        {payload.map((entry: { value: number | string; name: string }, index: number) => (
-          <div key={index} className="flex items-baseline gap-1.5">
-            <span className="text-xs font-bold text-white leading-none">
-              {typeof entry.value === 'number' ? entry.value.toLocaleString() : entry.value}
-            </span>
-            <span className="text-[10px] font-bold text-zinc-400">{entry.name}</span>
-          </div>
-        ))}
-      </motion.div>
-    )}
-  </AnimatePresence>
-);
-
-// --- Chart Card Wrapper ---
-
-const ChartCard = ({ title, subtitle, children, isLoading, className }: {
-  title: string;
-  subtitle: string;
-  children: React.ReactNode;
-  isLoading?: boolean;
-  className?: string;
-}) => (
-  <div className={cn(
-    "bg-white p-8 rounded-2xl shadow-sm border border-zinc-100 flex flex-col h-full group hover:shadow-md transition-all duration-500",
-    className
-  )}>
-    <div className="mb-8">
-      <h2 className="text-lg font-bold tracking-tight text-zinc-950">{title}</h2>
-      <p className="text-sm text-zinc-400 font-light">{subtitle}</p>
-    </div>
-    <div className="flex-1 min-h-[300px] w-full flex items-center justify-center">
-      {isLoading ? (
-        <Skeleton className="h-full w-full rounded-xl" />
-      ) : children}
-    </div>
-  </div>
-);
-
-// --- Page Animations ---
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1, delayChildren: 0.1 },
-  },
-};
-
-// --- Page Component ---
-
 export default function AdminAnalyticsPage() {
-  const [loading, setLoading] = useState(true);
-  const [revenueLoading, setRevenueLoading] = useState(true);
-  const [revenueRange, setRevenueRange] = useState<"30D" | "90D">("30D");
-
-  const [metrics, setMetrics] = useState<AnalyticsOverview>({
-    totalRevenue: 0, todayRevenue: 0, totalOrders: 0, totalCustomers: 0,
-    conversionRate: 0, ordersToday: 0, newCustomers: 0,
+  const [days, setDays] = useState<number>(30);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [overview, setOverview] = useState<any>(null);
+  const [revenueData, setRevenueData] = useState<any[]>([]);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [categoryData, setCategoryData] = useState<any[]>([]);
+  const [geoData, setGeoData] = useState<any[]>([]);
+  const [retention, setRetention] = useState({
+    newCustomers: 0,
+    returningCustomers: 0,
+    newPercentage: 0,
+    returningPercentage: 0,
+    total: 0,
   });
 
-  const [revenueData, setRevenueData] = useState<RevenuePoint[]>([]);
-  const [ordersStatusData, setOrdersStatusData] = useState<{ name: string; value: number }[]>([]);
-  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
-  const [topCustomers, setTopCustomers] = useState<CustomerSummary[]>([]);
-
-  // 1. Initial Data Fetch
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchOverview = async () => {
-      setLoading(true);
-      try {
-        const [analyticsRes, topProductsRes, customersRes] = await Promise.all([
-          adminApi.getAnalytics(),
-          adminApi.getTopProducts(),
-          adminApi.getCustomers({ limit: 5 }),
-        ]);
-
-        if (cancelled) return;
-
-        if (analyticsRes.data.success) {
-          const data = analyticsRes.data.data as AnalyticsOverview;
-          setMetrics(data);
-          if (data.statusCounts) {
-            setOrdersStatusData(Object.entries(data.statusCounts).map(([name, value]) => ({
-              name,
-              value: value as number,
-            })));
-          }
-        }
-
-        if (topProductsRes.data.success) {
-          setTopProducts(topProductsRes.data.data as TopProduct[]);
-        }
-
-        if (customersRes.data.success) {
-          const customers = customersRes.data.data as { id: string; name: string; email: string; avatar?: string; totalSpent?: number }[];
-          setTopCustomers(
-            customers
-              .sort((a, b) => (b.totalSpent || 0) - (a.totalSpent || 0))
-              .slice(0, 5)
-              .map(c => ({
-                id: c.id,
-                name: c.name,
-                email: c.email,
-                avatar: c.avatar,
-                totalSpent: c.totalSpent || 0,
-              }))
-          );
-        }
-      } catch (error) {
-        console.error("Failed to fetch analytics:", error);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    fetchOverview();
-    return () => { cancelled = true; };
-  }, []);
-
-  // 2. Selective Revenue Fetch
-  const fetchRevenue = useCallback(async (range: "30D" | "90D") => {
-    setRevenueLoading(true);
+  const fetchDashboardData = useCallback(async (isMounted: { current: boolean }) => {
+    setIsLoading(true);
     try {
-      const days = range === "30D" ? 30 : 90;
-      const res = await adminApi.getRevenue({ days });
-      if (res.data.success) {
-        setRevenueData(res.data.data as RevenuePoint[]);
+      // Mock category data from top products or static if API doesn't have it
+      const [overviewRes, revenueRes, topProductsRes, geoRes, categoryRes, retentionRes] = await Promise.all([
+        adminApi.getAnalytics().catch(() => ({ data: { data: null } })),
+        adminApi.getRevenue({ days }).catch(() => ({ data: { data: [] } })),
+        adminApi.getTopProducts().catch(() => ({ data: { data: [] } })),
+        adminApi.getGeographicData().catch(() => ({ data: { data: [] } })),
+        adminApi.getCategoryRevenue().catch(() => ({ data: { data: [] } })),
+        adminApi.getCustomerRetention().catch(() => ({ data: { data: null } }))
+      ]);
+
+      if (isMounted.current) {
+        let ov = overviewRes.data?.data as Record<string, any>;
+        if (ov) {
+           ov.totalRevenue = ov.totalRevenue || 0;
+           ov.totalOrders = ov.totalOrders || 0;
+           ov.newCustomers = ov.newCustomers || 0;
+           ov.avgOrderValue = ov.totalOrders > 0 ? (ov.totalRevenue / ov.totalOrders) : 0;
+        }
+        setOverview(ov || null);
+        
+        let revData = (revenueRes.data?.data as any[]) || [];
+        setRevenueData(revData);
+
+        let prods = (topProductsRes.data?.data as any[]) || [];
+        setTopProducts(prods);
+
+        let gData = (geoRes.data?.data as any[]) || [];
+        setGeoData(gData);
+
+        let catData = (categoryRes.data?.data as any[]) || [];
+        console.log("Analytics: Category Data Loaded:", catData);
+        setCategoryData(catData);
+
+        let retData = retentionRes.data?.data;
+        if (retData) {
+          setRetention(retData as any);
+        }
       }
-    } catch (error) {
-      console.error("Failed to fetch revenue:", error);
+    } catch (err) {
+      if (isMounted.current) toast.error("Failed to load analytics data");
     } finally {
-      setRevenueLoading(false);
+      if (isMounted.current) setIsLoading(false);
     }
-  }, []);
+  }, [days]);
 
   useEffect(() => {
-    fetchRevenue(revenueRange);
-  }, [revenueRange, fetchRevenue]);
+    const isMounted = { current: true };
+    fetchDashboardData(isMounted);
+    return () => { isMounted.current = false; };
+  }, [fetchDashboardData]);
+
+  const dateRangeOpts = [
+    { label: "Last 7 Days", value: 7 },
+    { label: "Last 30 Days", value: 30 },
+    { label: "Last 90 Days", value: 90 },
+  ];
+
+  const pastDate = new Date();
+  pastDate.setDate(pastDate.getDate() - days);
+  const dateLabel = `${pastDate.toLocaleDateString("en-US", { month: 'short', day: '2-digit', year: 'numeric' })} — ${new Date().toLocaleDateString("en-US", { month: 'short', day: '2-digit', year: 'numeric' })}`;
+
+  const ordersStatusData = useMemo(() => {
+    if (!overview?.statusCounts) return [];
+    return Object.entries(overview.statusCounts).map(([name, value]) => ({
+      name,
+      value: value as number
+    }));
+  }, [overview?.statusCounts]);
 
   return (
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-      className="space-y-10"
-    >
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="space-y-12 pb-12 font-inter text-zinc-900 max-w-7xl mx-auto px-8">
+      
+      {/* Page Header */}
+      <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-black tracking-tighter text-zinc-950">Analytics</h1>
-          <p className="text-sm text-zinc-400 font-medium">Deep performance insights across all operations.</p>
+          <h2 className="text-4xl font-headline font-medium tracking-tight text-on-surface">Analytics</h2>
+          <p className="text-on-surface-variant text-sm mt-1">Platform performance and editorial metrics</p>
         </div>
-      </div>
-
-      {/* KPI Metric Cards — reusing <MetricCard> from dashboard */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
-          title="Total Revenue"
-          value={metrics.totalRevenue}
-          prefix="$"
-          href="/admin/orders"
-        />
-        <MetricCard
-          title="Total Orders"
-          value={metrics.totalOrders}
-          href="/admin/orders"
-        />
-        <MetricCard
-          title="Total Customers"
-          value={metrics.totalCustomers}
-          href="/admin/customers"
-        />
-        <MetricCard
-          title="Conversion Rate"
-          value={parseFloat(metrics.conversionRate.toFixed(1))}
-          suffix="%"
-          progressBar={metrics.conversionRate > 0 ? Math.min(metrics.conversionRate * 10, 100) : 0}
-        />
-      </div>
-
-      {/* Row 1: Revenue Chart & Orders Donut — reusing existing components */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <motion.div variants={containerVariants} className="lg:col-span-2">
-          <RevenueChart
-            data={revenueData}
-            isLoading={revenueLoading}
-            range={revenueRange}
-            onRangeChange={setRevenueRange}
-          />
-        </motion.div>
-        <motion.div variants={containerVariants}>
-          <OrdersDonut data={ordersStatusData} isLoading={loading} />
-        </motion.div>
-      </div>
-
-      {/* Row 2: Top Products & Top Customers */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Top Products — Bar Chart with Real Data */}
-        <ChartCard
-          title="Top Products"
-          subtitle="Best-selling items by units sold."
-          isLoading={loading}
-          className="lg:col-span-2"
-        >
-          {topProducts.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                layout="vertical"
-                data={topProducts}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f4f4f5" />
-                <XAxis type="number" hide />
-                <YAxis
-                  dataKey="name"
-                  type="category"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 10, fontWeight: 700, fill: '#18181b' }}
-                  width={120}
-                />
-                <Tooltip content={<ChartTooltip />} />
-                <Bar
-                  name="Units"
-                  dataKey="quantity"
-                  fill="#18181b"
-                  radius={[0, 4, 4, 0]}
-                  barSize={20}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex flex-col items-center gap-3 text-zinc-200">
-              <BarChart3 size={32} strokeWidth={1} />
-              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-300">No product data yet</p>
+        
+        <div className="relative">
+          <Button 
+            variant="none"
+            size="none"
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="flex items-center gap-3 bg-surface-container-lowest cinematic-shadow px-4 py-2.5 rounded-lg group transition-all"
+          >
+            <Calendar className="w-5 h-5 text-on-surface-variant group-hover:text-on-surface" />
+            <span className="text-xs font-medium text-on-surface">{dateLabel}</span>
+            <ChevronDown className={cn("w-5 h-5 text-on-surface-variant transition-transform duration-300", isDropdownOpen && "rotate-180")} />
+          </Button>
+          
+          {isDropdownOpen && (
+            <div className="absolute right-0 top-full mt-2 bg-white shadow-xl rounded-lg border border-zinc-100 overflow-hidden z-50 min-w-[200px]">
+              {dateRangeOpts.map(opt => (
+                <Button
+                  key={opt.value}
+                  variant="none"
+                  size="none"
+                  className={cn(
+                    "w-full text-left px-4 py-3 text-sm transition-colors hover:bg-zinc-50",
+                    days === opt.value ? "font-bold text-zinc-900 bg-zinc-50/50" : "font-medium text-zinc-500"
+                  )}
+                  onClick={() => {
+                    setDays(opt.value);
+                    setIsDropdownOpen(false);
+                  }}
+                >
+                  {opt.label}
+                </Button>
+              ))}
             </div>
           )}
-        </ChartCard>
-
-        {/* Top Customers — Ranked List with Real Data */}
-        <div className="bg-zinc-950 p-8 rounded-2xl shadow-2xl flex flex-col relative overflow-hidden group hover:shadow-md transition-all duration-500">
-          <div className="absolute top-0 right-0 p-8 opacity-[0.05] group-hover:scale-110 transition-transform duration-700">
-            <TrendingUp size={120} strokeWidth={1} className="text-white" />
-          </div>
-
-          <div className="space-y-1 mb-8 z-10">
-            <h2 className="text-lg font-bold tracking-tight text-white">Top Customers</h2>
-            <p className="text-sm text-zinc-500 font-light">Highest lifetime value contributors.</p>
-          </div>
-
-          <div className="flex-1 w-full space-y-3 z-10">
-            {loading ? (
-              Array(5).fill(0).map((_, i) => (
-                <div key={i} className="flex items-center justify-between p-3">
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="w-9 h-9 rounded-full bg-white/10" />
-                    <div className="space-y-1.5">
-                      <Skeleton className="h-3 w-24 bg-white/10" />
-                      <Skeleton className="h-2 w-16 bg-white/5" />
-                    </div>
-                  </div>
-                  <Skeleton className="h-3 w-16 bg-white/10" />
-                </div>
-              ))
-            ) : topCustomers.length > 0 ? (
-              topCustomers.map((customer) => (
-                <div key={customer.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/10">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center text-white/40 border border-white/10 overflow-hidden">
-                      {customer.avatar ? (
-                        <img src={customer.avatar} alt={customer.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <UserIcon size={14} />
-                      )}
-                    </div>
-                    <div className="text-left">
-                      <p className="text-xs font-bold text-white tracking-tight">{customer.name}</p>
-                      <p className="text-[9px] text-zinc-500 font-medium truncate max-w-[100px]">{customer.email}</p>
-                    </div>
-                  </div>
-                  <p className="text-xs font-black text-white tabular-nums">{formatCurrency(customer.totalSpent)}</p>
-                </div>
-              ))
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full gap-3 py-12">
-                <Users size={32} strokeWidth={1} className="text-zinc-600" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600">No customer data</p>
-              </div>
-            )}
-          </div>
-
-          <Button
-            variant="none"
-            className="w-full bg-white text-zinc-950 font-black text-[10px] uppercase tracking-widest rounded-xl py-3 hover:opacity-90 transition-all flex items-center justify-center gap-2 z-10 mt-6"
-            onClick={() => window.location.href = '/admin/customers'}
-          >
-            View All Customers <ArrowRight size={14} />
-          </Button>
         </div>
       </div>
-    </motion.div>
+
+      {/* Row 1: Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard 
+          title="Total Revenue" 
+          value={formatCurrency(overview?.totalRevenue || 0)} 
+          trend={`${Math.abs(overview?.revenueTrend || 0)}%`} 
+          isPositive={(overview?.revenueTrend || 0) >= 0} 
+          isLoading={isLoading} 
+        />
+        <MetricCard 
+          title="Total Orders" 
+          value={(overview?.totalOrders || 0).toLocaleString()} 
+          trend={`${Math.abs(overview?.ordersTrend || 0)}%`} 
+          isPositive={(overview?.ordersTrend || 0) >= 0} 
+          isLoading={isLoading} 
+        />
+        <MetricCard 
+          title="New Customers" 
+          value={(overview?.newCustomers || 0).toLocaleString()} 
+          trend={`${Math.abs(overview?.customersTrend || 0)}%`} 
+          isPositive={(overview?.customersTrend || 0) >= 0} 
+          isLoading={isLoading} 
+        />
+        <MetricCard 
+          title="Avg. Order Value" 
+          value={formatCurrency(overview?.avgOrderValue || 0)} 
+          trend={`${Math.abs(overview?.avgOrderValueTrend || 0)}%`} 
+          isPositive={(overview?.avgOrderValueTrend || 0) >= 0} 
+          isLoading={isLoading} 
+        />
+      </div>
+
+      {/* Row 2: Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-8 bg-white p-8 rounded-xl shadow-[0_20px_50px_rgba(26,28,29,0.02)] border border-zinc-100 h-[400px]">
+          <div className="flex justify-between items-center mb-8">
+            <h3 className="text-lg font-medium tracking-tight">Revenue Over Time</h3>
+            <div className="flex gap-4">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-zinc-900 rounded-sm" />
+                <span className="text-xs font-medium text-zinc-600">Current</span>
+              </div>
+            </div>
+          </div>
+          <div className="h-[280px] w-full">
+            {isLoading ? (
+              <div className="w-full h-full bg-zinc-50 animate-pulse rounded-lg" />
+            ) : (
+              <RevenueChart data={revenueData} />
+            )}
+          </div>
+        </div>
+
+        <div className="lg:col-span-4 bg-surface-container-lowest p-8 rounded-xl cinematic-shadow border border-outline-variant/10 flex flex-col">
+          <OrdersDonut data={ordersStatusData} isLoading={isLoading} />
+        </div>
+      </div>
+
+      {/* Row 3: Tables */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="h-[400px]">
+          <TopProductsTable products={topProducts} isLoading={isLoading} />
+        </div>
+        <div className="h-[400px]">
+           <CategoryRevenueChart categories={categoryData} isLoading={isLoading} />
+        </div>
+      </div>
+
+      {/* Row 4: Customer Insights & Distribution (Empty States) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* New vs Returning Bar Chart */}
+        <div className="lg:col-span-5 bg-surface-container-lowest p-8 rounded-xl cinematic-shadow border border-outline-variant/10 flex flex-col justify-center">
+          <h3 className="text-lg font-medium tracking-tight mb-8 text-on-surface">New vs. Returning</h3>
+          {isLoading ? (
+            <div className="space-y-4 w-full">
+              <div className="animate-pulse">
+                <div className="flex justify-between text-sm mb-1">
+                  <div className="w-24 h-4 bg-zinc-100 rounded"></div>
+                  <div className="w-16 h-4 bg-zinc-100 rounded"></div>
+                </div>
+                <div className="w-full bg-zinc-50 rounded-full h-2"></div>
+              </div>
+              <div className="animate-pulse">
+                <div className="flex justify-between text-sm mb-1">
+                  <div className="w-32 h-4 bg-zinc-100 rounded"></div>
+                  <div className="w-16 h-4 bg-zinc-100 rounded"></div>
+                </div>
+                <div className="w-full bg-zinc-50 rounded-full h-2"></div>
+              </div>
+            </div>
+          ) : retention.total === 0 ? (
+            <p className="text-center text-sm text-zinc-400 py-8">
+              No customer data available yet
+            </p>
+          ) : (
+            <div className="space-y-4 w-full mt-auto mb-auto">
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-on-surface">New Customers</span>
+                  <span className="font-medium text-on-surface">{retention.newCustomers} ({retention.newPercentage}%)</span>
+                </div>
+                <div className="w-full bg-surface-container-high rounded-full h-2 overflow-hidden">
+                  <div 
+                    className="bg-primary h-full rounded-full transition-all duration-700 ease-out"
+                    style={{ width: `${retention.newPercentage}%` }}
+                  />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-on-surface">Returning Customers</span>
+                  <span className="font-medium text-on-surface">{retention.returningCustomers} ({retention.returningPercentage}%)</span>
+                </div>
+                <div className="w-full bg-surface-container-high rounded-full h-2 overflow-hidden">
+                  <div 
+                    className="bg-zinc-400 h-full rounded-full transition-all duration-700 ease-out"
+                    style={{ width: `${retention.returningPercentage}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Geographic Distribution -> Real Data */}
+        <div className="lg:col-span-7 bg-surface-container-lowest p-8 rounded-xl cinematic-shadow border border-outline-variant/10">
+          <div className="flex justify-between items-center mb-8">
+            <h3 className="text-lg font-medium tracking-tight text-on-surface">Geographic Distribution</h3>
+            <div className="flex items-center gap-2 text-xs text-on-surface-variant font-medium">
+              <Globe className="w-4 h-4" />
+              Global Activity
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 py-2 animate-pulse">
+                  <div className="h-4 bg-surface-container-high rounded w-4"></div>
+                  <div className="h-4 bg-surface-container-high rounded flex-1"></div>
+                  <div className="h-1.5 bg-surface-container-low rounded-full w-32"></div>
+                  <div className="h-4 bg-surface-container-high rounded w-20"></div>
+                </div>
+              ))
+            ) : geoData.length === 0 ? (
+              <div className="flex items-center justify-center h-56 bg-surface-container-low/50 rounded-lg border border-dashed border-outline-variant/20">
+                <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant/40">No geographic data available yet</span>
+              </div>
+            ) : (
+              geoData.map((item, i) => (
+                <div key={item.country} className="flex items-center gap-4 py-2 hover:bg-surface-container-low/50 transition-colors rounded-lg px-2 -mx-2 group">
+                  <span className="text-[10px] font-bold text-on-surface-variant/40 w-4 tabular-nums">{(i + 1).toString().padStart(2, '0')}</span>
+                  <span className="text-sm font-medium text-on-surface flex-1 truncate">{item.country}</span>
+                  <div className="w-32 bg-surface-container-high rounded-full h-1.5 overflow-hidden">
+                    <div 
+                      className="bg-primary h-full rounded-full transition-all duration-1000 ease-out"
+                      style={{ width: `${(item.revenue / (geoData[0]?.revenue || 1)) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-bold text-on-surface w-24 text-right">
+                    <PriceDisplay amount={item.revenue} size="sm" />
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+function MetricCard({ title, value, trend, isPositive, progress, isLoading }: {
+  title: string;
+  value: string | number;
+  trend: string;
+  isPositive: boolean;
+  progress?: number;
+  isLoading?: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="bg-surface-container-lowest p-6 rounded-xl cinematic-shadow border border-outline-variant/10 flex flex-col animate-pulse h-full">
+        <div className="h-3 bg-surface-container-high rounded w-1/2 mb-4"></div>
+        <div className="h-8 bg-surface-container-high rounded w-3/4 mb-6"></div>
+        <div className="h-1 bg-surface-container-high rounded-full w-full mt-auto"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-surface-container-lowest p-6 rounded-xl cinematic-shadow border border-outline-variant/10 transition-all hover:scale-[1.02] duration-300 group cursor-default h-full flex flex-col">
+      <div className="flex justify-between items-start mb-4">
+        <span className="text-[10px] font-bold tracking-[0.15em] text-on-surface-variant uppercase">{title}</span>
+        <span className={cn(
+          "px-2 py-0.5 rounded text-[10px] font-bold",
+          isPositive ? "text-green-600 bg-green-50" : "text-red-600 bg-red-50"
+        )}>
+          {isPositive ? "+" : "-"}{trend}
+        </span>
+      </div>
+      <div className="flex items-baseline gap-1 mb-4">
+        <span className="text-3xl font-bold text-on-surface tracking-tight">{value}</span>
+      </div>
+      {progress !== undefined && (
+        <div className="mt-auto h-1 w-full bg-surface-container-high rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-primary transition-all duration-1000 ease-out" 
+            style={{ width: `${progress}%` }} 
+          />
+        </div>
+      )}
+    </div>
   );
 }

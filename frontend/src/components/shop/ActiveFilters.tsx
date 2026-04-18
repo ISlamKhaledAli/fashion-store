@@ -27,7 +27,11 @@ export const ActiveFilters = ({ state, dispatch }: ActiveFiltersProps) => {
     });
   });
 
-  state.color.forEach((color) => {
+  const uniqueSelectedColors = Array.from(
+    new Set(state.color.map((c) => c.toLowerCase().trim()))
+  );
+
+  uniqueSelectedColors.forEach((color) => {
     activeItems.push({
       label: color,
       onRemove: () => dispatch({ type: "toggle_color", payload: color }),

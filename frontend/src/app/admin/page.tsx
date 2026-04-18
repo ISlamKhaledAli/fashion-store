@@ -87,7 +87,7 @@ export default function AdminDashboard() {
         if (cancelled) return;
 
         if (analyticsRes.data.success) {
-          const data = analyticsRes.data.data as AnalyticsOverview;
+          const data = analyticsRes.data.data as any;
           setMetrics({
             totalRevenue: data.totalRevenue || 0,
             revenueTrend: data.revenueTrend || 0,
@@ -99,6 +99,10 @@ export default function AdminDashboard() {
             conversionTrend: data.conversionTrend || 0,
           });
           
+          if (data.dailyRevenue) {
+            setRevenueData(data.dailyRevenue);
+          }
+
           if (data.statusCounts) {
             setOrdersStatusData(Object.entries(data.statusCounts).map(([name, value]) => ({ 
               name, 
@@ -278,6 +282,7 @@ export default function AdminDashboard() {
 
       <OrderDetailPanel 
         order={selectedOrder}
+        isOpen={!!selectedOrder}
         onClose={() => setSelectedOrder(null)}
         onUpdateStatus={handleUpdateOrderStatus}
       />

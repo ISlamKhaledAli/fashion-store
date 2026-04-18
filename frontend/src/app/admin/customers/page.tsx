@@ -1,376 +1,380 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
-import { AdminCustomer } from "@/types";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { 
+  Users, 
+  Search, 
+  FileDown, 
+  ChevronLeft, 
+  ChevronRight,
+  Filter,
+  MoreVertical,
+  Mail,
+  UserCheck,
+  UserX,
+  Edit,
+  Trash2,
+  Ban
+} from "lucide-react";
 import { adminApi } from "@/lib/api";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Badge } from "@/components/ui/Badge";
-import { Skeleton } from "@/components/ui/Skeleton";
-import { StatusBadge } from "@/components/admin/StatusBadge";
-import { toast } from "sonner";
-import { Search, Download, User as UserIcon, ArrowUpDown, MoreHorizontal, UserX, UserCheck } from "lucide-react";
+import { AdminCustomer } from "@/types";
 import { formatCurrency, cn } from "@/lib/utils";
-
-// Lazy load the details panel to prevent blocking the main thread during initial load
-const CustomerDetailPanel = React.lazy(() => 
-  import("@/components/admin/CustomerDetailPanel").then(module => ({ default: module.CustomerDetailPanel }))
-);
-
-// Optimized Atomic Components
-const CustomerRow = React.memo(({ 
-  customer, 
-  onClick,
-  onStatusChange,
-  onDelete
-}: { 
-  customer: AdminCustomer; 
-  onClick: (c: AdminCustomer) => void;
-  onStatusChange: (id: string, status: 'ACTIVE' | 'BANNED') => void;
-  onDelete: (id: string) => void;
-}) => {
-  return (
-    <tr 
-      onClick={() => onClick(customer)}
-      className="group/row hover:bg-zinc-50/30 transition-all cursor-pointer border-b border-zinc-50"
-    >
-      <td className="px-8 py-6">
-        <div className="flex items-center gap-5">
-          <div className="w-11 h-11 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 overflow-hidden border border-zinc-100 group-hover/row:scale-105 transition-transform shrink-0 shadow-sm">
-            {customer.avatar ? <img src={customer.avatar} alt={customer.name} className="w-full h-full object-cover" /> : <UserIcon size={20} />}
-          </div>
-          <div className="space-y-1">
-            <p className="text-lg font-semibold text-zinc-950 tracking-tight leading-tight group-hover/row:translate-x-1 transition-transform">{customer.name}</p>
-            <p className="text-sm font-medium text-zinc-500 tracking-wide font-mono uppercase">ID: {customer.id.split('-')[1] || customer.id.slice(-6)}</p>
-          </div>
-        </div>
-      </td>
-      <td className="px-8 py-6">
-        <div className="space-y-1">
-          <p className="text-sm text-zinc-500 font-medium leading-tight">{customer.email}</p>
-          <p className="text-sm text-zinc-400 font-medium tracking-wide">{customer.phone || "No Connection"}</p>
-        </div>
-      </td>
-      <td className="px-8 py-6 text-right">
-        <p className="text-base font-black text-zinc-950 tabular-nums tracking-tighter">{customer.totalOrders.toString().padStart(2, '0')}</p>
-      </td>
-      <td className="px-8 py-6 text-right font-black text-zinc-950 tabular-nums tracking-tighter text-base">
-        {formatCurrency(customer.totalSpent)}
-      </td>
-      <td className="px-8 py-6 text-center">
-        <StatusBadge status={customer.status} className="px-3 py-1 text-[10px] font-black min-w-[80px] justify-center" />
-      </td>
-      <td className="px-8 py-6 text-right pr-12" onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-end items-center gap-1.5 opacity-0 group-hover/row:opacity-100 transition-all translate-x-4 group-hover/row:translate-x-0">
-          {customer.status === 'ACTIVE' ? (
-            <Button 
-              variant="icon" 
-              size="none" 
-              onClick={() => onStatusChange(customer.id, 'BANNED')}
-              className="hover:bg-red-50 p-2.5 text-zinc-300 hover:text-red-500 rounded-lg transition-all" 
-              icon={<UserX size={18} />} 
-              title="Restrict Account"
-            />
-          ) : (
-            <Button 
-              variant="icon" 
-              size="none" 
-              onClick={() => onStatusChange(customer.id, 'ACTIVE')}
-              className="hover:bg-zinc-100 p-2.5 text-zinc-300 hover:text-zinc-950 rounded-lg transition-all" 
-              icon={<UserCheck size={18} />} 
-              title="Restore Access"
-            />
-          )}
-          <Button 
-            variant="icon" 
-            size="none" 
-            onClick={() => onClick(customer)}
-            className="hover:bg-zinc-100 p-2.5 text-zinc-300 hover:text-zinc-950 rounded-lg transition-all" 
-            icon={<MoreHorizontal size={18} />} 
-          />
-        </div>
-      </td>
-    </tr>
-  );
-});
-CustomerRow.displayName = "CustomerRow";
-
-const MobileCustomerRow = React.memo(({ 
-  customer, 
-  onClick 
-}: { 
-  customer: AdminCustomer; 
-  onClick: (c: AdminCustomer) => void;
-}) => {
-  return (
-    <div 
-      className="p-6 space-y-4 hover:bg-zinc-50/50 transition-colors cursor-pointer"
-      onClick={() => onClick(customer)}
-    >
-      <div className="flex justify-between items-start">
-        <div className="flex gap-4">
-          <div className="w-12 h-12 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 overflow-hidden border border-zinc-100">
-            {customer.avatar ? <img src={customer.avatar} alt={customer.name} className="w-full h-full object-cover" /> : <UserIcon size={24} />}
-          </div>
-          <div className="space-y-0.5">
-            <p className="text-base font-semibold text-zinc-950 tracking-tight">{customer.name}</p>
-            <p className="text-sm text-zinc-500 font-medium">{customer.email}</p>
-          </div>
-        </div>
-        <StatusBadge status={customer.status} className="px-2 py-0.5 text-[9px] font-black" />
-      </div>
-      <div className="grid grid-cols-2 gap-4 pt-1">
-        <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-100">
-          <span className="text-[9px] font-black uppercase text-zinc-400 tracking-widest block mb-1">Acquisitions</span>
-          <span className="text-base font-black text-zinc-950 tracking-tighter">{customer.totalOrders}</span>
-        </div>
-        <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-100">
-          <span className="text-[9px] font-black uppercase text-zinc-400 tracking-widest block mb-1">Total Spent</span>
-          <span className="text-base font-black text-zinc-950 tracking-tighter">{formatCurrency(customer.totalSpent)}</span>
-        </div>
-      </div>
-    </div>
-  );
-});
-MobileCustomerRow.displayName = "MobileCustomerRow";
-
-const TABS = ["ALL", "ACTIVE", "BANNED"];
+import { toast } from "sonner";
+import { Button } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { CustomerDetailPanel } from "@/components/admin/CustomerDetailPanel";
+import { TableImage } from "@/components/admin/TableImage";
+import { AdminTabs, AdminTab } from "@/components/admin/AdminTabs";
+import { StatusBadge } from "@/components/admin/StatusBadge";
+import { PriceDisplay } from "@/components/admin/PriceDisplay";
 
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<AdminCustomer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("ALL");
+  const [activeTab, setActiveTab ] = useState<"ALL" | "ACTIVE" | "BLOCKED" | "VIP">("ALL");
+  
+  // Detail Panel State
   const [selectedCustomer, setSelectedCustomer] = useState<AdminCustomer | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
-  const fetchCustomers = useCallback(async (isMounted: { current: boolean }) => {
-    setLoading(true);
+  // Pagination (Mocked for now as per HTML design)
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const fetchCustomers = useCallback(async () => {
+    setIsLoading(true);
     try {
       const res = await adminApi.getCustomers();
-      if (isMounted.current && res.data.success) {
+      if (res.data.success) {
         setCustomers(res.data.data as AdminCustomer[]);
       }
     } catch (err) {
-      if (isMounted.current) {
-        toast.error("Telemetry failure. Profiles inaccessible.");
-      }
+      toast.error("Failed to fetch customer data");
     } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
+      setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    const isMounted = { current: true };
-    fetchCustomers(isMounted);
-    return () => { isMounted.current = false; };
+    fetchCustomers();
   }, [fetchCustomers]);
 
+  const handleStatusChange = async (id: string, status: "ACTIVE" | "BANNED") => {
+    try {
+      await adminApi.updateCustomerStatus(id, status);
+      toast.success(`Customer status updated to ${status === 'ACTIVE' ? 'Active' : 'Blocked'}`);
+      
+      // Update local state
+      setCustomers(prev => prev.map(c => c.id === id ? { ...c, status } : c));
+      if (selectedCustomer?.id === id) {
+        setSelectedCustomer(prev => prev ? { ...prev, status } : null);
+      }
+    } catch (err) {
+      toast.error("Failed to update status");
+    }
+  };
+  
+  const tabList: AdminTab[] = useMemo(() => [
+    { id: "ALL",      label: "All Customers", count: customers.length },
+    { id: "ACTIVE",   label: "Active",        count: customers.filter(c => c.status === "ACTIVE").length },
+    { id: "BLOCKED",  label: "Blocked",       count: customers.filter(c => c.status === "BANNED").length },
+    { id: "VIP",      label: "VIP",           count: customers.filter(c => c.totalSpent > 10000).length },
+  ], [customers]);
+
   const filteredCustomers = useMemo(() => {
-    return customers.filter((c) => {
+    return customers.filter(c => {
       const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           c.email.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesTab = activeTab === "ALL" || c.status === activeTab;
+      
+      let matchesTab = true;
+      if (activeTab === "ACTIVE") matchesTab = c.status === "ACTIVE";
+      if (activeTab === "BLOCKED") matchesTab = c.status === "BANNED";
+      if (activeTab === "VIP") matchesTab = c.totalSpent > 10000;
+
       return matchesSearch && matchesTab;
     });
   }, [customers, searchQuery, activeTab]);
 
-  const handleRowClick = useCallback((customer: AdminCustomer) => {
-    // Optimistic state update: open panel immediately
-    setSelectedCustomer(customer);
-    setIsPanelOpen(true);
-  }, []);
+  const paginatedCustomers = useMemo(() => {
+    const start = (page - 1) * itemsPerPage;
+    return filteredCustomers.slice(start, start + itemsPerPage);
+  }, [filteredCustomers, page]);
 
-  const handleStatusChange = useCallback(async (id: string, status: 'ACTIVE' | 'BANNED') => {
-    try {
-      await adminApi.updateCustomerStatus(id, status);
-      toast.success(`Protocol updated: Status set to ${status.toLowerCase()}`);
-      fetchCustomers({ current: true });
-      setIsPanelOpen(false);
-    } catch (err) {
-      toast.error("Status override failed. Access persists.");
-    }
-  }, [fetchCustomers]);
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
 
-  const handleDelete = useCallback(async (id: string) => {
-    if (!confirm("Are you sure you want to permanently delete this customer profile? This action is irreversible.")) return;
-    try {
-      await adminApi.deleteCustomer(id);
-      toast.success("Profile purged from archives");
-      fetchCustomers({ current: true });
-      setIsPanelOpen(false);
-    } catch (err) {
-      toast.error("Critical failure. Data persists.");
-    }
-  }, [fetchCustomers]);
+  const exportCSV = () => {
+    const headers = ["ID", "Name", "Email", "Join Date", "Total Orders", "Total Spent", "Status"];
+    const csvContent = [
+      headers.join(","),
+      ...filteredCustomers.map(c => [
+        c.id,
+        `"${c.name}"`,
+        c.email,
+        c.joinDate,
+        c.totalOrders,
+        c.totalSpent,
+        c.status
+      ].join(","))
+    ].join("\n");
 
-  const exportCSV = useCallback(() => {
-    const headers = ["ID", "Name", "Email", "Phone", "Total Orders", "Total Spent", "Join Date", "Status"];
-    const rows = customers.map(c => [
-      c.id, c.name, c.email, c.phone, c.totalOrders, c.totalSpent, c.joinDate, c.status
-    ]);
-    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodeURI(csvContent));
-    link.setAttribute("download", `customers_intelligence_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `customers_export_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success("Intelligence report exported");
-  }, [customers]);
+  };
+
+  const openPanel = (customer: AdminCustomer) => {
+    setSelectedCustomer(customer);
+    setIsPanelOpen(true);
+  };
 
   return (
-    <div className="max-w-6xl mx-auto w-full space-y-8 lg:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000 px-4">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-        <div className="space-y-1.5">
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-950">Customer Intelligence</h1>
-          <div className="flex items-center gap-3">
-             <Badge variant="surface" className="px-3 py-1 font-black">Biometric Feed</Badge>
-             <div className="h-4 w-[1px] bg-zinc-200" />
-             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-               {customers.length} Profiles Indexed
-             </span>
+    <div className="space-y-12 pb-12">
+      {/* Header Section */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-[3rem] sm:text-[3.5rem] font-bold tracking-tight text-zinc-950 leading-none">Customers</h2>
+            <p className="text-zinc-500 mt-4 text-base sm:text-lg">
+              {customers.length.toLocaleString()} registered members across global regions.
+            </p>
           </div>
+          
+          {!isLoading && customers.length > 0 && (
+            <div className="flex items-center gap-4 animate-in fade-in slide-in-from-left-4 duration-1000 delay-200">
+              <div className="flex -space-x-3 overflow-hidden">
+                {customers.slice(0, 5).map((c, i) => (
+                  <div 
+                    key={c.id}
+                    className="inline-block h-10 w-10 rounded-full ring-2 ring-white bg-zinc-50 border border-zinc-100 flex items-center justify-center overflow-hidden"
+                  >
+                    {c.avatar ? (
+                      <img src={c.avatar} alt={c.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="text-[8px] font-black text-zinc-300 uppercase">{c.name.split(" ")[0][0]}</span>
+                    )}
+                  </div>
+                ))}
+                {customers.length > 5 && (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 ring-2 ring-white">
+                    <span className="text-[8px] font-black text-white">+{customers.length - 5}</span>
+                  </div>
+                )}
+              </div>
+              <div className="h-4 w-[1px] bg-zinc-200" />
+               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+                 Growing Audience
+               </p>
+            </div>
+          )}
         </div>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={exportCSV}
-          className="rounded-xl border-zinc-200 text-zinc-600 hover:text-zinc-950 hover:bg-zinc-50 font-bold text-[10px] uppercase tracking-widest px-6 shadow-sm transition-all flex items-center gap-2 w-full sm:w-auto"
-          icon={<Download size={14} />}
-        >
-          Export CSV
-        </Button>
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4" />
+            <input 
+              type="text" 
+              placeholder="Search members..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white border border-zinc-200 rounded-lg pl-9 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none transition-all"
+            />
+          </div>
+          <Button 
+            onClick={exportCSV}
+            className="flex items-center gap-2 px-6 py-2.5 bg-zinc-900 text-white rounded-lg font-medium text-sm hover:scale-[0.98] transition-transform duration-300 whitespace-nowrap"
+          >
+            <FileDown size={16} />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
-      {/* Control Bar */}
-      <div className="flex flex-col lg:flex-row justify-between items-center gap-6 border-b border-zinc-100 pb-4">
-        <div className="flex gap-x-12 w-full lg:w-auto overflow-x-auto no-scrollbar scroll-smooth">
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={cn(
-                "pb-4 text-[10px] font-black uppercase tracking-[0.3em] transition-all relative whitespace-nowrap group",
-                activeTab === tab ? "text-zinc-950" : "text-zinc-400 hover:text-zinc-600"
-              )}
-            >
-              {tab}
-              {activeTab === tab && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-950" />
-              )}
-            </button>
-          ))}
-        </div>
-        <div className="w-full lg:w-[320px]">
-          <Input
-            placeholder="Search fingerprints..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-zinc-50/50 border-zinc-100 rounded-xl py-3 focus:bg-white transition-all text-sm shadow-inner"
-            icon={<Search size={16} />}
-          />
+      {/* Filter Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-4 border-b border-zinc-100">
+        <AdminTabs
+          tabs={tabList}
+          activeTab={activeTab}
+          onTabChange={(id) => { setActiveTab(id as any); setPage(1); }}
+          layoutId="customersTabUnderline"
+          className="flex-1 lg:flex-none"
+        />
+        <div className="flex items-center gap-4">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Sort by</span>
+          <Button 
+            variant="none"
+            size="none"
+            className="flex items-center gap-2 px-4 py-2 bg-white text-xs font-bold border border-zinc-200 rounded-lg text-zinc-900 hover:bg-zinc-50 transition-colors"
+          >
+            Join Date
+            <Filter size={14} className="text-zinc-400" />
+          </Button>
         </div>
       </div>
 
-      {/* Table Container */}
-      <div className="bg-white rounded-2xl border border-zinc-100 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
-        {/* Desktop View */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[900px]">
+      {/* Table Section */}
+      <div className="bg-white rounded-2xl border border-zinc-100 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-zinc-50/50 text-[10px] font-black uppercase tracking-[0.15em] text-zinc-400 border-b border-zinc-100">
-                <th className="px-8 py-5">Customer Identification</th>
-                <th className="px-8 py-5">Communication Feed</th>
-                <th className="px-8 py-5 text-right">Acquisitions</th>
-                <th className="px-8 py-5 text-right">Lifetime Value</th>
-                <th className="px-8 py-5 text-center">Stance</th>
-                <th className="px-8 py-5 text-right pr-12">Actions</th>
+              <tr className="bg-zinc-50/50 border-b border-zinc-100">
+                <th className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Customer Identity</th>
+                <th className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Engagement</th>
+                <th className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-zinc-400 text-right">Total Spent</th>
+                <th className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Stance</th>
+                <th className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-zinc-400 text-right pr-12">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-50">
-              {loading ? (
-                Array(5).fill(0).map((_, i) => (
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i}>
                     <td className="px-8 py-8 flex items-center gap-6">
-                      <Skeleton className="w-11 h-11 rounded-full" />
+                      <Skeleton className="w-12 h-12 rounded-full" />
                       <div className="space-y-2">
                         <Skeleton className="h-5 w-48" />
                         <Skeleton className="h-3 w-32" />
                       </div>
                     </td>
-                    <td className="px-8 py-8 space-y-2">
-                      <Skeleton className="h-4 w-40" />
-                      <Skeleton className="h-3 w-24" />
-                    </td>
-                    <td className="px-8 py-8"><Skeleton className="h-5 w-12 ml-auto" /></td>
+                    <td className="px-8 py-8"><Skeleton className="h-6 w-32 rounded-full" /></td>
                     <td className="px-8 py-8"><Skeleton className="h-5 w-20 ml-auto" /></td>
-                    <td className="px-8 py-8 flex justify-center"><Skeleton className="h-6 w-24 rounded-full" /></td>
-                    <td className="px-8 py-8 ml-auto"><Skeleton className="h-5 w-12 ml-auto" /></td>
+                    <td className="px-8 py-8"><Skeleton className="h-8 w-24 rounded-full" /></td>
+                    <td className="px-8 py-8"><Skeleton className="h-5 w-12 ml-auto" /></td>
                   </tr>
                 ))
-              ) : filteredCustomers.length > 0 ? (
-                filteredCustomers.map((c) => (
-                  <CustomerRow 
-                    key={c.id} 
-                    customer={c}
-                    onClick={handleRowClick}
-                    onStatusChange={handleStatusChange}
-                    onDelete={handleDelete}
-                  />
-                ))
-              ) : (
+              ) : paginatedCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-8 py-32 text-center">
-                    <div className="flex flex-col items-center gap-6 max-w-sm mx-auto opacity-40">
-                      <UserIcon size={48} strokeWidth={1} className="text-zinc-400" />
-                      <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 italic">No manifest matches found in archives</p>
+                  <td colSpan={5} className="px-8 py-24 text-center">
+                    <div className="flex flex-col items-center gap-4 opacity-30">
+                      <Users size={48} strokeWidth={1} />
+                      <p className="text-sm font-bold uppercase tracking-[0.2em]">No customers found</p>
                     </div>
                   </td>
                 </tr>
+              ) : (
+                paginatedCustomers.map((customer) => (
+                  <tr 
+                    key={customer.id} 
+                    onClick={() => openPanel(customer)}
+                    className="group/row hover:bg-zinc-50/50 transition-all cursor-pointer relative border-b border-zinc-50"
+                  >
+                    <td className="px-8 py-8">
+                      <div className="flex items-center gap-6">
+                        <TableImage 
+                          src={customer.avatar}
+                          alt={customer.name}
+                          containerClassName="w-12 h-12 rounded-full border border-zinc-200 group-hover/row:shadow-xl group-hover/row:z-10"
+                        />
+                        <div className="space-y-1">
+                          <p className="text-base font-bold text-zinc-950 tracking-tight group-hover/row:translate-x-1 transition-transform">{customer.name}</p>
+                          <p className="text-[10px] font-bold font-mono text-zinc-400 tracking-widest uppercase">MEMBER SINCE: {new Date(customer.joinDate).getFullYear()}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-8">
+                      <div className="flex flex-col gap-1.5">
+                        <StatusBadge status="ARCHIVED" className="bg-zinc-50/50 w-fit">
+                          {customer.email}
+                        </StatusBadge>
+                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-zinc-100 bg-white w-fit shadow-sm">
+                          <span className="text-[10px] font-bold text-zinc-400">LVL</span>
+                          <span className="text-[10px] font-black uppercase text-zinc-950 tracking-tight">
+                            {customer.totalSpent > 10000 ? "VIP ELITE" : "MEMBER"}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-8 text-right">
+                      <PriceDisplay amount={customer.totalSpent} />
+                    </td>
+                    <td className="px-8 py-8">
+                       <StatusBadge status={customer.status === "ACTIVE" ? "ACTIVE" : "ARCHIVED"} />
+                    </td>
+                    <td className="px-8 py-8 text-right pr-12" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex justify-end items-center gap-1.5 opacity-0 group-hover/row:opacity-100 transition-all translate-x-4 group-hover/row:translate-x-0">
+                        <Button 
+                          variant="icon" 
+                          size="none" 
+                          onClick={() => openPanel(customer)}
+                          className="hover:bg-zinc-100 transition-all p-2.5 text-zinc-400 hover:text-zinc-950 rounded-full" 
+                          icon={<Edit size={18} />} 
+                        />
+                         <Button 
+                          variant="icon" 
+                          size="none" 
+                          onClick={() => window.location.href = `mailto:${customer.email}`}
+                          className="hover:bg-zinc-100 transition-all p-2.5 text-zinc-400 hover:text-zinc-950 rounded-full" 
+                          icon={<Mail size={18} />} 
+                        />
+                        <Button 
+                          variant="icon" 
+                          size="none" 
+                          onClick={() => handleStatusChange(customer.id, customer.status === 'ACTIVE' ? 'BANNED' : 'ACTIVE')}
+                          className="hover:bg-red-50 transition-all p-2.5 text-zinc-400 hover:text-red-500 rounded-full" 
+                          icon={<Ban size={18} />} 
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
         </div>
+      </div>
 
-        {/* Mobile View */}
-        <div className="md:hidden divide-y divide-zinc-50">
-          {loading ? (
-             Array(3).fill(0).map((_, i) => (
-              <div key={i} className="p-6 space-y-4">
-                <div className="flex gap-4">
-                  <Skeleton className="w-12 h-12 rounded-full" />
-                  <div className="space-y-2 flex-1">
-                    <Skeleton className="h-5 w-full" />
-                    <Skeleton className="h-4 w-24" />
-                  </div>
-                </div>
-                <Skeleton className="h-20 w-full rounded-xl" />
-              </div>
-            ))
-          ) : filteredCustomers.map((c) => (
-            <MobileCustomerRow 
-              key={c.id} 
-              customer={c} 
-              onClick={handleRowClick}
-            />
+      {/* Footer Pagination */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-6 mt-8">
+        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+          Showing {Math.min(filteredCustomers.length, (page - 1) * itemsPerPage + 1)} to {Math.min(filteredCustomers.length, page * itemsPerPage)} of {filteredCustomers.length.toLocaleString()} results
+        </span>
+        <div className="flex gap-2">
+          <Button 
+            variant="none"
+            size="none"
+            disabled={page === 1}
+            onClick={() => setPage(p => p - 1)}
+            className="w-10 h-10 flex items-center justify-center rounded-lg border border-zinc-200 hover:bg-zinc-50 disabled:opacity-30 transition-all font-bold"
+          >
+            <ChevronLeft size={18} />
+          </Button>
+          {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => (
+            <Button 
+              variant="none"
+              size="none"
+              key={i}
+              onClick={() => setPage(i + 1)}
+              className={cn(
+                "w-10 h-10 flex items-center justify-center rounded-lg font-bold text-xs transition-all",
+                page === i + 1 ? "bg-zinc-900 text-white" : "text-zinc-500 hover:bg-zinc-50"
+              )}
+            >
+              {i + 1}
+            </Button>
           ))}
+          <Button 
+            variant="none"
+            size="none"
+            disabled={page === totalPages}
+            onClick={() => setPage(p => p + 1)}
+            className="w-10 h-10 flex items-center justify-center rounded-lg border border-zinc-200 hover:bg-zinc-50 disabled:opacity-30 transition-all font-bold"
+          >
+            <ChevronRight size={18} />
+          </Button>
         </div>
       </div>
 
-      {/* Detail Overlay - Lazy loaded and Wrapped in Suspense */}
-      <Suspense fallback={null}>
-        <CustomerDetailPanel 
-          customer={selectedCustomer}
-          isOpen={isPanelOpen}
-          onClose={() => setIsPanelOpen(false)}
-          onStatusChange={handleStatusChange}
-          onDelete={handleDelete}
-        />
-      </Suspense>
+      {/* Customer Detail Side Panel */}
+      <CustomerDetailPanel 
+        customer={selectedCustomer}
+        isOpen={isPanelOpen}
+        onClose={() => setIsPanelOpen(false)}
+        onStatusChange={handleStatusChange}
+      />
     </div>
   );
 }

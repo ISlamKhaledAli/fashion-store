@@ -37,6 +37,12 @@ const statusVariants: Record<string, VariantConfig> = {
   PAID: { bg: "bg-green-100 text-green-700 border-green-200", glow: true },
   CANCELLED: { bg: "bg-red-50 text-red-700 border-red-100/50" },
   BANNED: { bg: "bg-red-50 text-red-700 border-red-100/50", glow: true },
+
+  // Discount Specific
+  EXPIRED: { bg: "bg-red-50 text-red-600 border-red-100/50" },
+  SCHEDULED: { bg: "bg-blue-50 text-blue-600 border-blue-100/50" },
+  DISABLED: { bg: "bg-zinc-100 text-zinc-500 border-zinc-200" },
+  LIMIT_REACHED: { bg: "bg-orange-50 text-orange-600 border-orange-100/50" },
 };
 
 export const StatusBadge = ({ status, className, children }: StatusBadgeProps) => {

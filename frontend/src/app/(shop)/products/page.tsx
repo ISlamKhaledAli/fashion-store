@@ -56,9 +56,11 @@ function filterReducer(state: FilterState, action: Action): FilterState {
       return { ...state, brand };
     }
     case "toggle_color": {
-      const color = state.color.includes(action.payload)
-        ? state.color.filter((c) => c !== action.payload)
-        : [...state.color, action.payload];
+      const normalizedPayload = action.payload.toLowerCase().trim();
+      const isSelected = state.color.some(c => c.toLowerCase().trim() === normalizedPayload);
+      const color = isSelected
+        ? state.color.filter(c => c.toLowerCase().trim() !== normalizedPayload)
+        : [...state.color, normalizedPayload];
       return { ...state, color };
     }
     case "set_max_price":

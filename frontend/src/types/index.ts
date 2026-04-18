@@ -48,6 +48,7 @@ export interface Variant {
   colorHex: string;
   stock: number;
   sku?: string;
+  updatedAt?: string;
 }
 
 export interface Product {

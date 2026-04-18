@@ -242,6 +242,7 @@ model Discount {
   minOrder  Float?
   maxUses   Int?
   usedCount Int       @default(0)
+  startDate DateTime?
   expiresAt DateTime?
   isActive  Boolean   @default(true)
   createdAt DateTime  @default(now())

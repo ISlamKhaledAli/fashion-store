@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, memo, useMemo } from "react";
-import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Upload, Check, Trash2, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
+import { Upload, Check, Trash2, ArrowRight } from "lucide-react";
 import { Product, Category, Brand, Variant } from "@/types";
 import { Button } from "@/components/ui/Button";
-import { CloseButton } from "@/components/ui/CloseButton";
+import { AdminDrawer } from "./AdminDrawer";
 import { Input } from "../ui/Input";
 import { Textarea } from "../ui/Textarea";
 import { Select } from "../ui/Select";
@@ -111,8 +110,10 @@ const IdentitySection = memo(({
           <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Toggle visibility on the main archival feed</p>
         </div>
         <div className="flex items-center gap-4">
-          <button
+          <Button
             type="button"
+            variant="none"
+            size="none"
             onClick={() => onFieldChange("status", status === 'ACTIVE' ? 'DRAFT' : 'ACTIVE')}
             disabled={status === 'ARCHIVED'}
             className={cn(
@@ -127,7 +128,7 @@ const IdentitySection = memo(({
               transition={{ duration: 0.2, ease: "easeInOut" }}
               className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm pointer-events-none" 
             />
-          </button>
+          </Button>
           
           <Button
             type="button"
@@ -434,20 +435,6 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     }
   }, [product, isOpen]);
 
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === "Escape") onClose();
-      };
-      window.addEventListener("keydown", handleKeyDown);
-      return () => {
-        document.body.style.overflow = "unset";
-        window.removeEventListener("keydown", handleKeyDown);
-      };
-    }
-  }, [isOpen, onClose]);
-
   const handleNameChange = React.useCallback((name: string) => {
     const slug = name.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
     setFormData(prev => ({ ...prev, name, slug }));
@@ -570,125 +557,95 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
 
   if (!mounted) return null;
 
-  return createPortal(
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-[100]">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+  return (
+    <AdminDrawer
+      isOpen={isOpen}
+      onClose={onClose}
+      title={product ? "Refine Piece" : "New Archive"}
+      subtitle={product ? `Collection Item REF: ${product.id.slice(-6).toUpperCase()}` : "Initiating catalog entry"}
+      footer={
+        <>
+          <Button
+            variant="outline"
+            className="flex-1 font-black uppercase tracking-[0.2em] text-[10px] py-6 rounded-sm"
             onClick={onClose}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
-          />
-          <motion.div
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 250 }}
-            style={{ willChange: "transform", z: 0 }}
-            className="fixed inset-y-0 right-0 w-full sm:w-[420px] bg-white shadow-[0_10px_40px_rgba(0,0,0,0.2)] z-50 flex flex-col"
+            disabled={fetching}
           >
-            {/* Header */}
-            <div className="px-8 py-8 border-b border-zinc-100 flex justify-between items-center sticky top-0 bg-white/80 backdrop-blur-xl z-20">
-              <div className="space-y-1">
-                <h3 className="text-2xl font-bold tracking-tight text-zinc-950">
-                  {product ? "Refine Piece" : "New Archive"}
-                </h3>
-                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.2em]">
-                  {product ? `Collection Item REF: ${product.id.slice(-6).toUpperCase()}` : "Initiating catalog entry"}
+            Discard
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            className="flex-1 font-black uppercase tracking-[0.2em] text-[10px] py-6 rounded-sm shadow-2xl shadow-black/10 transition-all hover:-translate-y-0.5"
+            onClick={handleSubmit}
+            isLoading={loading}
+            disabled={fetching}
+          >
+            {product ? "Sync Archive" : "Manifest Collection"}
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-16">
+        {fetching ? (
+          <FormSkeleton />
+        ) : (
+          <>
+            <IdentitySection 
+              {...formData}
+              categoryOptions={flatCategoryOptions}
+              brandOptions={brandOptions}
+              onNameChange={handleNameChange}
+              onFieldChange={handleFieldChange}
+              errors={formErrors}
+            />
+
+            <PricingSection 
+              {...formData}
+              margin={margin}
+              onFieldChange={handleFieldChange}
+              errors={formErrors}
+            />
+
+            <MediaSection 
+              images={formData.images}
+              onUpload={handleImageUpload}
+              onSetMain={handleSetMain}
+              onRemove={handleRemoveImage}
+            />
+
+            <section>
+              <ProductVariantsTable 
+                variants={formData.variants} 
+                onChange={(variants) => handleFieldChange("variants", variants)} 
+                errors={formErrors}
+              />
+            </section>
+
+            <section className="space-y-8">
+              <div className="flex items-center gap-4">
+                <div className="h-[1px] flex-1 bg-zinc-100" />
+                <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Search Presence</h4>
+                <div className="h-[1px] flex-1 bg-zinc-100" />
+              </div>
+              
+              <div className="p-8 bg-zinc-50/50 rounded-xl space-y-3 border border-zinc-100 shadow-inner">
+                <p className="text-[#1a0dab] text-xl font-medium tracking-tight truncate hover:underline cursor-pointer">
+                  {formData.name || "Product Archive Piece"} | Editorial curator
+                </p>
+                <div className="flex items-center gap-1.5 text-[#006621] text-xs font-medium">
+                  <span>thecurator.com</span>
+                  <ArrowRight size={10} className="text-zinc-400" />
+                  <span className="truncate">{formData.slug || "item-pathway"}</span>
+                </div>
+                <p className="text-zinc-500 text-[13px] leading-relaxed line-clamp-2 italic font-serif">
+                  {formData.description || "Refining the intersection of modern utility and timeless editorial aesthetics... "}
                 </p>
               </div>
-              <CloseButton onClick={onClose} />
-            </div>
-
-            {/* Scroll Area */}
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto no-scrollbar px-8 py-10 space-y-16">
-              {fetching ? (
-                <FormSkeleton />
-              ) : (
-                <>
-                  <IdentitySection 
-                    {...formData}
-                    categoryOptions={flatCategoryOptions}
-                    brandOptions={brandOptions}
-                    onNameChange={handleNameChange}
-                    onFieldChange={handleFieldChange}
-                    errors={formErrors}
-                  />
-
-                  <PricingSection 
-                    {...formData}
-                    margin={margin}
-                    onFieldChange={handleFieldChange}
-                    errors={formErrors}
-                  />
-
-                  <MediaSection 
-                    images={formData.images}
-                    onUpload={handleImageUpload}
-                    onSetMain={handleSetMain}
-                    onRemove={handleRemoveImage}
-                  />
-
-                  <section>
-                    <ProductVariantsTable 
-                      variants={formData.variants} 
-                      onChange={(variants) => handleFieldChange("variants", variants)} 
-                      errors={formErrors}
-                    />
-                  </section>
-
-                  <section className="space-y-8">
-                    <div className="flex items-center gap-4">
-                      <div className="h-[1px] flex-1 bg-zinc-100" />
-                      <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Search Presence</h4>
-                      <div className="h-[1px] flex-1 bg-zinc-100" />
-                    </div>
-                    
-                    <div className="p-8 bg-zinc-50/50 rounded-xl space-y-3 border border-zinc-100 shadow-inner">
-                      <p className="text-[#1a0dab] text-xl font-medium tracking-tight truncate hover:underline cursor-pointer">
-                        {formData.name || "Product Archive Piece"} | Editorial curator
-                      </p>
-                      <div className="flex items-center gap-1.5 text-[#006621] text-xs font-medium">
-                        <span>thecurator.com</span>
-                        <ArrowRight size={10} className="text-zinc-400" />
-                        <span className="truncate">{formData.slug || "item-pathway"}</span>
-                      </div>
-                      <p className="text-zinc-500 text-[13px] leading-relaxed line-clamp-2 italic font-serif">
-                        {formData.description || "Refining the intersection of modern utility and timeless editorial aesthetics... "}
-                      </p>
-                    </div>
-                  </section>
-                </>
-              )}
-            </form>
-
-            {/* Footer */}
-            <div className="px-8 py-8 border-t border-zinc-100 bg-white sticky bottom-0 flex gap-4 shadow-[0_-20px_60px_rgba(0,0,0,0.02)] z-20">
-              <Button
-                variant="outline"
-                className="flex-1 font-black uppercase tracking-[0.2em] text-[10px] py-6 rounded-sm"
-                onClick={onClose}
-                disabled={fetching}
-              >
-                Discard
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                className="flex-1 font-black uppercase tracking-[0.2em] text-[10px] py-6 rounded-sm shadow-2xl shadow-black/10 transition-all hover:-translate-y-0.5"
-                onClick={handleSubmit}
-                isLoading={loading}
-                disabled={fetching}
-              >
-                {product ? "Sync Archive" : "Manifest Collection"}
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>,
-    document.body
+            </section>
+          </>
+        )}
+      </form>
+    </AdminDrawer>
   );
 };

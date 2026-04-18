@@ -14,12 +14,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import { Activity } from "lucide-react";
 
 interface RevenueChartProps {
   data: { date: string; amount: number }[];
   isLoading?: boolean;
-  range: "30D" | "90D";
-  onRangeChange: (range: "30D" | "90D") => void;
+  range?: "30D" | "90D";
+  onRangeChange?: (range: "30D" | "90D") => void;
 }
 
 const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) => {
@@ -52,67 +53,56 @@ CustomTooltip.displayName = "CustomTooltip";
 export const RevenueChart = ({ data, isLoading, range, onRangeChange }: RevenueChartProps) => {
   if (isLoading) {
     return (
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-zinc-100 h-full">
+      <div className="bg-surface-container-lowest p-8 rounded-xl cinematic-shadow border border-outline-variant/10 h-full">
         <div className="flex justify-between items-center mb-8">
           <div className="space-y-2">
             <Skeleton className="h-6 w-48" />
-            <Skeleton className="h-4 w-64" />
           </div>
-          <Skeleton className="h-8 w-24" />
         </div>
-        <Skeleton className="h-[300px] w-full" />
+        <Skeleton className="h-[280px] w-full" />
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-8 rounded-2xl shadow-sm border border-zinc-100 flex flex-col h-full group hover:shadow-md transition-all duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <div>
-          <h2 className="text-lg font-bold tracking-tight text-zinc-950">Revenue Over Time</h2>
-          <p className="text-sm text-zinc-400 font-light">Earnings from the last {range === "30D" ? "30 days" : "90 days"} of sales.</p>
-        </div>
-        <div className="flex bg-zinc-50 rounded-xl p-1 border border-zinc-100">
-          {(["30D", "90D"] as const).map((r) => (
-            <Button 
-              key={r}
-              variant="none"
-              size="none"
-              onClick={() => onRangeChange(r)}
-              className={cn(
-                "px-4 py-1.5 text-[10px] font-black tracking-widest uppercase rounded-lg transition-all duration-300",
-                range === r ? "bg-white text-zinc-950 shadow-sm ring-1 ring-zinc-950/5" : "text-zinc-400 hover:text-zinc-600"
-              )}
-            >
-              {r}
-            </Button>
-          ))}
+    <div className="bg-surface-container-lowest p-8 rounded-xl cinematic-shadow border border-outline-variant/10 flex flex-col h-full group transition-all duration-500">
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-lg font-medium tracking-tight text-on-surface">Revenue Over Time</h2>
+        <div className="flex gap-4">
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 bg-primary rounded-full"></span>
+            <span className="text-xs font-medium">Current</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 bg-surface-container-high rounded-full"></span>
+            <span className="text-xs font-medium text-on-surface-variant">Previous</span>
+          </div>
         </div>
       </div>
 
-      <div className="h-[300px] w-full mt-auto flex items-center justify-center">
+      <div className="h-[280px] w-full mt-auto flex items-center justify-center">
         {(!data || !Array.isArray(data) || data.length === 0) ? (
-          <div className="flex flex-col items-center gap-3 text-zinc-200">
-            <div className="w-12 h-12 rounded-full bg-zinc-50 flex items-center justify-center">
-              <span className="material-symbols-outlined text-2xl">monitoring</span>
+          <div className="flex flex-col items-center gap-3 text-on-surface-variant/20">
+            <div className="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center">
+              <Activity className="w-6 h-6 text-on-surface-variant/40" />
             </div>
-            <p className="text-sm font-bold uppercase tracking-widest text-zinc-300">No telemetry data</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/40">No data available</p>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data}>
               <defs>
                 <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#09090b" stopOpacity={0.08}/>
-                  <stop offset="95%" stopColor="#09090b" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#030304" stopOpacity={0.03}/>
+                  <stop offset="95%" stopColor="#030304" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eeeef0" />
               <XAxis 
                 dataKey="date" 
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 9, fontWeight: 700, fill: "#a1a1aa" }}
+                tick={{ fontSize: 10, fontWeight: 500, fill: "#868587" }}
                 dy={12}
                 tickFormatter={(val) => {
                   const date = new Date(val);
@@ -123,29 +113,28 @@ export const RevenueChart = ({ data, isLoading, range, onRangeChange }: RevenueC
               <YAxis 
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 9, fontWeight: 700, fill: "#a1a1aa" }}
+                tick={{ fontSize: 10, fontWeight: 500, fill: "#868587" }}
                 tickFormatter={(value) => `$${value >= 1000 ? (value/1000).toFixed(1) + 'k' : value}`}
                 dx={-10}
               />
               <Tooltip 
                 content={<CustomTooltip />} 
-                cursor={{ stroke: '#e4e4e7', strokeWidth: 1, strokeDasharray: '4 4' }}
+                cursor={{ stroke: '#c7c6ca', strokeWidth: 1, strokeDasharray: '4 4' }}
                 wrapperStyle={{ outline: 'none' }}
               />
               <Area 
                 type="monotone" 
                 dataKey="amount" 
-                stroke="#09090b" 
+                stroke="#030304" 
                 strokeWidth={2.5}
                 fillOpacity={1} 
                 fill="url(#revenueGradient)" 
                 animationDuration={1500}
                 activeDot={{ 
-                  r: 5, 
+                  r: 4, 
                   strokeWidth: 2, 
                   stroke: '#fff', 
-                  fill: '#09090b',
-                  className: "shadow-lg shadow-zinc-950/20"
+                  fill: '#030304',
                 }}
               />
             </AreaChart>
@@ -153,5 +142,6 @@ export const RevenueChart = ({ data, isLoading, range, onRangeChange }: RevenueC
         )}
       </div>
     </div>
+
   );
 };

@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { 
-  PieChart, 
-  Pie, 
-  Cell, 
+import {
+  PieChart,
+  Pie,
+  Cell,
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
 import { motion, AnimatePresence } from "framer-motion";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { PieChart as PieIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface OrdersDonutProps {
@@ -17,157 +17,153 @@ interface OrdersDonutProps {
   isLoading?: boolean;
 }
 
-const COLORS: Record<string, string> = {
-  PROCESSING: "#fbbf24", // amber-400
-  SHIPPED: "#3b82f6",    // blue-500
-  DELIVERED: "#22c55e",  // green-500
-  CANCELLED: "#ef4444",   // red-500
+// Proper status colors
+const STATUS_COLORS: Record<string, string> = {
+  PROCESSING: "#F59E0B",  // amber
+  SHIPPED:    "#3B82F6",  // blue
+  DELIVERED:  "#10B981",  // green
+  CANCELLED:  "#EF4444",  // red
+  CANCELED:   "#EF4444",  // red (alternate spelling)
+  PENDING:    "#8B5CF6",  // purple
+  FULFILLED:  "#10B981",  // green
+  RETURNED:   "#F97316",  // orange
 };
 
-const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { value: number; payload: { name: string } }[] }) => {
-  return (
-    <AnimatePresence>
-      {active && payload && payload.length && (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95, y: 4 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 4 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
-          className="bg-black text-white px-2 py-1.5 rounded-md shadow-lg pointer-events-none z-50 flex flex-col items-center min-w-[80px]"
-        >
-          <span className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-0.5">
-            {payload[0].payload.name}
-          </span>
-          <div className="flex items-center gap-1">
-            <span className="text-xs font-bold leading-none">{payload[0].value}</span>
-            <span className="text-[9px] font-medium opacity-40 uppercase">Orders</span>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-};
+const getStatusColor = (name: string): string =>
+  STATUS_COLORS[name.toUpperCase()] || "#6B7280";
+
+const CustomTooltip = ({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: { value: number; payload: { name: string } }[];
+}) => (
+  <AnimatePresence>
+    {active && payload && payload.length && (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 4 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 4 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
+        className="bg-black text-white px-2.5 py-2 rounded-md shadow-lg pointer-events-none z-50 flex flex-col items-center min-w-[90px]"
+      >
+        <span className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-0.5">
+          {payload[0].payload.name}
+        </span>
+        <div className="flex items-center gap-1">
+          <span className="text-sm font-bold leading-none">{payload[0].value.toLocaleString()}</span>
+          <span className="text-[9px] font-medium opacity-40 uppercase">Orders</span>
+        </div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
 CustomTooltip.displayName = "CustomTooltip";
 
 export const OrdersDonut = ({ data, isLoading }: OrdersDonutProps) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const total = data.reduce((acc, curr) => acc + curr.value, 0);
+  const total = Array.isArray(data) ? data.reduce((acc, curr) => acc + (curr.value || 0), 0) : 0;
 
   if (isLoading) {
     return (
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-zinc-100 flex flex-col items-center justify-center space-y-6">
-        <div className="w-full text-left">
-          <Skeleton className="h-6 w-32 mb-2" />
-          <Skeleton className="h-4 w-48 mb-6" />
-        </div>
-        <Skeleton className="h-[180px] w-[180px] rounded-full" />
-        <div className="grid grid-cols-2 gap-4 w-full px-4">
-          <Skeleton className="h-3 w-full" />
-          <Skeleton className="h-3 w-full" />
+      <div className="flex flex-col items-center gap-4 py-6 w-full h-full">
+        <h3 className="text-lg font-medium tracking-tight mb-8 w-full">Orders by Status</h3>
+        <div className="w-40 h-40 rounded-full bg-zinc-100 animate-pulse mx-auto" />
+        <div className="grid grid-cols-2 gap-4 w-full mt-8">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="flex flex-col gap-1 px-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-zinc-100 animate-pulse" />
+                <div className="w-16 h-3 rounded bg-zinc-100 animate-pulse" />
+              </div>
+              <div className="w-8 h-4 rounded bg-zinc-100 animate-pulse pl-4" />
+            </div>
+          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-8 rounded-2xl shadow-sm border border-zinc-100 flex flex-col h-full group hover:shadow-md transition-all duration-500 overflow-hidden">
-      <div className="mb-6">
-        <h2 className="text-lg font-bold tracking-tight text-zinc-950">Orders by Status</h2>
-        <p className="text-sm text-zinc-400 font-light">Direct fulfillment state distribution.</p>
-      </div>
-      
-      <div className="flex-1 flex flex-col items-center justify-center space-y-8">
+    <>
+      <h3 className="text-lg font-medium tracking-tight mb-8">Orders by Status</h3>
+
+      <div className="flex-1 flex flex-col items-center justify-center">
         {total === 0 ? (
-          <div className="flex flex-col items-center gap-3 text-zinc-200">
-            <div className="w-12 h-12 rounded-full bg-zinc-50 flex items-center justify-center">
-              <span className="material-symbols-outlined text-2xl">pie_chart</span>
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-44 h-44 rounded-full border-[18px] border-surface-container-high relative flex items-center justify-center">
+              <div className="text-center">
+                <span className="block text-2xl font-bold text-on-surface">0</span>
+                <span className="block text-[10px] text-on-surface-variant uppercase tracking-widest">Total</span>
+              </div>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-300">Archive empty</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/40">No order data</p>
           </div>
         ) : (
           <>
-            {/* Chart Area */}
-            <div className="relative w-[180px] h-[180px] flex items-center justify-center">
+            {/* Square donut chart */}
+            <div className="w-full aspect-square max-w-[200px] mx-auto relative flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={data}
                     cx="50%"
                     cy="50%"
-                    innerRadius={65}
-                    outerRadius={85}
-                    paddingAngle={6}
+                    innerRadius="60%"
+                    outerRadius="82%"
+                    paddingAngle={2}
                     dataKey="value"
                     stroke="none"
                     animationDuration={1200}
-                    animationBegin={0}
                     onMouseEnter={(_, index) => setActiveIndex(index)}
                     onMouseLeave={() => setActiveIndex(null)}
                   >
                     {data.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={COLORS[entry.name.toUpperCase()] || "#e4e4e7"} 
-                        className="cursor-pointer transition-all duration-300"
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={getStatusColor(entry.name)}
                         style={{
-                          opacity: activeIndex === null || activeIndex === index ? 1 : 0.4,
-                          filter: activeIndex === index ? "brightness(1.1)" : "none",
+                          opacity: activeIndex === null || activeIndex === index ? 1 : 0.5,
+                          transition: "opacity 0.2s ease",
                         }}
                       />
                     ))}
                   </Pie>
-                  <Tooltip 
-                    content={<CustomTooltip />} 
-                    cursor={false}
-                    offset={15}
-                    wrapperStyle={{ outline: 'none' }}
-                  />
+                  <Tooltip content={<CustomTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none translate-y-1">
-                <span className="text-4xl font-black tracking-tighter text-zinc-950 tabular-nums">
-                  {total}
+              {/* Center label */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-2xl font-bold text-on-surface tabular-nums">
+                  {total.toLocaleString()}
                 </span>
-                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] -mt-1">Total</span>
+                <span className="text-[10px] text-on-surface-variant uppercase tracking-widest">Total</span>
               </div>
             </div>
 
-            {/* Legend Area */}
-            <div className="w-full h-px bg-zinc-50" />
-            
-            <div className="w-full flex-1 flex flex-col gap-4 px-2">
-              {data.map((item, index) => {
-                const color = COLORS[item.name.toUpperCase()] || "#e4e4e7";
-                const percentage = total > 0 ? Math.round((item.value / total) * 100) : 0;
-                const isActive = activeIndex === index;
-                
-                return (
-                  <div 
-                    key={item.name} 
-                    className={cn(
-                      "flex items-center justify-between px-4 transition-all duration-300",
-                      activeIndex !== null && !isActive ? "opacity-30 scale-[0.98]" : "opacity-100 scale-100"
-                    )}
-                  >
-                    <div className="flex items-center gap-2.5 truncate">
-                      <div 
-                        className="w-2 h-2 rounded-full shrink-0 shadow-sm" 
-                        style={{ backgroundColor: color }} 
-                      />
-                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest truncate">
-                        {item.name}
-                      </span>
-                    </div>
-                    <span className="text-[11px] font-black text-zinc-950 tabular-nums">
-                      {percentage}%
+            {/* Legend — uses actual status colors */}
+            <div className="mt-8 grid grid-cols-2 gap-4 w-full">
+              {data.map((item) => (
+                <div key={item.name} className="flex flex-col">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: getStatusColor(item.name) }}
+                    />
+                    <span className="text-[11px] font-medium text-on-surface-variant capitalize">
+                      {item.name.charAt(0).toUpperCase() + item.name.slice(1).toLowerCase()}
                     </span>
                   </div>
-                );
-              })}
+                  <span className="text-sm font-bold pl-4 text-on-surface tabular-nums">
+                    {item.value.toLocaleString()}
+                  </span>
+                </div>
+              ))}
             </div>
           </>
         )}
       </div>
-    </div>
+    </>
   );
 };

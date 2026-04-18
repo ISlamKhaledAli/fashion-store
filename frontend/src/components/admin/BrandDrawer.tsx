@@ -72,8 +72,10 @@ const IdentitySection = memo(({
           <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Toggle visibility on the main archival feed</p>
         </div>
         <div className="flex items-center gap-4">
-          <button
+          <Button
             type="button"
+            variant="none"
+            size="none"
             onClick={() => onFieldChange("status", status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')}
             className={cn(
               "w-12 h-6 rounded-full relative transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 shrink-0",
@@ -86,7 +88,7 @@ const IdentitySection = memo(({
               transition={{ duration: 0.2, ease: "easeInOut" }}
               className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm pointer-events-none" 
             />
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -111,13 +113,15 @@ const MediaSection = memo(({ logo, onLogoUpload, onRemoveLogo, isUploading }: {
       {logo ? (
         <div className="relative aspect-[3/4] w-full rounded-xl bg-zinc-50 overflow-hidden border border-zinc-200 group lg:max-w-xs mx-auto flex items-center justify-center p-8">
           <img src={logo} className="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-110" alt="Logo Preview" />
-          <button
+          <Button
             type="button"
+            variant="none"
+            size="none"
             onClick={onRemoveLogo}
             className="absolute top-3 right-3 bg-white p-2 text-zinc-600 rounded-full shadow-md hover:bg-zinc-100 transition-colors z-10 cursor-pointer"
           >
             <X size={14} />
-          </button>
+          </Button>
         </div>
       ) : (
         <label className="flex items-center justify-center w-full aspect-[3/4] border-2 border-dashed border-zinc-200 rounded-xl hover:border-zinc-950 cursor-pointer transition-all duration-300 hover:bg-zinc-50 group lg:max-w-xs mx-auto">

@@ -103,6 +103,12 @@ export const adminApi = {
     api.get<ApiResponse<unknown>>("/admin/analytics/revenue", { params }),
   getTopProducts: () => 
     api.get<ApiResponse<unknown>>("/admin/analytics/top-products"),
+  getGeographicData: () => 
+    api.get<ApiResponse<unknown>>("/admin/analytics/geographic"),
+  getCategoryRevenue: () =>
+    api.get<ApiResponse<unknown>>("/admin/analytics/categories"),
+  getCustomerRetention: () =>
+    api.get<ApiResponse<unknown>>("/admin/analytics/retention"),
   getOrders: (params: { page?: number; limit?: number; search?: string; status?: OrderStatus }) => 
     api.get<ApiResponse<Order[]>>("/admin/orders", { params }),
   updateOrderStatus: (id: string, status: OrderStatus) => 
@@ -154,4 +160,16 @@ export const adminApi = {
     api.put<ApiResponse<Brand>>(`/brands/${id}`, data),
   deleteBrand: (id: string) =>
     api.delete<ApiResponse<unknown>>(`/brands/${id}`),
+  getInventory: () => 
+    api.get<ApiResponse<Product[]>>("/admin/inventory"),
+  updateStock: (variantId: string, stock: number) =>
+    api.put<ApiResponse<unknown>>(`/admin/inventory/${variantId}`, { stock }),
+  getDiscounts: () =>
+    api.get<ApiResponse<any[]>>("/admin/discounts"),
+  createDiscount: (data: any) =>
+    api.post<ApiResponse<any>>("/admin/discounts", data),
+  updateDiscount: (id: string, data: any) =>
+    api.put<ApiResponse<any>>(`/admin/discounts/${id}`, data),
+  deleteDiscount: (id: string) =>
+    api.delete<ApiResponse<unknown>>(`/admin/discounts/${id}`),
 };
