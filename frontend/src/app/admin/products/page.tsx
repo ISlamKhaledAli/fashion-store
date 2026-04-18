@@ -282,8 +282,9 @@ export default function AdminProductsPage() {
       toast.success("Piece purged from archives");
       const isMounted = { current: true };
       fetchProducts(isMounted);
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.message || "Critical failure. Data persists.";
+    } catch (err) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      const errorMsg = axiosErr.response?.data?.message || "Critical failure. Data persists.";
       toast.error(errorMsg);
     }
   }, []);

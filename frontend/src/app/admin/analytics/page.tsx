@@ -54,7 +54,7 @@ interface CustomerSummary {
 
 // --- Shared Tooltip ---
 
-const ChartTooltip = ({ active, payload, label }: any) => (
+const ChartTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number | string; name: string }[]; label?: string }) => (
   <AnimatePresence>
     {active && payload && payload.length && (
       <motion.div
@@ -67,7 +67,7 @@ const ChartTooltip = ({ active, payload, label }: any) => (
         <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-1.5">
           {label}
         </p>
-        {payload.map((entry: any, index: number) => (
+        {payload.map((entry: { value: number | string; name: string }, index: number) => (
           <div key={index} className="flex items-baseline gap-1.5">
             <span className="text-xs font-bold text-white leading-none">
               {typeof entry.value === 'number' ? entry.value.toLocaleString() : entry.value}
@@ -166,7 +166,7 @@ export default function AdminAnalyticsPage() {
         }
 
         if (customersRes.data.success) {
-          const customers = customersRes.data.data as any[];
+          const customers = customersRes.data.data as { id: string; name: string; email: string; avatar?: string; totalSpent?: number }[];
           setTopCustomers(
             customers
               .sort((a, b) => (b.totalSpent || 0) - (a.totalSpent || 0))

@@ -25,3 +25,24 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
     logger.error("Error sending email:", { error });
   }
 };
+
+export const sendOrderConfirmationEmail = async ({
+  to,
+  orderNumber,
+  items,
+  total,
+}: {
+  to: string;
+  orderNumber: string;
+  items: any[];
+  total: number;
+}) => {
+  const html = `
+    <h1>Order Confirmation</h1>
+    <p>Thank you for your order!</p>
+    <p>Order Number: <strong>${orderNumber}</strong></p>
+    <p>Total: $${total.toFixed(2)}</p>
+    <p>We will notify you when your items ship.</p>
+  `;
+  await sendEmail(to, "Order Confirmation - Fashion Store", html);
+};

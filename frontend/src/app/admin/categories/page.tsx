@@ -363,8 +363,9 @@ export default function AdminCategoriesPage() {
       setIsModalOpen(false);
       setEditingCategory(null);
       fetchCategories();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to save category");
+    } catch (error) {
+      const axiosErr = error as { response?: { data?: { message?: string } } };
+      toast.error(axiosErr.response?.data?.message || "Failed to save category");
     } finally {
       setIsSubmitting(false);
     }
@@ -379,8 +380,9 @@ export default function AdminCategoriesPage() {
       setIsDeleteDialogOpen(false);
       setCategoryToDelete(null);
       fetchCategories();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to delete category");
+    } catch (error) {
+      const axiosErr = error as { response?: { data?: { message?: string } } };
+      toast.error(axiosErr.response?.data?.message || "Failed to delete category");
     } finally {
       setIsSubmitting(false);
     }
@@ -392,7 +394,7 @@ export default function AdminCategoriesPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-950">Categories</h1>
           <p className="mt-2 text-sm text-zinc-500">
-            Manage your store's categories and hierarchy. Drag to reorder.
+            Manage your store&apos;s categories and hierarchy. Drag to reorder.
           </p>
         </div>
         <div className="flex items-center gap-3">

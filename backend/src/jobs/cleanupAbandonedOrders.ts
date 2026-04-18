@@ -1,6 +1,7 @@
 import { prisma } from "../lib/prisma";
 import stripe from "../services/stripe";
 import logger from "../utils/logger";
+import cron from "node-cron";
 
 export const cleanupAbandonedOrders = async () => {
   logger.info("Starting cleanup of abandoned orders...");
@@ -64,8 +65,11 @@ export const cleanupAbandonedOrders = async () => {
   }
 };
 
-/**
- * Note: To execute this automatically, wire this function up using a job runner
- * like node-cron, BullMQ, or trigger it via an external OS cron to hit an 
- * admin endpoint e.g., POST /admin/cron/cleanup.
- */
+
+export const setupCleanupJobs = () => {
+  logger.info("Initializing cleanup jobs...");
+  // Run every hour
+  cron.schedule("0 * * * *", async () => {
+    await cleanupAbandonedOrders();
+  });
+};

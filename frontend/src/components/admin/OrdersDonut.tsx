@@ -24,7 +24,7 @@ const COLORS: Record<string, string> = {
   CANCELLED: "#ef4444",   // red-500
 };
 
-const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
+const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { value: number; payload: { name: string } }[] }) => {
   return (
     <AnimatePresence>
       {active && payload && payload.length && (

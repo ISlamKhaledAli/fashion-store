@@ -33,7 +33,7 @@ const IdentitySection = memo(({
   description: string;
   status: string;
   onNameChange: (val: string) => void;
-  onFieldChange: (field: string, val: any) => void;
+  onFieldChange: (field: string, val: string) => void;
 }) => (
   <section className="space-y-8">
     <div className="flex items-center gap-4">
@@ -170,7 +170,7 @@ export const BrandDrawer = React.memo(({
         name: editingBrand.name,
         slug: editingBrand.slug,
         description: editingBrand.description || "",
-        status: (editingBrand as any).status || "ACTIVE",
+        status: (editingBrand as Brand & { status?: string }).status || "ACTIVE",
         logo: editingBrand.logo || "",
       });
     } else {
@@ -207,7 +207,7 @@ export const BrandDrawer = React.memo(({
     }
   }, [editingBrand]);
 
-  const handleFieldChange = React.useCallback((field: string, value: any) => {
+  const handleFieldChange = React.useCallback((field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 

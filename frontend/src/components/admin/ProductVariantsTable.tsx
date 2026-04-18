@@ -13,7 +13,7 @@ interface ProductVariantsTableProps {
   errors?: Record<string, string>;
 }
 
-const VariantRow = ({ variant, index, onUpdate, onRemove, errors }: any) => {
+const VariantRow = ({ variant, index, onUpdate, onRemove, errors }: { variant: Partial<Variant>; index: number; onUpdate: (index: number, field: keyof Variant, value: string | number | undefined) => void; onRemove: (index: number) => void; errors?: Record<string, string> }) => {
   return (
     <tr className="group hover:bg-zinc-50 transition">
       <td className="px-4 py-3">
@@ -81,7 +81,7 @@ export const ProductVariantsTable = ({ variants, onChange, errors }: ProductVari
     onChange(variants.filter((_, i) => i !== index));
   };
 
-  const updateRow = (index: number, field: keyof Variant, value: any) => {
+  const updateRow = (index: number, field: keyof Variant, value: string | number | undefined) => {
     const updated = [...variants];
     updated[index] = { ...updated[index], [field]: value };
     onChange(updated);

@@ -44,7 +44,7 @@ export const ShippingStep = ({ onNext, initialData }: ShippingStepProps) => {
       try {
         const res = await cartApi.getShippingMethods();
         if (res.data.success) {
-          setShippingMethods(res.data.data as any);
+          setShippingMethods(res.data.data as ShippingMethod[]);
         }
       } catch (err) {
         console.error("Failed to fetch shipping methods", err);

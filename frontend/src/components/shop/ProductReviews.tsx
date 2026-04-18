@@ -38,7 +38,7 @@ export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductRev
           
           // Check if current user has already reviewed
           if (user) {
-            const userReview = fetchedReviews.some(r => r.user?.name === user.name);
+            const userReview = fetchedReviews.some(r => r.userId === user.id);
             setHasReviewed(userReview);
           }
         }

@@ -24,7 +24,7 @@ export const useProductList = (config: UseProductListConfig = {}) => {
         const { limit = 8, excludeId, category, featured } = config;
         
         // Prepare params for API call
-        const params: Record<string, any> = { limit };
+        const params: Record<string, string | number | boolean> = { limit };
         if (category) params.category = category;
         if (featured !== undefined) params.featured = featured;
 

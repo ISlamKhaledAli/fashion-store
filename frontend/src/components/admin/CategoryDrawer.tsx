@@ -40,7 +40,7 @@ const IdentitySection = memo(({
   parentId: string;
   parentOptions: { label: string; value: string }[];
   onNameChange: (val: string) => void;
-  onFieldChange: (field: string, val: any) => void;
+  onFieldChange: (field: string, val: string) => void;
 }) => (
   <section className="space-y-8">
     <div className="flex items-center gap-4">
@@ -229,7 +229,7 @@ export const CategoryDrawer = React.memo(({
     }
   }, [editingCategory]);
 
-  const handleFieldChange = React.useCallback((field: string, value: any) => {
+  const handleFieldChange = React.useCallback((field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 

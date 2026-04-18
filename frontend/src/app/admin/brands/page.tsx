@@ -68,8 +68,9 @@ export default function AdminBrandsPage() {
       setIsDrawerOpen(false);
       setEditingBrand(null);
       fetchBrands();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to save brand");
+    } catch (error) {
+      const axiosErr = error as { response?: { data?: { message?: string } } };
+      toast.error(axiosErr.response?.data?.message || "Failed to save brand");
     } finally {
       setIsSubmitting(false);
     }
@@ -84,8 +85,9 @@ export default function AdminBrandsPage() {
       setIsDeleteDialogOpen(false);
       setBrandToDelete(null);
       fetchBrands();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to delete brand");
+    } catch (error) {
+      const axiosErr = error as { response?: { data?: { message?: string } } };
+      toast.error(axiosErr.response?.data?.message || "Failed to delete brand");
     } finally {
       setIsSubmitting(false);
     }
@@ -188,10 +190,10 @@ export default function AdminBrandsPage() {
                       </div>
                     </td>
                     <td className="py-4 px-6 text-sm text-zinc-600 font-medium">
-                      {(brand as any)._count?.products || 0} <span className="text-zinc-400 font-normal">Products</span>
+                      {(brand as Brand & { _count?: { products: number } })._count?.products || 0} <span className="text-zinc-400 font-normal">Products</span>
                     </td>
                     <td className="py-4 px-6">
-                      <StatusBadge status={(brand as any).status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE'} />
+                      <StatusBadge status={(brand as Brand & { status?: string }).status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE'} />
                     </td>
                     <td className="py-4 px-6 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -242,13 +244,13 @@ export default function AdminBrandsPage() {
                     <div>
                       <h3 className="font-bold text-zinc-950 text-xl tracking-tight text-center">{brand.name}</h3>
                       <p className="text-sm text-zinc-400 mt-2 line-clamp-2 text-center italic font-serif leading-relaxed px-4">
-                        {(brand as any).description || 'No curated mission statement available for this maison.'}
+                        {(brand as Brand & { description?: string }).description || 'No curated mission statement available for this maison.'}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between mt-8 pt-6 border-t border-zinc-50">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">{(brand as any)._count?.products || 0} Pieces</span>
-                    <StatusBadge status={(brand as any).status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE'} />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">{(brand as Brand & { _count?: { products: number } })._count?.products || 0} Pieces</span>
+                    <StatusBadge status={(brand as Brand & { status?: string }).status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE'} />
                   </div>
                 </div>
               ))}

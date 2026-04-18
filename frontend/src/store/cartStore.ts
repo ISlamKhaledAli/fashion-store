@@ -61,7 +61,7 @@ export const useCartStore = create<CartState>()(
             if (serverCart.data.success) {
               get().syncFromServer(serverCart.data.data);
             }
-          } catch (err) {
+          } catch {
             set({ items: previousItems });
             toast.error("Failed to add item to cart. Please try again.");
           } finally {
@@ -73,10 +73,7 @@ export const useCartStore = create<CartState>()(
       },
       setItems: (items) => set({ items }),
       syncFromServer: (serverData: unknown) => {
-        const data = serverData as { items?: any[] };
-        if (!data?.items) return;
-        
-        const mappedItems = data.items.map((i: {
+        type ServerCartItem = {
           id: string;
           variantId: string;
           variant: {
@@ -91,7 +88,11 @@ export const useCartStore = create<CartState>()(
             };
           };
           quantity: number;
-        }) => ({
+        };
+        const data = serverData as { items?: ServerCartItem[] };
+        if (!data?.items) return;
+        
+        const mappedItems = data.items.map((i) => ({
           id: i.id,
           cartItemId: i.id,
           variantId: i.variantId,
@@ -123,7 +124,7 @@ export const useCartStore = create<CartState>()(
         if (isAuthenticated && item?.cartItemId) {
           try {
             await cartApi.removeItem(item.cartItemId);
-          } catch (err) {
+          } catch {
             set({ items: previousItems });
             toast.error("Failed to remove item. Please try again.");
           } finally {
@@ -153,7 +154,7 @@ export const useCartStore = create<CartState>()(
         if (isAuthenticated && item.cartItemId) {
           try {
             await cartApi.updateQuantity(item.cartItemId, quantity);
-          } catch (err) {
+          } catch {
             set({ items: previousItems });
             toast.error("Failed to update quantity. Please try again.");
           } finally {

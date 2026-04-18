@@ -16,13 +16,13 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 interface RevenueChartProps {
-  data: Record<string, any>[];
+  data: { date: string; amount: number }[];
   isLoading?: boolean;
   range: "30D" | "90D";
   onRangeChange: (range: "30D" | "90D") => void;
 }
 
-const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
+const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) => {
   return (
     <AnimatePresence>
       {active && payload && payload.length && (

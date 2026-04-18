@@ -36,7 +36,7 @@ const CheckoutForm = ({ onNext, onBack, paymentIntentId, addressId, shippingMeth
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || !paymentIntentId) return;
 
     setLoading(true);
     setError(null);
@@ -50,33 +50,13 @@ const CheckoutForm = ({ onNext, onBack, paymentIntentId, addressId, shippingMeth
         return;
       }
 
-      // 2. Confirm the payment with Stripe FIRST
-      const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/checkout?step=review&return_from_stripe=true`,
-        },
-        redirect: "if_required",
-      });
-
-      if (confirmError) {
-        setError(confirmError.message || "Payment confirmation failed");
-        setLoading(false);
-        return;
-      }
-
-      if (!paymentIntent || (paymentIntent.status !== "succeeded" && paymentIntent.status !== "processing")) {
-        setError("Payment was not completed. Please try again.");
-        setLoading(false);
-        return;
-      }
-
-      // 3. Create the order AFTER payment is confirmed
+      // 2. Create the order FIRST (status: PENDING/UNPAID)
+      // We pass the existing paymentIntentId so the backend links them
       let orderId = "";
       try {
         const orderRes = await api.post("/orders", {
           addressId,
-          stripePaymentId: paymentIntent.id,
+          stripePaymentId: paymentIntentId,
           notes: "Created via checkout flow",
           shippingMethod,
           promoCode: promoCode || undefined,
@@ -95,14 +75,46 @@ const CheckoutForm = ({ onNext, onBack, paymentIntentId, addressId, shippingMeth
         return;
       }
 
-      // 4. Success — pass the order ID up to the parent
-      onNext(paymentIntent.client_secret || "", orderId);
+      // 3. Confirm the payment with Stripe
+      const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/checkout?step=review&return_from_stripe=true&order_id=${orderId}`,
+        },
+        redirect: "if_required",
+      });
+
+      if (confirmError) {
+        // Payment failed — order stays in DB as PENDING/UNPAID, user can retry
+        setError(confirmError.message || "Payment confirmation failed");
+        setLoading(false);
+        return;
+      }
+
+      if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing")) {
+        // 4. Verification/Acknowledge Success (Frontend confirmation)
+        try {
+          await api.put(`/orders/${orderId}/payment`, {
+            stripePaymentId: paymentIntent.id,
+            paymentStatus: "PAID"
+          });
+        } catch (err) {
+          // Soft failure — the webhook will catch it anyway
+          console.error("Failed to acknowledge payment success on frontend:", err);
+        }
+
+        // 5. Success — pass the order ID up to the parent
+        onNext(paymentIntent.client_secret || "", orderId);
+      } else {
+        setError("Payment was not completed. Please try again.");
+      }
     } catch (err: unknown) {
       setError("An unexpected error occurred during payment.");
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-700">
@@ -149,26 +161,23 @@ export const PaymentStep = ({ onNext, onBack, shippingMethod = "standard" }: Pay
   const [addressId, setAddressId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { getTotalPrice, promoCode } = useCartStore();
+  const { getTotalPrice, promoCode, discountAmount } = useCartStore();
+  const [lastTotal, setLastTotal] = useState(0);
+
+  // Calculate current total for dependency tracking
+  const subtotal = getTotalPrice();
+  const currentTotal = subtotal + 10 - discountAmount; // Simplified local total for diffing
 
   useEffect(() => {
     const fetchIntent = async () => {
+      if (currentTotal <= 0) return;
+      
+      setLoading(true);
+      setError(null);
       try {
-        const subtotal = getTotalPrice();
-        if (subtotal <= 0) {
-          setError("Your cart appears to be empty.");
-          setLoading(false);
-          return;
-        }
-
         const addressRes = await addressApi.getAll();
-        const addresses = addressRes.data.data as { id: string }[];
-        if (!addresses || addresses.length === 0) {
-          setError("No confirmed address found. Please go back to shipping.");
-          setLoading(false);
-          return;
-        }
-        setAddressId(addresses[0].id);
+        const addresses = (addressRes.data?.data || []) as { id: string }[];
+        setAddressId(addresses[0]?.id || null);
 
         const token = useAuthStore.getState().accessToken;
 
@@ -186,17 +195,21 @@ export const PaymentStep = ({ onNext, onBack, shippingMethod = "standard" }: Pay
         if (res.data.success) {
           setClientSecret(res.data.data.clientSecret);
           setPaymentIntentId(res.data.data.paymentIntentId);
+          setLastTotal(currentTotal);
         }
       } catch (err: unknown) {
         const error = err as { response?: { data?: { message?: string } } };
         setError(error.response?.data?.message || "Failed to initialize payment. Please try again.");
-
       } finally {
         setLoading(false);
       }
     };
-    fetchIntent();
-  }, [getTotalPrice]);
+
+    if (currentTotal !== lastTotal && currentTotal > 0) {
+      fetchIntent();
+    }
+  }, [currentTotal, shippingMethod, promoCode]);
+
 
   if (loading) {
     return (

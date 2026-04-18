@@ -2,10 +2,12 @@ import { Request, Response, NextFunction } from "express";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { sendResponse } from "../utils/apiResponse";
-import { createOrderSchema } from "../validators/order.validator";
+import { createOrderSchema, updateOrderPaymentSchema } from "../validators/order.validator";
 import { createPaymentIntent } from "../services/stripe";
 import stripe from "../services/stripe";
 import { calculateOrderTotals } from "../utils/pricing";
+import { sendOrderConfirmationEmail } from "../services/email";
+import logger from "../utils/logger";
 import { NotFoundError, ConflictError, ValidationError } from "../utils/AppError";
 
 export const getOrders = async (req: Request, res: Response, next: NextFunction) => {
@@ -176,8 +178,8 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
         if (intent.amount !== expectedAmount) {
           throw new ValidationError("Payment amount mismatch");
         }
-        if (intent.status !== "succeeded") {
-          throw new ValidationError("Payment not completed");
+        if (!["succeeded", "requires_payment_method", "requires_confirmation", "processing"].includes(intent.status)) {
+          throw new ValidationError(`Payment in invalid state: ${intent.status}`);
         }
         if (intent.metadata.userId !== userId) {
           throw new ValidationError("Payment ownership mismatch");
@@ -240,6 +242,20 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
       clientSecret = paymentIntent.client_secret;
     }
 
+    try {
+      const dbUser = await prisma.user.findUnique({ where: { id: userId } });
+      if (dbUser && dbUser.email) {
+        await sendOrderConfirmationEmail({
+          to: dbUser.email,
+          orderNumber: order.id,
+          items: orderItems,
+          total: order.total
+        });
+      }
+    } catch (emailErr) {
+      logger.warn("Failed to send confirmation email:", emailErr);
+    }
+
     return sendResponse({
       res,
       status: 201,
@@ -273,6 +289,44 @@ export const cancelOrder = async (req: Request, res: Response, next: NextFunctio
     });
 
     return sendResponse({ res, status: 200, success: true, message: "Order cancelled" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateOrderPayment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id as string;
+    const { stripePaymentId, paymentStatus } = updateOrderPaymentSchema.parse(req.body);
+
+    const order = await prisma.order.findUnique({
+      where: { id: String(id) }
+    });
+
+    if (!order || order.userId !== userId) {
+      throw new NotFoundError("Order not found");
+    }
+
+    // Only allow updating if it's currently UNPAID or PENDING
+    // This prevents accidental downgrades if already PAID via webhook
+    const updatedOrder = await prisma.order.update({
+      where: { id: String(id) },
+      data: {
+        stripePaymentId,
+        paymentStatus: paymentStatus as any,
+        // If becoming PAID, we might also want to update the main order status
+        status: paymentStatus === "PAID" ? "PROCESSING" : order.status
+      }
+    });
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: `Order payment status updated to ${paymentStatus}`,
+      data: updatedOrder
+    });
   } catch (error) {
     next(error);
   }

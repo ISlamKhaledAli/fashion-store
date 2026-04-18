@@ -84,8 +84,6 @@ export const wishlistApi = {
 export const reviewApi = {
   create: (data: { productId: string; rating: number; title: string; body: string }) =>
     api.post<ApiResponse<unknown>>("/reviews", data),
-  getMine: (productId: string) =>
-    api.get<ApiResponse<unknown>>(`/reviews/mine/${productId}`),
 };
 
 export const addressApi = {

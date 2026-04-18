@@ -24,3 +24,9 @@ export const createOrderSchema = z.object({
 export const updateOrderStatusSchema = z.object({
   status: z.enum(["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"]),
 });
+
+export const updateOrderPaymentSchema = z.object({
+  stripePaymentId: z.string().min(1, "Payment ID is required"),
+  paymentStatus: z.enum(["PENDING", "PAID", "FAILED", "UNPAID"]).default("PAID"),
+});
+

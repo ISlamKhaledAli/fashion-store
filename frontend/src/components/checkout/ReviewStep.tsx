@@ -3,8 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useCartStore } from "@/store/cartStore";
-import { formatCurrency } from "@/lib/utils";
-import { orderApi } from "@/lib/api";
+
 interface ReviewStepProps {
   shippingData: any;
   paymentIntentId: string;
@@ -25,7 +24,7 @@ export const ReviewStep = ({ shippingData, paymentIntentId, onSuccess, onBack }:
       // paymentIntentId prop now actually holds the orderId passed forward.
       clearCart();
       onSuccess(paymentIntentId);
-    } catch (err: any) {
+    } catch {
       setError("An unexpected error occurred finalizing the order UI.");
     } finally {
       setLoading(false);

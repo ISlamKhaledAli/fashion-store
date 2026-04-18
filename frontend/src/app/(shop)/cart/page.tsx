@@ -30,6 +30,7 @@ export default function CartPage() {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Needed for hydration check
     setIsMounted(true);
     
     // Background sync — non-blocking, only for authenticated users
@@ -62,9 +63,10 @@ export default function CartPage() {
         setPromoMessage(res.data.data?.message || "Invalid promo code");
         setPromo(null, 0);
       }
-    } catch (err: any) {
+    } catch (err) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
       setPromoStatus("error");
-      setPromoMessage(err.response?.data?.message || "Error validating code");
+      setPromoMessage(axiosErr.response?.data?.message || "Error validating code");
     }
   };
 

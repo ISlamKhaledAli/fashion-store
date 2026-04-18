@@ -28,8 +28,8 @@ interface IdentitySectionProps {
   categoryOptions: { label: string; value: string }[];
   brandOptions: { label: string; value: string }[];
   onNameChange: (val: string) => void;
-  onFieldChange: (field: string, val: any) => void;
-  errors: any;
+  onFieldChange: (field: string, val: string) => void;
+  errors: Record<string, string>;
 }
 
 const IdentitySection = memo(({ 
@@ -154,8 +154,8 @@ const PricingSection = memo(({ price, comparePrice, cost, margin, onFieldChange,
   comparePrice?: number;
   cost?: number;
   margin: string;
-  onFieldChange: (field: string, val: number) => void;
-  errors: any;
+  onFieldChange: (field: string, val: number | string) => void;
+  errors: Record<string, string>;
 }) => (
   <section className="space-y-8">
     <div className="flex items-center gap-4">
@@ -199,7 +199,7 @@ const PricingSection = memo(({ price, comparePrice, cost, margin, onFieldChange,
 PricingSection.displayName = "PricingSection";
 
 const MediaSection = memo(({ images, onUpload, onSetMain, onRemove }: {
-  images: any[];
+  images: { url: string; publicId: string; isMain: boolean }[];
   onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSetMain: (idx: number) => void;
   onRemove: (idx: number) => void;
@@ -212,7 +212,7 @@ const MediaSection = memo(({ images, onUpload, onSetMain, onRemove }: {
     </div>
     
     <div className="grid grid-cols-3 gap-4">
-      {images.map((img: any, idx: number) => (
+      {images.map((img: { url: string; publicId: string; isMain: boolean }, idx: number) => (
         <motion.div 
           layout
           key={img.publicId} 
@@ -453,7 +453,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     setFormData(prev => ({ ...prev, name, slug }));
   }, []);
 
-  const handleFieldChange = React.useCallback((field: string, value: any) => {
+  const handleFieldChange = React.useCallback((field: string, value: string | number | Partial<Variant>[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
@@ -552,8 +552,9 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
       }
       onSuccess();
       onClose();
-    } catch (err: any) {
-      if (err.response?.status === 409) {
+    } catch (err) {
+      const axiosErr = err as { response?: { status?: number } };
+      if (axiosErr.response?.status === 409) {
         toast.error("Conflict: This SKU or Slug already exists in the archive.");
       } else {
         toast.error("Sync failed. Check credentials and required fields.");

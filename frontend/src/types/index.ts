@@ -153,6 +153,7 @@ export interface PaginationData {
 
 export interface Review {
   id: string;
+  userId: string;
   user?: {
     name: string;
     avatar?: string;

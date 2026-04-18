@@ -30,7 +30,7 @@ const MetricCard = React.memo(({
 }: { 
   label: string; 
   value: string | number; 
-  icon: any; 
+  icon: React.ElementType; 
   className?: string;
 }) => (
   <div className={cn(
@@ -99,6 +99,7 @@ export const CustomerDetailPanel = React.memo(({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Needed for hydration check on Portals
     setMounted(true);
   }, []);
 
@@ -117,7 +118,7 @@ export const CustomerDetailPanel = React.memo(({
   }, [isOpen, onClose]);
 
   // Memoize transaction list to prevent heavy re-renders during animation
-  const transactionStream = useMemo(() => {
+  const transactionStream = (() => {
     if (!customer?.orders) return null;
     return customer.orders.map((order) => (
       <TransactionItem 
@@ -125,7 +126,7 @@ export const CustomerDetailPanel = React.memo(({
         order={order} 
       />
     ));
-  }, [customer?.orders]);
+  })();
 
   if (!mounted) return null;
 
