@@ -1,11 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.calculateTotals = exports.clearCart = exports.removeFromCart = exports.updateCartItem = exports.addToCart = exports.getCart = void 0;
+exports.calculateTotals = exports.clearCart = exports.removeFromCart = exports.updateCartItem = exports.addToCart = exports.getCart = exports.getShippingMethods = void 0;
 const prisma_1 = require("../lib/prisma");
 const apiResponse_1 = require("../utils/apiResponse");
 const common_validator_1 = require("../validators/common.validator");
 const AppError_1 = require("../utils/AppError");
 const pricing_1 = require("../utils/pricing");
+const getShippingMethods = async (req, res, next) => {
+    try {
+        return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data: pricing_1.SHIPPING_METHODS });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getShippingMethods = getShippingMethods;
 const getCart = async (req, res, next) => {
     try {
         const userId = req.user?.id;

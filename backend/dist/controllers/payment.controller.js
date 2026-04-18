@@ -70,7 +70,7 @@ exports.stripeWebhook = stripeWebhook;
 const createIntent = async (req, res, next) => {
     try {
         const userId = req.user?.id;
-        const { amount: clientAmount, shippingMethod, promoCode } = req.body || {};
+        const { shippingMethod, promoCode } = req.body || {};
         let subtotal = 0;
         let itemsCount = 0;
         // 1. Try to get cart from database first (server-authoritative)
@@ -90,11 +90,6 @@ const createIntent = async (req, res, next) => {
                 subtotal += item.variant.product.price * item.quantity;
             }
             itemsCount = cart.items.length;
-        }
-        else if (clientAmount && typeof clientAmount === "number" && clientAmount > 0) {
-            // Fallback: use client-provided amount (Zustand cart)
-            subtotal = clientAmount;
-            itemsCount = 1; // placeholder
         }
         else {
             throw new AppError_1.ValidationError("Your cart is empty");

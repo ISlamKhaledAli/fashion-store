@@ -96,6 +96,12 @@ const createOrder = async (req, res, next) => {
         WHERE id IN (${client_1.Prisma.join(variantIds)}) 
         FOR UPDATE
       `;
+            // Step 1a.5: Runtime guard against negative/invalid quantities (Second layer of defense)
+            for (const item of orderItems) {
+                if (item.quantity < 1 || !Number.isInteger(item.quantity)) {
+                    throw new AppError_1.ValidationError(`Invalid quantity for item variant: ${item.variantId}`);
+                }
+            }
             // Step 1b: Verify stock and fetch fresh prices for ALL items
             for (const item of orderItems) {
                 const variant = await tx.variant.findUnique({
@@ -149,6 +155,20 @@ const createOrder = async (req, res, next) => {
                 discountAmount: rawDiscountAmount,
                 shippingMethod
             });
+            // Step 1c: Verify PaymentIntent if provided (Security check)
+            if (stripePaymentId) {
+                const intent = await stripe_2.default.paymentIntents.retrieve(stripePaymentId);
+                const expectedAmount = Math.round(totals.total * 100); // cents
+                if (intent.amount !== expectedAmount) {
+                    throw new AppError_1.ValidationError("Payment amount mismatch");
+                }
+                if (intent.status !== "succeeded") {
+                    throw new AppError_1.ValidationError("Payment not completed");
+                }
+                if (intent.metadata.userId !== userId) {
+                    throw new AppError_1.ValidationError("Payment ownership mismatch");
+                }
+            }
             // Step 2: Create Order
             const newOrder = await tx.order.create({
                 data: {
@@ -173,6 +193,7 @@ const createOrder = async (req, res, next) => {
             });
             // Step 3: Decrement stock
             for (const item of finalizedItems) {
+                // This must ALWAYS be a decrement with a positive validated quantity
                 await tx.variant.update({
                     where: { id: item.variantId },
                     data: { stock: { decrement: item.quantity } },

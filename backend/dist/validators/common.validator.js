@@ -13,13 +13,18 @@ exports.updateCartItemSchema = zod_1.z.object({
 exports.categorySchema = zod_1.z.object({
     name: zod_1.z.string().min(1, "Name is required"),
     slug: zod_1.z.string().min(1, "Slug is required"),
-    image: zod_1.z.string().url().optional(),
-    parentId: zod_1.z.string().optional(),
+    image: zod_1.z.string().url().optional().or(zod_1.z.literal("")),
+    parentId: zod_1.z.string().optional().nullable(),
+    description: zod_1.z.string().optional().nullable(),
+    status: zod_1.z.enum(["ACTIVE", "HIDDEN"]).optional(),
+    position: zod_1.z.number().int().optional(),
 });
 exports.brandSchema = zod_1.z.object({
     name: zod_1.z.string().min(1, "Name is required"),
     slug: zod_1.z.string().min(1, "Slug is required"),
-    logo: zod_1.z.string().url().optional(),
+    logo: zod_1.z.string().url().optional().or(zod_1.z.literal("")),
+    description: zod_1.z.string().optional().nullable(),
+    status: zod_1.z.enum(["ACTIVE", "INACTIVE"]).optional(),
 });
 exports.createDiscountSchema = zod_1.z.object({
     code: zod_1.z.string().min(3, "Code must be at least 3 characters"),

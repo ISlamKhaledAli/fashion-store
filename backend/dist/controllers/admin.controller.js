@@ -1,11 +1,50 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDiscounts = exports.createDiscount = exports.getInventory = exports.getTopProducts = exports.getRevenueAnalytics = exports.getAnalyticsOverview = exports.getCustomers = exports.bulkDeleteOrders = exports.bulkUpdateOrdersStatus = exports.updateOrderStatus = exports.getAdminOrders = void 0;
+exports.getDiscounts = exports.createDiscount = exports.getInventory = exports.getTopProducts = exports.getRevenueAnalytics = exports.getAnalyticsOverview = exports.deleteCustomer = exports.updateCustomerStatus = exports.getCustomers = exports.bulkDeleteOrders = exports.bulkUpdateOrdersStatus = exports.updateOrderStatus = exports.getAdminOrders = exports.reorderCategories = exports.getAdminCategories = void 0;
 const prisma_1 = require("../lib/prisma");
 const apiResponse_1 = require("../utils/apiResponse");
 const pagination_1 = require("../utils/pagination");
 const common_validator_1 = require("../validators/common.validator");
 const AppError_1 = require("../utils/AppError");
+const getAdminCategories = async (req, res, next) => {
+    try {
+        const categories = await prisma_1.prisma.category.findMany({
+            include: {
+                _count: { select: { products: true } },
+            },
+        });
+        return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data: categories });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getAdminCategories = getAdminCategories;
+const reorderCategories = async (req, res, next) => {
+    try {
+        const { items } = req.body;
+        if (!Array.isArray(items)) {
+            return (0, apiResponse_1.sendResponse)({ res, status: 400, success: false, message: "Invalid payload format" });
+        }
+        // Use a transaction to perform bulk updates efficiently
+        await prisma_1.prisma.$transaction(items.map((item) => prisma_1.prisma.category.update({
+            where: { id: item.id },
+            data: {
+                position: item.position,
+                ...(item.parentId === null
+                    ? { parent: { disconnect: true } }
+                    : item.parentId
+                        ? { parent: { connect: { id: item.parentId } } }
+                        : {})
+            },
+        })));
+        return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, message: "Categories reordered successfully" });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.reorderCategories = reorderCategories;
 const getAdminOrders = async (req, res, next) => {
     try {
         const { status, search, page, limit } = req.query;
@@ -115,12 +154,28 @@ const bulkDeleteOrders = async (req, res, next) => {
 exports.bulkDeleteOrders = bulkDeleteOrders;
 const getCustomers = async (req, res, next) => {
     try {
+        const { search, status } = req.query;
+        const where = { role: "CUSTOMER" };
+        if (status && status !== "ALL") {
+            where.status = status;
+        }
+        if (search) {
+            where.OR = [
+                { name: { contains: String(search), mode: "insensitive" } },
+                { email: { contains: String(search), mode: "insensitive" } },
+            ];
+        }
         const customers = await prisma_1.prisma.user.findMany({
-            where: { role: "CUSTOMER" },
+            where,
             include: {
                 _count: { select: { orders: true } },
-                orders: { select: { total: true } },
+                orders: {
+                    select: { id: true, total: true, status: true, createdAt: true },
+                    orderBy: { createdAt: "desc" },
+                    take: 5
+                },
             },
+            orderBy: { createdAt: "desc" },
         });
         const customersWithStats = customers.map(user => {
             const totalSpent = user.orders.reduce((acc, order) => acc + order.total, 0);
@@ -128,8 +183,18 @@ const getCustomers = async (req, res, next) => {
                 id: user.id,
                 name: user.name,
                 email: user.email,
-                orderCount: user._count.orders,
+                phone: user.phone,
+                avatar: user.avatar,
+                status: user.status,
+                joinDate: user.createdAt,
+                totalOrders: user._count.orders,
                 totalSpent,
+                orders: user.orders.map(o => ({
+                    id: o.id,
+                    total: o.total,
+                    status: o.status,
+                    date: o.createdAt
+                }))
             };
         });
         return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data: customersWithStats });
@@ -139,6 +204,35 @@ const getCustomers = async (req, res, next) => {
     }
 };
 exports.getCustomers = getCustomers;
+const updateCustomerStatus = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        const user = await prisma_1.prisma.user.update({
+            where: { id: String(id) },
+            data: { status },
+        });
+        return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data: user });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.updateCustomerStatus = updateCustomerStatus;
+const deleteCustomer = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        // Optional: Check if user has orders before deleting, or use cascade
+        await prisma_1.prisma.user.delete({
+            where: { id: String(id) },
+        });
+        return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, message: "Customer profile purged" });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.deleteCustomer = deleteCustomer;
 const getAnalyticsOverview = async (req, res, next) => {
     try {
         const totalRevenue = await prisma_1.prisma.order.aggregate({

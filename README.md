@@ -1,400 +1,237 @@
-# Fashion Store REST API
+# Fashion Store Monorepo
 
-Production-ready e-commerce backend for a fashion store platform, built with Node.js, Express, TypeScript, Prisma 7, PostgreSQL, JWT authentication, Stripe payments, Cloudinary uploads, and Zod validation. The repository also contains a frontend app, but this README focuses on the backend REST API in `backend/`.
+Full-stack fashion e-commerce project with:
+- `frontend/`: Next.js app (customer + admin interfaces)
+- `backend/`: Express + Prisma REST API
+
+This README now documents both apps and includes a real codebase audit snapshot.
+
+## Audit Snapshot (April 18, 2026)
+
+### Verification Run
+
+- Backend `npm run build`: Passed
+- Backend `npm test`: Passed (`5` suites, `19` tests)
+- Frontend `npm run build`: Failed (`EPERM` unlink on `.next/app-path-routes-manifest.json`)
+- Frontend `npm run lint`: Failed (`41` errors, `123` warnings)
+
+### Clean Architecture Status
+
+Current backend is layered but not strict Clean Architecture.
+
+What exists:
+- Presentation layer: routes + middleware
+- Input validation: Zod validators
+- Infra: Prisma client, Stripe, Cloudinary services
+- Shared utilities: pagination, pricing, auth helpers
+
+What is missing for strict Clean Architecture:
+- No dedicated application/use-case layer
+- No repository abstraction between controllers and Prisma
+- Business rules still live directly inside controllers
+- Domain logic and infrastructure concerns are mixed in some flows
+
+Conclusion:
+- Practical MVC-style architecture with good modular separation
+- Not a pure Clean Architecture implementation yet
+
+### Items Present But Not Wired / Not Used
+
+- `backend/src/jobs/cleanupAbandonedOrders.ts`
+  - Exists but is not scheduled or invoked by app startup.
+- `backend/src/services/email.ts`
+  - Implemented but not used by runtime flows.
+- `frontend/src/app/admin/inventory/page.tsx`
+  - Placeholder page (`Coming Soon`), no API integration.
+- `frontend/src/app/admin/discounts/page.tsx`
+  - Placeholder page (`Coming Soon`), no API integration.
+- `frontend/src/lib/api.ts` -> `reviewApi.getMine`
+  - Not used and points to `/reviews/mine/:productId` (route does not exist in backend).
+- `frontend/src/lib/api.ts` -> `authApi.refresh`
+  - Not used (token refresh is handled by Axios interceptor directly).
+- Frontend root lint artifacts:
+  - `lint_report.txt`, `lint_output.txt`, `lint_final.txt`, `lint_errors.txt`, `eslint-report.json`, `all_errors.txt`, `cat1_errors.json`
+  - Generated diagnostics, not part of runtime.
+
+### Items That Are Currently Risky / Not Working
+
+- Frontend build can fail on locked `.next` artifacts (Windows/OneDrive lock issue).
+- Lint quality gate currently fails with many TypeScript and hook-rule issues.
+- Checkout flow risk:
+  - In `PaymentStep`, payment is confirmed before order creation.
+  - If order creation fails after successful charge, payment can succeed without created order.
+- Payment intent refresh risk:
+  - `PaymentStep` effect does not re-run when `shippingMethod` or `promoCode` changes, so intent amount may get stale.
 
 ## Tech Stack
 
-- Node.js
-- Express 5
+### Frontend
+
+- Next.js 16 (App Router)
+- React 19
 - TypeScript
-- Prisma 7 with `prisma.config.ts`
-- PostgreSQL / Supabase
-- JWT access + refresh tokens
-- Stripe Payment Intents + webhooks
-- Cloudinary
-- Nodemailer
-- Zod
+- Tailwind CSS 4
+- Zustand (auth/cart/search/wishlist state)
+- Axios
+- Stripe Elements
+- Framer Motion
+
+### Backend
+
+- Node.js + Express 5
+- TypeScript
+- Prisma 7 + PostgreSQL
+- JWT (access + refresh)
+- Stripe (Payment Intents + webhooks)
+- Cloudinary uploads
+- Zod validation
 - Winston logging
-- Jest + Supertest + ts-jest
+- Jest + Supertest integration tests
 
-## Features
-
-- JWT authentication with access and refresh token flow
-- Product catalog with category, brand, search, filtering, sorting, and pagination
-- Variant-aware inventory management
-- Customer cart management
-- Order creation from cart with stock validation and transactional checkout
-- Stripe payment intent generation and webhook-based payment status updates
-- Product reviews and wishlists
-- Address book management
-- Admin-only product, category, brand, upload, analytics, inventory, and discount endpoints
-- Cloudinary-based image uploads
-- Structured API responses and centralized error handling
-- Integration test suite with isolated test database support and mocked external services
-
-## Project Structure
+## Repository Structure
 
 ```text
 fashion-store/
+|-- frontend/
+|   |-- src/app/               # Next.js routes (shop, auth, admin)
+|   |-- src/components/        # UI + feature components
+|   |-- src/store/             # Zustand stores
+|   |-- src/lib/               # Axios client + API wrappers + helpers
+|   `-- src/types/             # Shared frontend types
 |-- backend/
-|   |-- prisma/
-|   |   |-- migrations/         # Prisma migrations
-|   |   `-- schema.prisma       # Database schema
-|   |-- src/
-|   |   |-- controllers/        # Route handlers and business orchestration
-|   |   |-- lib/                # Shared Prisma client setup
-|   |   |-- middleware/         # Auth, admin, upload, rate limit, logger, errors
-|   |   |-- routes/             # Express route registration
-|   |   |-- services/           # Stripe, Cloudinary, email integrations
-|   |   |-- types/              # Express request typing
-|   |   |-- utils/              # Env validation, JWT, bcrypt, logger, API response helpers
-|   |   |-- validators/         # Zod request schemas
-|   |   |-- app.module.ts       # Express application composition
-|   |   `-- server.ts           # Runtime bootstrap / listener startup
-|   |-- tests/
-|   |   |-- helpers/            # Test factories and auth helpers
-|   |   |-- scripts/            # Test database preparation
-|   |   |-- auth.test.ts        # Auth integration tests
-|   |   |-- products.test.ts    # Product integration tests
-|   |   |-- cart.test.ts        # Cart integration tests
-|   |   |-- orders.test.ts      # Order integration tests
-|   |   |-- setup-env.ts        # Test env bootstrap
-|   |   `-- setup-tests.ts      # DB cleanup and service mocks
-|   |-- jest.config.js          # Jest runner configuration
-|   |-- prisma.config.ts        # Prisma 7 configuration
-|   |-- tsconfig.json
-|   `-- tsconfig.test.json
-`-- frontend/                   # Separate client application
+|   |-- prisma/                # Schema + migrations + seed
+|   |-- src/routes/            # Express routes
+|   |-- src/controllers/       # Request handlers + orchestration
+|   |-- src/middleware/        # Auth/admin/rate-limit/error/logging/upload
+|   |-- src/services/          # Stripe/Cloudinary/email integrations
+|   |-- src/utils/             # Env/JWT/bcrypt/pagination/pricing/helpers
+|   |-- src/validators/        # Zod schemas
+|   `-- tests/                 # Integration tests
+|-- vercel.json
+`-- README.md
 ```
 
-## Installation
+## Local Setup
 
-1. Clone the repository.
-2. Move into the backend directory:
+### 1) Install Dependencies
 
 ```bash
 cd backend
-```
+npm install
 
-3. Install dependencies:
-
-```bash
+cd ../frontend
 npm install
 ```
 
-4. Create your environment file:
+### 2) Configure Environment
+
+#### Backend (`backend/.env`)
+
+Required:
+- `DATABASE_URL`
+- `DIRECT_URL` (used by Prisma config)
+- `JWT_SECRET`
+- `JWT_REFRESH_SECRET`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+- `CLIENT_URL`
+
+Optional:
+- `DATABASE_URL_TEST`
+- `DIRECT_URL_TEST`
+- `PORT` (default `5000`)
+- `NODE_ENV` (`development` | `production` | `test`)
+- `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_SECURE`, `EMAIL_USER`, `EMAIL_PASS`
+
+#### Frontend (`frontend/.env.local`)
+
+- `NEXT_PUBLIC_API_URL` (example: `http://localhost:5000/api`)
+- `NEXT_PUBLIC_STRIPE_KEY` (publishable Stripe key)
+
+### 3) Database
 
 ```bash
-cp .env.example .env
-```
-
-5. Update the values in `.env`.
-6. Apply database migrations:
-
-```bash
+cd backend
 npm run prisma:migrate
+npm run seed
 ```
 
-7. Start the API in development mode:
+### 4) Run Both Apps
 
-```bash
-npm run dev
-```
-
-## Environment Variables
-
-Create `backend/.env` with the following keys:
-
-| Variable | Required | Description |
-| --- | --- | --- |
-| `DATABASE_URL` | Yes | Runtime PostgreSQL connection string used by the app. |
-| `DIRECT_URL` | Yes | Direct PostgreSQL connection string used by Prisma CLI and migrations. |
-| `DATABASE_URL_TEST` | Recommended | Dedicated PostgreSQL test database URL used by Jest. Keep this isolated from production data. |
-| `DIRECT_URL_TEST` | Recommended | Direct connection string for the test database used by Prisma during test setup. |
-| `JWT_SECRET` | Yes | Secret used to sign short-lived access tokens. |
-| `JWT_REFRESH_SECRET` | Yes | Secret used to sign refresh tokens. |
-| `STRIPE_SECRET_KEY` | Yes | Secret Stripe API key used to create payment intents. |
-| `STRIPE_WEBHOOK_SECRET` | Yes | Stripe webhook signing secret for `/api/payment/webhook`. |
-| `CLOUDINARY_CLOUD_NAME` | Yes | Cloudinary cloud name. |
-| `CLOUDINARY_API_KEY` | Yes | Cloudinary API key. |
-| `CLOUDINARY_API_SECRET` | Yes | Cloudinary API secret. |
-| `CLIENT_URL` | Yes | Allowed frontend origin for CORS. |
-| `PORT` | No | HTTP port for the API. Defaults to `5000`. |
-| `NODE_ENV` | No | Runtime mode: `development`, `production`, or `test`. |
-| `EMAIL_HOST` | Optional | SMTP host for transactional emails. |
-| `EMAIL_PORT` | Optional | SMTP port. |
-| `EMAIL_SECURE` | Optional | SMTP TLS flag (`true` / `false`). |
-| `EMAIL_USER` | Optional | SMTP username / sender identity. |
-| `EMAIL_PASS` | Optional | SMTP password. |
-
-## Running The Project
-
-### Development
-
+Terminal 1:
 ```bash
 cd backend
 npm run dev
 ```
 
-### Production
+Terminal 2:
+```bash
+cd frontend
+npm run dev
+```
+
+## Backend API Overview
+
+Base URL (local): `http://localhost:5000/api`
+
+Key route groups:
+- Auth: `/auth/*`
+- Products: `/products/*`
+- Categories: `/categories/*`
+- Brands: `/brands/*`
+- Cart: `/cart/*`
+- Orders: `/orders/*`
+- Reviews: `/reviews/*`
+- Wishlist: `/wishlist/*`
+- Addresses: `/addresses/*`
+- Upload: `/upload/*`
+- Payments: `/payment/*`
+- Admin: `/admin/*`
+- Discounts validation: `/discounts/validate`
+
+Health endpoint:
+- `GET /health`
+
+## Tests and Quality Commands
+
+### Backend
 
 ```bash
 cd backend
 npm run build
-npm start
-```
-
-## API Overview
-
-Base URL in local development:
-
-```text
-http://localhost:5000
-```
-
-### Health
-
-- `GET /health`
-
-### Authentication
-
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `POST /api/auth/refresh`
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
-
-### Products
-
-- `GET /api/products`
-- `GET /api/products/:slug`
-- `POST /api/products` (admin)
-- `PUT /api/products/:id` (admin)
-- `DELETE /api/products/:id` (admin, archives product)
-
-### Categories
-
-- `GET /api/categories`
-- `POST /api/categories` (admin)
-- `PUT /api/categories/:id` (admin)
-- `DELETE /api/categories/:id` (admin)
-
-### Brands
-
-- `GET /api/brands`
-- `POST /api/brands` (admin)
-- `PUT /api/brands/:id` (admin)
-- `DELETE /api/brands/:id` (admin)
-
-### Cart
-
-- `GET /api/cart`
-- `POST /api/cart/add`
-- `PUT /api/cart/update`
-- `DELETE /api/cart/remove/:cartItemId`
-- `DELETE /api/cart/clear`
-
-### Orders
-
-- `GET /api/orders`
-- `GET /api/orders/:id`
-- `POST /api/orders`
-- `PUT /api/orders/:id/cancel`
-
-### Reviews
-
-- `GET /api/reviews/product/:productId`
-- `POST /api/reviews`
-- `PUT /api/reviews/:id`
-- `DELETE /api/reviews/:id`
-
-### Wishlist
-
-- `GET /api/wishlist`
-- `POST /api/wishlist/add`
-- `DELETE /api/wishlist/remove/:productId`
-
-### Addresses
-
-- `GET /api/addresses`
-- `POST /api/addresses`
-- `PUT /api/addresses/:id`
-- `DELETE /api/addresses/:id`
-
-### Uploads
-
-- `POST /api/upload/image` (admin)
-- `DELETE /api/upload/image` (admin)
-
-### Payments
-
-- `POST /api/payment/webhook`
-
-### Admin
-
-- `GET /api/admin/orders`
-- `PUT /api/admin/orders/:id`
-- `GET /api/admin/customers`
-- `GET /api/admin/analytics/overview`
-- `GET /api/admin/analytics/revenue`
-- `GET /api/admin/analytics/top-products`
-- `GET /api/admin/inventory`
-- `POST /api/admin/discounts`
-- `GET /api/admin/discounts`
-
-## Authentication Flow
-
-The API uses stateless JWT authentication:
-
-1. `POST /api/auth/register` or `POST /api/auth/login` returns:
-   - `accessToken`
-   - `refreshToken`
-   - sanitized user object
-2. Send the access token in the `Authorization` header:
-
-```http
-Authorization: Bearer <access_token>
-```
-
-3. When the access token expires, call `POST /api/auth/refresh` with the refresh token in the request body:
-
-```json
-{
-  "refreshToken": "your-refresh-token"
-}
-```
-
-4. Use the returned access token for subsequent protected requests.
-5. `POST /api/auth/logout` is currently stateless and returns a success response; token invalidation is managed client-side unless you later add token persistence / revocation storage.
-
-## Stripe Webhook Setup
-
-The backend creates Stripe payment intents during order creation and expects webhook events to finalize payment state changes.
-
-### Local Development
-
-1. Start the API:
-
-```bash
-npm run dev
-```
-
-2. Start Stripe CLI forwarding:
-
-```bash
-stripe listen --forward-to http://localhost:5000/api/payment/webhook
-```
-
-3. Copy the generated webhook signing secret and store it in `.env` as:
-
-```bash
-STRIPE_WEBHOOK_SECRET=whsec_...
-```
-
-4. Trigger test events:
-
-```bash
-stripe trigger payment_intent.succeeded
-```
-
-### Webhook Behavior
-
-- `payment_intent.succeeded` marks the order as `PAID` and moves status to `PROCESSING`
-- `payment_intent.payment_failed` marks the order payment as `FAILED`
-
-## Cloudinary Setup
-
-1. Create a Cloudinary account.
-2. Collect:
-   - cloud name
-   - API key
-   - API secret
-3. Add them to `.env`.
-4. Use the admin upload endpoint:
-
-```text
-POST /api/upload/image
-```
-
-The upload middleware stores files in memory and sends them to the `fashion-store` Cloudinary folder.
-
-## Example API Response Format
-
-Successful responses follow the shared `sendResponse` shape:
-
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "user": {
-      "id": "clx123",
-      "name": "Jane Doe",
-      "email": "jane@example.com",
-      "role": "CUSTOMER"
-    },
-    "accessToken": "eyJ...",
-    "refreshToken": "eyJ..."
-  },
-  "pagination": null,
-  "errors": null,
-  "stack": null
-}
-```
-
-Validation and error responses keep the same top-level contract and populate `message`, `errors`, and optionally `stack` in development.
-
-## Testing
-
-The backend includes Jest + Supertest integration tests for:
-
-- auth: register, login, refresh token, `/me`
-- products: catalog listing and admin product creation
-- cart: add, update, remove
-- orders: create and cancel
-
-### Run Tests
-
-```bash
-cd backend
 npm test
-```
-
-### Coverage
-
-```bash
 npm run test:coverage
 ```
 
-### Test Database Behavior
-
-- Tests never use the primary runtime database connection directly.
-- The test harness prefers `DATABASE_URL_TEST` and `DIRECT_URL_TEST`.
-- If those are not provided, the setup derives a schema-scoped fallback URL from the main connection string so test data stays isolated.
-- The test runner applies migrations before execution and truncates all application tables between tests.
-- Stripe, Cloudinary, and Nodemailer are mocked in the Jest setup so the suite never calls external services.
-
-## Deployment Notes
-
-- Build before deploy:
+### Frontend
 
 ```bash
+cd frontend
+npm run lint
 npm run build
 ```
 
-- Use production-safe environment variables in your hosting platform.
-- Make sure both `DATABASE_URL` and `DIRECT_URL` are configured in production.
-- Run migrations against the production database before switching traffic:
+If `npm run build` fails with `EPERM` on `.next`, ensure no running Next.js process is locking the file and clear stale build cache safely.
 
-```bash
-npx prisma migrate deploy
-```
+## Recommended Refactor Path
 
-- Expose the public webhook endpoint for Stripe:
+1. Stabilize frontend quality gate
+- Fix `no-explicit-any` errors and hook dependency issues.
+- Resolve `react-hooks/set-state-in-effect` violations.
 
-```text
-POST /api/payment/webhook
-```
+2. Harden checkout ordering sequence
+- Create order draft (or stock reservation) before payment confirmation.
+- Ensure failed order creation after payment triggers automatic compensation/refund.
 
-- Configure `CLIENT_URL` to the real frontend origin so CORS allows browser requests.
-- Keep secrets out of version control and rotate any values that were previously exposed.
+3. Move toward cleaner architecture
+- Introduce use-case/service layer (application layer).
+- Introduce repository layer for Prisma access.
+- Keep controllers thin (HTTP only).
+
+4. Remove or wire inactive modules
+- Either schedule `cleanupAbandonedOrders` or remove it.
+- Either implement email flow usage or document it as planned.
+- Either build admin inventory/discount UI or hide links until ready.

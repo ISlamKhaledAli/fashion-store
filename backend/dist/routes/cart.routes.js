@@ -7,6 +7,7 @@ const router = (0, express_1.Router)();
 router.use(auth_1.authMiddleware);
 router.get("/", cart_controller_1.getCart);
 router.post("/add", cart_controller_1.addToCart);
+router.get("/shipping-methods", cart_controller_1.getShippingMethods);
 router.post("/calculate", cart_controller_1.calculateTotals);
 router.put("/update", cart_controller_1.updateCartItem);
 router.delete("/remove/:cartItemId", cart_controller_1.removeFromCart);
