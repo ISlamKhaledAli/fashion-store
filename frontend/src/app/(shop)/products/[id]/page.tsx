@@ -17,14 +17,16 @@ import { YouMayAlsoLike } from "@/components/shop/YouMayAlsoLike";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ color?: string }>;
 }
 
-export default function ProductDetailPage({ params }: PageProps) {
+export default function ProductDetailPage({ params, searchParams }: PageProps) {
   const { id } = use(params);
+  const { color: initialColor } = use(searchParams);
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(initialColor || null);
 
   const router = useRouter();
 
@@ -53,7 +55,7 @@ export default function ProductDetailPage({ params }: PageProps) {
           if (relatedRes.data.success) {
             setRelatedProducts(relatedRes.data.data.filter(p => p.id !== fetchedProduct.id));
           }
-          if (fetchedProduct?.variants?.length > 0) {
+          if (fetchedProduct?.variants?.length > 0 && !initialColor) {
             setSelectedColor(fetchedProduct.variants[0].color);
           }
         }

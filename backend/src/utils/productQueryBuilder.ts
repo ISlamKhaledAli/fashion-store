@@ -135,7 +135,6 @@ export const buildProductQuery = ({
     };
     include.variants = {
       select: { id: true, size: true, color: true, colorHex: true, stock: true },
-      take: 1,
     };
     include.reviews = { select: { rating: true } };
   }

@@ -34,8 +34,17 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
   const isAnimating = useRef(false);
   const imageRef = useRef<HTMLImageElement>(null);
   
-  // State for hovered color
+  // State for color interactions
   const [hoveredColor, setHoveredColor] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+
+  const selectedVariant = useMemo(() => {
+    const activeColor = selectedColor || hoveredColor;
+    if (activeColor) {
+      return product.variants?.find(v => v.color?.toLowerCase() === activeColor.toLowerCase()) || product.variants?.[0];
+    }
+    return product.variants?.[0];
+  }, [product.variants, selectedColor, hoveredColor]);
 
   // Get unique colors from product variants
   const uniqueColors = useMemo(() => {
@@ -48,16 +57,20 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
     });
   }, [product.variants]);
 
-  // Get image for current hovered color
+  // Get image based on hover or selection
   const currentImage = useMemo(() => {
-    if (!hoveredColor) {
+    const colorToDisplay = hoveredColor || selectedColor;
+    
+    if (!colorToDisplay) {
       return product.images?.find(img => img.isMain) || product.images?.[0];
     }
+    
     const colorImage = product.images?.find(
-      img => img.variantColor?.toLowerCase() === hoveredColor.toLowerCase()
+      img => img.variantColor?.toLowerCase() === colorToDisplay.toLowerCase()
     );
+    
     return colorImage || product.images?.find(img => img.isMain) || product.images?.[0];
-  }, [hoveredColor, product.images]);
+  }, [hoveredColor, selectedColor, product.images]);
   
   const isFavorite = isInWishlist(product.id);
 
@@ -67,10 +80,6 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
     
     if (isAnimating.current) return;
     isAnimating.current = true;
-    
-    const selectedVariant = hoveredColor
-      ? product.variants?.find(v => v.color?.toLowerCase() === hoveredColor.toLowerCase())
-      : product.variants?.[0];
 
     if (!selectedVariant) return;
     
@@ -137,7 +146,10 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay }}
         className={cn("group flex flex-col sm:flex-row gap-8 items-center bg-surface p-4 sm:p-0 border-b border-outline-variant/10 pb-12 sm:border-none sm:pb-0", className)}
       >
-        <Link href={`/products/${product.id}`} className="shrink-0 w-full sm:w-64 aspect-3/4 sm:aspect-square relative overflow-hidden bg-surface-container-low group-hover:-translate-y-1 transition-transform duration-500">
+        <Link 
+          href={`/products/${product.slug}${(hoveredColor || selectedColor) ? `?color=${encodeURIComponent((hoveredColor || selectedColor) as string)}` : ''}`} 
+          className="shrink-0 w-full sm:w-64 aspect-3/4 sm:aspect-square relative overflow-hidden bg-surface-container-low group-hover:-translate-y-1 transition-transform duration-500"
+        >
           {product.images[0] && (
             <Image
               ref={imageRef}
@@ -175,8 +187,11 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
               {product.brand?.name || "THE CURATOR"}
             </p>
             <h3 className="text-xl sm:text-2xl font-medium tracking-tight group-hover:text-primary transition-colors">
-              <Link href={`/products/${product.id}`}>{product.name}</Link>
+              <Link href={`/products/${product.slug}${(hoveredColor || selectedColor) ? `?color=${encodeURIComponent((hoveredColor || selectedColor) as string)}` : ''}`}>{product.name}</Link>
             </h3>
+            <p className="text-on-surface-variant text-sm mt-1 uppercase tracking-widest font-medium">
+              {hoveredColor || product.variants?.[0]?.color || ""}
+            </p>
           </div>
 
           <p className="text-sm text-on-surface-variant line-clamp-2 max-w-xl leading-relaxed">
@@ -235,7 +250,7 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
               </Button>
             )}
             <Link 
-              href={`/products/${product.id}`}
+              href={`/products/${product.slug}${(hoveredColor || selectedColor) ? `?color=${encodeURIComponent((hoveredColor || selectedColor) as string)}` : ''}`}
               className="px-8 py-3 border border-outline text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-surface-container transition-all active:scale-95 flex items-center justify-center cursor-pointer"
             >
               View Details
@@ -252,18 +267,31 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
         className={cn("group cinematic-reveal", className)}
         style={{ animationDelay: `${delay}s` }}
       >
-        <Link href={`/products/${product.id}`} className="block">
-          <div className="relative overflow-hidden aspect-3/4 bg-surface-container-low mb-6">
-            {product.images[0] && (
-              <Image
-                ref={imageRef}
-                src={product.images.find(img => img.isMain)?.url || product.images[0].url}
-                alt={product.name}
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-            )}
+        <Link href={`/products/${product.slug}${(hoveredColor || selectedColor) ? `?color=${encodeURIComponent((hoveredColor || selectedColor) as string)}` : ''}`} className="block">
+          <div className="relative overflow-hidden aspect-3/4 bg-surface-container-low mb-4">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentImage?.url || 'placeholder'}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                className="absolute inset-0"
+              >
+                {currentImage ? (
+                  <Image
+                    ref={imageRef}
+                    src={currentImage.url}
+                    alt={product.name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-zinc-100" />
+                )}
+              </motion.div>
+            </AnimatePresence>
             
             <Button
               variant="icon"
@@ -334,15 +362,50 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
             )}
           </div>
           
-          <div className="space-y-1 mt-6">
-            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
+          {/* Premium Metadata */}
+          <div className="space-y-1.5">
+            <p className="text-[9px] uppercase tracking-[0.25em] text-on-surface-variant font-black">
               {product.brand?.name || "THE CURATOR"}
             </p>
             <div className="flex justify-between items-start">
               <h3 className="text-sm font-medium tracking-tight">{product.name}</h3>
               <span className="text-sm font-medium">{formatCurrency(product.price)}</span>
             </div>
-            <RatingDisplay rating={product.avgRating} count={product.reviewCount} />
+            
+            {/* Color Swatches */}
+            {uniqueColors.length > 0 && (
+              <div className="flex items-center gap-[10px] pt-2">
+                {uniqueColors.map(v => (
+                  <motion.button
+                    key={v.color}
+                    type="button"
+                    onMouseEnter={() => setHoveredColor(v.color)}
+                    onMouseLeave={() => setHoveredColor(null)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setSelectedColor(prev => prev === v.color ? null : v.color);
+                    }}
+                    whileHover={{ scale: 1.2 }}
+                    animate={{ scale: selectedColor === v.color ? 1.1 : 1 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    className={cn(
+                      "w-[22px] h-[22px] rounded-full transition-all duration-300 flex items-center justify-center",
+                      (hoveredColor === v.color || selectedColor === v.color)
+                        ? "ring-2 ring-zinc-950 ring-offset-2"
+                        : "ring-1 ring-transparent"
+                    )}
+                    title={v.color}
+                    aria-label={`Select ${v.color}`}
+                  >
+                    <span 
+                      className="block w-full h-full rounded-full border border-zinc-200"
+                      style={{ backgroundColor: v.colorHex || '#ccc' }}
+                    />
+                  </motion.button>
+                ))}
+              </div>
+            )}
           </div>
         </Link>
       </article>
@@ -358,7 +421,7 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] as const, delay }}
       className={cn("group", className)}
     >
-      <Link href={`/products/${product.id}`} className="block">
+      <Link href={`/products/${product.slug}${(hoveredColor || selectedColor) ? `?color=${encodeURIComponent((hoveredColor || selectedColor) as string)}` : ''}`} className="block">
         <div className="relative aspect-4/5 bg-surface-container-low overflow-hidden mb-6 cinematic-ease duration-500 group-hover:-translate-y-2">
           <AnimatePresence mode="wait">
             <motion.div
@@ -429,18 +492,28 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
           )}
         </div>
 
-        <div className="flex justify-between items-start">
-          <div>
-            <h4 className="text-lg font-medium text-on-surface">{product.name}</h4>
-            <p className="text-on-surface-variant text-sm mt-1">
-              {hoveredColor || product.variants?.[0]?.color || "Default"}
+        <div className="mt-4 space-y-1.5">
+          {/* Brand & Price Header */}
+          <div className="flex justify-between items-end">
+            <p className="text-[9px] uppercase tracking-[0.25em] text-on-surface-variant font-black">
+              {product.brand?.name || "THE CURATOR"}
             </p>
+            <span className="text-sm font-bold tracking-tighter text-on-surface">
+              {formatCurrency(product.price)}
+            </span>
+          </div>
+
+          {/* Title & Color Display */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-on-surface tracking-tight group-hover:text-primary transition-colors duration-300">
+              {product.name}
+            </h4>
             
-            {/* Color Swatches */}
-            {uniqueColors.length > 1 && (
-              <div className="flex items-center gap-1.5 mt-2">
-                {uniqueColors.slice(0, 5).map(variant => (
-                  <button
+            {/* High-end Color Swatches */}
+            {uniqueColors.length > 0 && (
+              <div className="flex items-center gap-[10px]">
+                {uniqueColors.map(variant => (
+                  <motion.button
                     key={variant.color}
                     type="button"
                     onMouseEnter={() => setHoveredColor(variant.color)}
@@ -448,27 +521,43 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      setHoveredColor(variant.color === hoveredColor ? null : variant.color);
+                      setSelectedColor(prev => prev === variant.color ? null : variant.color);
                     }}
+                    whileHover={{ scale: 1.2 }}
+                    animate={{ scale: selectedColor === variant.color ? 1.1 : 1 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     className={cn(
-                      "w-4 h-4 rounded-full border-2 transition-all duration-200",
-                      hoveredColor === variant.color
-                        ? "border-zinc-900 scale-110"
-                        : "border-transparent hover:border-zinc-400"
+                      "relative w-[22px] h-[22px] rounded-full flex items-center justify-center transition-all duration-300",
+                      (hoveredColor === variant.color || selectedColor === variant.color)
+                        ? "ring-2 ring-zinc-950 ring-offset-2" 
+                        : "ring-1 ring-transparent"
                     )}
-                    style={{ backgroundColor: variant.colorHex || '#ccc' }}
                     title={variant.color}
-                  />
+                    aria-label={`Select ${variant.color}`}
+                  >
+                    <span 
+                      className="w-full h-full rounded-full border border-zinc-200"
+                      style={{ backgroundColor: variant.colorHex || '#ccc' }}
+                    />
+                  </motion.button>
                 ))}
-                {uniqueColors.length > 5 && (
-                  <span className="text-[10px] font-bold text-zinc-400">+{uniqueColors.length - 5}</span>
-                )}
+                
+                {/* Active Color Label (Optional but adds premium feel) */}
+                <AnimatePresence>
+                  {(hoveredColor || selectedColor) && (
+                    <motion.span
+                      initial={{ opacity: 0, x: -5 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -5 }}
+                      className="text-[9px] uppercase tracking-widest text-zinc-400 font-bold ml-auto"
+                    >
+                      {hoveredColor || selectedColor}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </div>
             )}
           </div>
-          <span className="text-lg font-bold tracking-tighter text-on-surface">
-            {formatCurrency(product.price)}
-          </span>
         </div>
       </Link>
     </motion.div>

@@ -776,13 +776,18 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
             />
 
             <section className="space-y-8">
-              <div className="flex items-center gap-4">
-                <div className="h-[1px] flex-1 bg-zinc-100" />
-                <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Variant Generation</h4>
-                <div className="h-[1px] flex-1 bg-zinc-100" />
+              <div className="border-t border-zinc-100 pt-10 mt-6">
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h3 className="text-lg font-bold text-zinc-900 uppercase tracking-widest">Curate Color Palette</h3>
+                    <p className="text-[10px] font-bold text-zinc-400 mt-1 uppercase tracking-[0.2em]">
+                      Select archival shades and sizes to manifest all combinations
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div className="p-6 bg-zinc-50/50 rounded-xl border border-zinc-100 space-y-6">
+              <div className="p-8 bg-zinc-50/50 rounded-2xl border border-zinc-100 space-y-8">
                 {/* Size Selection */}
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block">
