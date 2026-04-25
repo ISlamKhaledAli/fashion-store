@@ -58,8 +58,8 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
         if (filterRes.data.success) {
           const rawColors = filterRes.data.data.colors;
           // Deduplicate by normalized color name as requested
-          const uniqueColors = rawColors.filter((color: { name: string; hex: string }, index: number, self: any[]) => 
-            index === self.findIndex((c: any) => 
+          const uniqueColors = rawColors.filter((color: { name: string; hex: string }, index: number, self: { name: string; hex: string }[]) => 
+            index === self.findIndex((c: { name: string; hex: string }) => 
               c.name.toLowerCase().trim() === color.name.toLowerCase().trim()
             )
           );

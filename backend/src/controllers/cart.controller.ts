@@ -3,7 +3,7 @@ import { prisma } from "../lib/prisma";
 import { sendResponse } from "../utils/apiResponse";
 import { addToCartSchema, updateCartItemSchema } from "../validators/common.validator";
 import { NotFoundError, ValidationError } from "../utils/AppError";
-import { calculateOrderTotals, SHIPPING_METHODS } from "../utils/pricing";
+import { calculateOrderTotals, calculateDiscount, SHIPPING_METHODS } from "../utils/pricing";
 
 export const getShippingMethods = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -179,20 +179,14 @@ export const calculateTotals = async (req: Request, res: Response, next: NextFun
     let rawDiscountAmount = 0;
     if (promoCode) {
       const discountRecord = await prisma.discount.findUnique({ where: { code: promoCode } });
-      if (discountRecord && discountRecord.isActive) {
-        const isNotExpired = !discountRecord.expiresAt || new Date() <= discountRecord.expiresAt;
-        const isNotOverused = !discountRecord.maxUses || discountRecord.usedCount < discountRecord.maxUses;
-        const meetsMinOrder = !discountRecord.minOrder || subtotal >= discountRecord.minOrder;
-
-        if (isNotExpired && isNotOverused && meetsMinOrder) {
-          if (discountRecord.type.toLowerCase() === "fixed") {
-            rawDiscountAmount = discountRecord.value;
-          } else if (discountRecord.type.toLowerCase() === "percentage" || discountRecord.type.toLowerCase() === "percent") {
-            rawDiscountAmount = subtotal * (discountRecord.value / 100);
-          }
+      if (discountRecord) {
+        const result = calculateDiscount(subtotal, discountRecord);
+        if (result.isValid) {
+          rawDiscountAmount = result.discountAmount;
         }
       }
     }
+
 
     // 3. Single canonical calculation
     const totals = calculateOrderTotals({

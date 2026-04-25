@@ -87,7 +87,7 @@ export default function AdminDashboard() {
         if (cancelled) return;
 
         if (analyticsRes.data.success) {
-          const data = analyticsRes.data.data as any;
+          const data = analyticsRes.data.data as AnalyticsOverview & { dailyRevenue?: RevenuePoint[] };
           setMetrics({
             totalRevenue: data.totalRevenue || 0,
             revenueTrend: data.revenueTrend || 0,

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
 import { verifyStripeWebhook, createPaymentIntent } from "../services/stripe";
-import { calculateOrderTotals } from "../utils/pricing";
+import { calculateOrderTotals, calculateDiscount } from "../utils/pricing";
 import logger from "../utils/logger";
 import { ValidationError, NotFoundError } from "../utils/AppError";
 import { sendResponse } from "../utils/apiResponse";
@@ -104,17 +104,10 @@ export const createIntent = async (req: Request, res: Response, next: NextFuncti
     let rawDiscountAmount = 0;
     if (promoCode) {
       const discountRecord = await prisma.discount.findUnique({ where: { code: promoCode } });
-      if (discountRecord && discountRecord.isActive) {
-        const isNotExpired = !discountRecord.expiresAt || new Date() <= discountRecord.expiresAt;
-        const isNotOverused = !discountRecord.maxUses || discountRecord.usedCount < discountRecord.maxUses;
-        const meetsMinOrder = !discountRecord.minOrder || subtotal >= discountRecord.minOrder;
-        
-        if (isNotExpired && isNotOverused && meetsMinOrder) {
-          if (discountRecord.type.toLowerCase() === "fixed") {
-            rawDiscountAmount = discountRecord.value;
-          } else if (discountRecord.type.toLowerCase() === "percentage" || discountRecord.type.toLowerCase() === "percent") {
-            rawDiscountAmount = subtotal * (discountRecord.value / 100);
-          }
+      if (discountRecord) {
+        const result = calculateDiscount(subtotal, discountRecord);
+        if (result.isValid) {
+          rawDiscountAmount = result.discountAmount;
         }
       }
     }

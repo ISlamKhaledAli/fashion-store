@@ -5,7 +5,7 @@ import { PriceDisplay } from "@/components/admin/PriceDisplay";
 import { Button } from "@/components/ui/Button";
 import { TableImage } from "./TableImage";
 
-interface TopProduct {
+export interface TopProduct {
   id: string;
   name: string;
   image?: string;

@@ -5,7 +5,7 @@ import { sendResponse } from "../utils/apiResponse";
 import { createOrderSchema, updateOrderPaymentSchema } from "../validators/order.validator";
 import { createPaymentIntent } from "../services/stripe";
 import stripe from "../services/stripe";
-import { calculateOrderTotals } from "../utils/pricing";
+import { calculateOrderTotals, calculateDiscount } from "../utils/pricing";
 import { sendOrderConfirmationEmail } from "../services/email";
 import logger from "../utils/logger";
 import { NotFoundError, ConflictError, ValidationError } from "../utils/AppError";
@@ -138,24 +138,15 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
       let rawDiscountAmount = 0;
       if (promoCode) {
         const discountRecord = await tx.discount.findUnique({ where: { code: promoCode } });
-        if (!discountRecord || !discountRecord.isActive) {
+        if (!discountRecord) {
           throw new ValidationError("Invalid promo code");
         }
-        if (discountRecord.expiresAt && new Date() > discountRecord.expiresAt) {
-          throw new ValidationError("Promo code has expired");
-        }
-        if (discountRecord.maxUses && discountRecord.usedCount >= discountRecord.maxUses) {
-          throw new ValidationError("Promo code usage limit exceeded");
-        }
-        if (discountRecord.minOrder && subtotal < discountRecord.minOrder) {
-          throw new ValidationError(`Promo code requires minimum order of $${discountRecord.minOrder}`);
-        }
 
-        if (discountRecord.type.toLowerCase() === "fixed") {
-          rawDiscountAmount = discountRecord.value;
-        } else if (discountRecord.type.toLowerCase() === "percentage" || discountRecord.type.toLowerCase() === "percent") {
-          rawDiscountAmount = subtotal * (discountRecord.value / 100);
+        const result = calculateDiscount(subtotal, discountRecord);
+        if (!result.isValid) {
+          throw new ValidationError(result.message || "Invalid promo code");
         }
+        rawDiscountAmount = result.discountAmount;
 
         // Increment count
         await tx.discount.update({

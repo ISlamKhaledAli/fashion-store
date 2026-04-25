@@ -199,7 +199,7 @@ export default function AdminCustomersPage() {
         <AdminTabs
           tabs={tabList}
           activeTab={activeTab}
-          onTabChange={(id) => { setActiveTab(id as any); setPage(1); }}
+          onTabChange={(id) => { setActiveTab(id as "ALL" | "ACTIVE" | "BLOCKED" | "VIP"); setPage(1); }}
           layoutId="customersTabUnderline"
           className="flex-1 lg:flex-none"
         />

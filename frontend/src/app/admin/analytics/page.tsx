@@ -12,8 +12,8 @@ import { PriceDisplay } from "@/components/admin/PriceDisplay";
 
 import { RevenueChart } from "@/components/admin/RevenueChart";
 import { OrdersDonut } from "@/components/admin/OrdersDonut";
-import { TopProductsTable } from "@/components/admin/TopProductsTable";
-import { CategoryRevenueChart } from "@/components/admin/CategoryRevenueChart";
+import { TopProductsTable, TopProduct } from "@/components/admin/TopProductsTable";
+import { CategoryRevenueChart, CategoryStat } from "@/components/admin/CategoryRevenueChart";
 import { Button } from "@/components/ui/Button";
 
 export const dynamic = 'force-dynamic';
@@ -24,11 +24,11 @@ export default function AdminAnalyticsPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   const [isLoading, setIsLoading] = useState(true);
-  const [overview, setOverview] = useState<any>(null);
-  const [revenueData, setRevenueData] = useState<any[]>([]);
-  const [topProducts, setTopProducts] = useState<any[]>([]);
-  const [categoryData, setCategoryData] = useState<any[]>([]);
-  const [geoData, setGeoData] = useState<any[]>([]);
+  const [overview, setOverview] = useState<Record<string, number> | null>(null);
+  const [revenueData, setRevenueData] = useState<{ date: string; amount: number }[]>([]);
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+  const [categoryData, setCategoryData] = useState<CategoryStat[]>([]);
+  const [geoData, setGeoData] = useState<{ country: string; revenue: number }[]>([]);
   const [retention, setRetention] = useState({
     newCustomers: 0,
     returningCustomers: 0,
@@ -51,7 +51,7 @@ export default function AdminAnalyticsPage() {
       ]);
 
       if (isMounted.current) {
-        let ov = overviewRes.data?.data as Record<string, any>;
+        const ov = overviewRes.data?.data as Record<string, number> | null;
         if (ov) {
            ov.totalRevenue = ov.totalRevenue || 0;
            ov.totalOrders = ov.totalOrders || 0;
@@ -60,22 +60,22 @@ export default function AdminAnalyticsPage() {
         }
         setOverview(ov || null);
         
-        let revData = (revenueRes.data?.data as any[]) || [];
+        const revData = (revenueRes.data?.data as { date: string; amount: number }[]) || [];
         setRevenueData(revData);
 
-        let prods = (topProductsRes.data?.data as any[]) || [];
+        const prods = (topProductsRes.data?.data as TopProduct[]) || [];
         setTopProducts(prods);
 
-        let gData = (geoRes.data?.data as any[]) || [];
+        const gData = (geoRes.data?.data as { country: string; revenue: number }[]) || [];
         setGeoData(gData);
 
-        let catData = (categoryRes.data?.data as any[]) || [];
+        const catData = (categoryRes.data?.data as CategoryStat[]) || [];
         console.log("Analytics: Category Data Loaded:", catData);
         setCategoryData(catData);
 
-        let retData = retentionRes.data?.data;
+        const retData = retentionRes.data?.data;
         if (retData) {
-          setRetention(retData as any);
+          setRetention(retData as typeof retention);
         }
       }
     } catch (err) {

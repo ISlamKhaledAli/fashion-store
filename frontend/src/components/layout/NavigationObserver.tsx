@@ -1,34 +1,21 @@
 "use client";
 
 import { useEffect, Suspense } from "react";
-import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
 import { useSearchStore } from "@/store/searchStore";
 
 function NavigationHandler() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const { toggleDrawer } = useCartStore();
-  const { onClose: closeSearch } = useSearchStore();
 
-  // 1. Telemetry for Back Button (popstate)
+  // Close overlays on route change — only if actually open
   useEffect(() => {
-    const handlePopState = () => {
-      router.refresh();
-    };
+    const { isOpen: cartOpen } = useCartStore.getState();
+    const { isOpen: searchOpen } = useSearchStore.getState();
 
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, [router]);
-
-  // 2. Global UI Cleanup on route change
-  useEffect(() => {
-    // Close overlays instantly on navigation
-    // Using a micro-task or immediate call to ensure it doesn't block the next page render
-    toggleDrawer(false);
-    closeSearch();
-  }, [pathname, searchParams, toggleDrawer, closeSearch]);
+    if (cartOpen) useCartStore.getState().toggleDrawer(false);
+    if (searchOpen) useSearchStore.getState().onClose();
+  }, [pathname]); // pathname only, no other deps
 
   return null;
 }

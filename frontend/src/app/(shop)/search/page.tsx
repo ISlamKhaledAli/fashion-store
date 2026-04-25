@@ -134,7 +134,7 @@ function SearchContent() {
     if (Object.keys(params).length > 0) {
       dispatch({ type: "sync_from_url", payload: params });
     }
-  }, []); // Only on mount
+  }, [searchParams]); // Depend on searchParams to sync when URL changes explicitly
 
   // Fetch products when query or state changes
   useEffect(() => {

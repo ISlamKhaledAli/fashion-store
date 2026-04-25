@@ -19,7 +19,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || "");
 
 import { orderApi, addressApi } from "@/lib/api";
 
-interface ShippingFormData {
+export interface ShippingFormData {
   firstName: string;
   lastName: string;
   email: string;
@@ -158,7 +158,7 @@ function CheckoutPageContent() {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           >
-            {clientSecret && paymentIntentId ? (
+            {clientSecret && paymentIntentId && shippingData ? (
               <ReviewStep 
                 shippingData={shippingData} 
                 paymentIntentId={paymentIntentId}

@@ -150,7 +150,7 @@ export const SearchOverlay = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, products, categories, recentSearces, query, selectedIndex, handleSearch, onClose]);
+  }, [isOpen, products, categories, recentSearces, query, selectedIndex, handleSearch, onClose, router]);
 
   const containerVariants: Variants = {
     hidden: { height: 0, opacity: 0 },

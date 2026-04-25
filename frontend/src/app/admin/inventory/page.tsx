@@ -85,13 +85,13 @@ export default function AdminInventoryPage() {
       const res = await adminApi.getInventory();
       if (res.data.success) {
         const products = res.data.data || [];
-        const rows = products.flatMap((product: any) => {
+        const rows = products.flatMap((product: Product) => {
           if (!product.variants || product.variants.length === 0) return [];
-          return product.variants.map((variant: any) => ({
+          return product.variants.map((variant) => ({
             id: variant.id,
             productId: product.id,
             productName: product.name,
-            image: product.images?.find((img: any) => img.isMain)?.url || product.images?.[0]?.url || null,
+            image: product.images?.find((img) => img.isMain)?.url || product.images?.[0]?.url || null,
             category: product.category?.name || '—',
             size: variant.size || '—',
             color: variant.color || '—',
@@ -99,13 +99,13 @@ export default function AdminInventoryPage() {
             sku: variant.sku || '—',
             stock: variant.stock ?? 0,
             price: product.price || 0,
-            productStatus: product.status,
+            productStatus: product.status || "ACTIVE",
             updatedAt: variant.updatedAt
           }));
         });
         setInventoryRows(rows);
       }
-    } catch (err: any) {
+    } catch (_err) {
       setError('Failed to load inventory');
       toast.error("Telemetry failure. Sync impossible.");
     } finally {
@@ -292,7 +292,7 @@ export default function AdminInventoryPage() {
           { id: "ARCHIVED", label: "Archived",   count: stats.archived },
         ]}
         activeTab={activeTab}
-        onTabChange={(id) => { setActiveTab(id as any); setCurrentPage(1); }}
+        onTabChange={(id) => { setActiveTab(id as "ALL" | "LOW" | "OUT" | "IN" | "ARCHIVED"); setCurrentPage(1); }}
         layoutId="inventoryTabUnderline"
       />
 

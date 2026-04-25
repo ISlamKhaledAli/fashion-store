@@ -9,7 +9,7 @@ interface UseProductListConfig {
   featured?: boolean;
 }
 
-export const useProductList = (config: UseProductListConfig = {}) => {
+export const useProductList = ({ limit = 8, excludeId, category, featured }: UseProductListConfig = {}) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,8 +21,6 @@ export const useProductList = (config: UseProductListConfig = {}) => {
       setLoading(true);
       setError(null);
       try {
-        const { limit = 8, excludeId, category, featured } = config;
-        
         // Prepare params for API call
         const params: Record<string, string | number | boolean> = { limit };
         if (category) params.category = category;
@@ -59,7 +57,7 @@ export const useProductList = (config: UseProductListConfig = {}) => {
     // Stringify config to detect deep changes if necessary, 
     // but typically config is defined in render so we use specific deps.
     // In our case, we'll use specific deps to avoid infinite loops.
-  }, [config.limit, config.excludeId, config.category, config.featured]);
+  }, [limit, excludeId, category, featured]);
 
   return { products, loading, error };
 };

@@ -18,6 +18,62 @@ export const SHIPPING_METHODS = [
   { id: "overnight", name: "Overnight", time: "Next day delivery", rate: 24.99 },
 ];
 
+export interface DiscountResult {
+  discountAmount: number;
+  isValid: boolean;
+  message?: string;
+}
+
+/**
+ * Centralized discount validation and calculation.
+ * All controllers must use this instead of inline logic.
+ */
+export const calculateDiscount = (
+  subtotal: number,
+  discount: {
+    type: string;
+    value: number;
+    minOrder?: number | null;
+    maxUses?: number | null;
+    usedCount: number;
+    expiresAt?: Date | null;
+    isActive: boolean;
+  }
+): DiscountResult => {
+  if (!discount.isActive) {
+    return { discountAmount: 0, isValid: false, message: "Invalid or inactive discount code" };
+  }
+
+  if (discount.expiresAt && new Date() > new Date(discount.expiresAt)) {
+    return { discountAmount: 0, isValid: false, message: "Discount code has expired" };
+  }
+
+  if (discount.maxUses && discount.usedCount >= discount.maxUses) {
+    return { discountAmount: 0, isValid: false, message: "Discount usage limit reached" };
+  }
+
+  if (discount.minOrder && subtotal < discount.minOrder) {
+    return {
+      discountAmount: 0,
+      isValid: false,
+      message: `Minimum order amount is $${discount.minOrder}`,
+    };
+  }
+
+  let discountAmount = 0;
+  const type = discount.type.toLowerCase();
+  if (type === "percentage" || type === "percent") {
+    discountAmount = subtotal * (discount.value / 100);
+  } else if (type === "fixed") {
+    discountAmount = Math.min(discount.value, subtotal);
+  }
+
+  return {
+    discountAmount: Math.round(discountAmount * 100) / 100,
+    isValid: true,
+  };
+};
+
 /**
  * Calculates correct derived mathematical subsets applying limits against subtotal bounds.
  */

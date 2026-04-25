@@ -43,7 +43,7 @@ export default function AdminOrdersPage() {
   
   const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 1 });
 
-  const fetchOrders = async (page = 1, isMounted: { current: boolean }) => {
+  const fetchOrders = React.useCallback(async (page = 1, isMounted: { current: boolean }) => {
     setLoading(true);
     try {
       const params: { page?: number; limit?: number; search?: string; status?: OrderStatus } = { 
@@ -69,7 +69,7 @@ export default function AdminOrdersPage() {
         setLoading(false);
       }
     }
-  };
+  }, [searchQuery, statusFilter]);
 
   useEffect(() => {
     const isMounted = { current: true };
@@ -82,7 +82,7 @@ export default function AdminOrdersPage() {
       isMounted.current = false;
       clearTimeout(timer);
     };
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, fetchOrders]);
 
   const toggleSelectAll = () => {
     const newSelected = new Set(selectedIds);

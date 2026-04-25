@@ -30,8 +30,11 @@ export const AdminDrawer: React.FC<AdminDrawerProps> = ({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => {
+      cancelAnimationFrame(id);
+      setMounted(false);
+    };
   }, []);
 
   useEffect(() => {

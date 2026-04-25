@@ -3,9 +3,10 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useCartStore } from "@/store/cartStore";
+import { ShippingFormData } from "@/app/(shop)/checkout/page";
 
 interface ReviewStepProps {
-  shippingData: any;
+  shippingData: ShippingFormData;
   paymentIntentId: string;
   onSuccess: (orderId: string) => void;
   onBack: () => void;

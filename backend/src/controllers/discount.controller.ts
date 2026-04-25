@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
 import { sendResponse } from "../utils/apiResponse";
 import { ValidationError } from "../utils/AppError";
+import { calculateDiscount } from "../utils/pricing";
 
 export const validateDiscount = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -15,7 +16,7 @@ export const validateDiscount = async (req: Request, res: Response, next: NextFu
       where: { code: code.toUpperCase() },
     });
 
-    if (!discount || !discount.isActive) {
+    if (!discount) {
       return sendResponse({
         res,
         status: 200,
@@ -24,45 +25,15 @@ export const validateDiscount = async (req: Request, res: Response, next: NextFu
       });
     }
 
-    // Check expiry
-    if (discount.expiresAt && new Date(discount.expiresAt) < new Date()) {
+    const result = calculateDiscount(orderTotal, discount);
+
+    if (!result.isValid) {
       return sendResponse({
         res,
         status: 200,
         success: true,
-        data: { valid: false, message: "Discount code has expired" },
+        data: { valid: false, message: result.message },
       });
-    }
-
-    // Check usage limits
-    if (discount.maxUses && discount.usedCount >= discount.maxUses) {
-      return sendResponse({
-        res,
-        status: 200,
-        success: true,
-        data: { valid: false, message: "Discount code limit reached" },
-      });
-    }
-
-    // Check minimum order
-    if (discount.minOrder && orderTotal < discount.minOrder) {
-      return sendResponse({
-        res,
-        status: 200,
-        success: true,
-        data: { 
-          valid: false, 
-          message: `Minimum order amount for this code is $${discount.minOrder}` 
-        },
-      });
-    }
-
-    // Calculate discount amount
-    let discountAmount = 0;
-    if (discount.type === "PERCENTAGE") {
-      discountAmount = orderTotal * (discount.value / 100);
-    } else {
-      discountAmount = Math.min(discount.value, orderTotal);
     }
 
     return sendResponse({
@@ -73,7 +44,7 @@ export const validateDiscount = async (req: Request, res: Response, next: NextFu
         valid: true,
         type: discount.type,
         value: discount.value,
-        discountAmount,
+        discountAmount: result.discountAmount,
         code: discount.code,
       },
     });

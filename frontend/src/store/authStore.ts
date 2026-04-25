@@ -43,7 +43,7 @@ export const useAuthStore = create<AuthState>()(
             for (const item of items) {
               try {
                 await cartApi.addItem(item.variantId, item.quantity);
-              } catch (err) {
+              } catch (_err) {
                 // Silently ignore sync errors (likely duplicates on server)
               }
             }

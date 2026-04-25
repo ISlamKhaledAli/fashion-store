@@ -195,6 +195,11 @@ export default function AdminProductsPage() {
     }
   };
 
+  const handleCreate = React.useCallback(() => {
+    setSelectedProduct(null);
+    setIsPanelOpen(true);
+  }, []);
+
   useEffect(() => {
     const isMounted = { current: true };
     
@@ -207,7 +212,7 @@ export default function AdminProductsPage() {
     return () => {
       isMounted.current = false;
     };
-  }, [searchParams]);
+  }, [searchParams, handleCreate]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
@@ -234,11 +239,6 @@ export default function AdminProductsPage() {
 
   const handleEdit = React.useCallback((product: Product) => {
     setSelectedProduct(product);
-    setIsPanelOpen(true);
-  }, []);
-
-  const handleCreate = React.useCallback(() => {
-    setSelectedProduct(null);
     setIsPanelOpen(true);
   }, []);
 

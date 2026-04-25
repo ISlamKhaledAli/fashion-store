@@ -144,7 +144,7 @@ export default function AdminBrandsPage() {
                 { id: "INACTIVE", label: "Drafts", count: stats.inactive },
               ]}
               activeTab={activeTab}
-              onTabChange={(id) => setActiveTab(id as any)}
+              onTabChange={(id) => setActiveTab(id as "ALL" | "ACTIVE" | "INACTIVE")}
             />
           </div>
 

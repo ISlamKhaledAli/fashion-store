@@ -208,7 +208,7 @@ export const PaymentStep = ({ onNext, onBack, shippingMethod = "standard" }: Pay
     if (currentTotal !== lastTotal && currentTotal > 0) {
       fetchIntent();
     }
-  }, [currentTotal, shippingMethod, promoCode]);
+  }, [currentTotal, shippingMethod, promoCode, lastTotal, subtotal]);
 
 
   if (loading) {

@@ -32,6 +32,20 @@ import { MetricCard } from "@/components/admin/MetricCard";
 import { AdminTabs, AdminTab } from "@/components/admin/AdminTabs";
 import { cn } from "@/lib/utils";
 
+export interface DiscountItem {
+  id: string;
+  code: string;
+  type: string;
+  value: number;
+  minOrder: number | null;
+  maxUses: number | null;
+  usedCount: number;
+  isActive: boolean;
+  expiresAt: string | null;
+  startDate: string | null;
+  revenueGenerated?: number;
+}
+
 // Optimized Table Row Component
 const DiscountRow = React.memo(({ 
   discount, 
@@ -40,8 +54,8 @@ const DiscountRow = React.memo(({
   onDelete, 
   onCopy 
 }: { 
-  discount: any; 
-  onEdit: (d: any) => void;
+  discount: DiscountItem; 
+  onEdit: (d: DiscountItem) => void;
   onToggleStatus: (id: string, current: boolean) => void;
   onDelete: (id: string) => void;
   onCopy: (code: string) => void;
@@ -200,10 +214,10 @@ const DiscountRow = React.memo(({
 DiscountRow.displayName = "DiscountRow";
 
 export default function DiscountsPage() {
-  const [discounts, setDiscounts] = useState<any[]>([]);
+  const [discounts, setDiscounts] = useState<DiscountItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingDiscount, setEditingDiscount] = useState<any>(null);
+  const [editingDiscount, setEditingDiscount] = useState<DiscountItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
   const [page, setPage] = useState(1);
@@ -214,7 +228,7 @@ export default function DiscountsPage() {
     try {
       const res = await adminApi.getDiscounts();
       if (res.data.success) {
-        setDiscounts(res.data.data);
+        setDiscounts(res.data.data as unknown as DiscountItem[]);
       }
     } catch (err) {
       toast.error("Telemetry failure. Records inaccessible.");
@@ -232,7 +246,7 @@ export default function DiscountsPage() {
     toast.success("Code copied to clipboard!");
   }, []);
 
-  const handleEdit = useCallback((discount: any) => {
+  const handleEdit = useCallback((discount: DiscountItem) => {
     setEditingDiscount(discount);
     setIsFormOpen(true);
   }, []);
@@ -272,9 +286,9 @@ export default function DiscountsPage() {
       const isLimitReached = d.maxUses && d.usedCount >= d.maxUses;
       
       let matchesTab = true;
-      if (activeTab === "ACTIVE") matchesTab = d.isActive && !isExpired && !isScheduled && !isLimitReached;
-      if (activeTab === "SCHEDULED") matchesTab = d.isActive && isScheduled;
-      if (activeTab === "EXPIRED") matchesTab = isExpired;
+      if (activeTab === "ACTIVE") matchesTab = Boolean(d.isActive && !isExpired && !isScheduled && !isLimitReached);
+      if (activeTab === "SCHEDULED") matchesTab = Boolean(d.isActive && isScheduled);
+      if (activeTab === "EXPIRED") matchesTab = Boolean(isExpired);
       if (activeTab === "INACTIVE") matchesTab = !d.isActive;
       
       return matchesSearch && matchesTab;

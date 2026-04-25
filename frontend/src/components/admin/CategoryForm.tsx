@@ -87,7 +87,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       await onSave({
         ...formData,
         parentId: formData.parentId || null,
-      } as any);
+      } as Partial<Category>);
     } finally {
       setIsSaving(false);
     }

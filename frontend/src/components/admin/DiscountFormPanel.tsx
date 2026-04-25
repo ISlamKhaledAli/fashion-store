@@ -10,10 +10,12 @@ import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
+import { DiscountItem } from "@/app/admin/discounts/page";
+
 interface DiscountFormPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  discount?: any;
+  discount?: DiscountItem | null;
   onSuccess: () => void;
 }
 
@@ -107,8 +109,8 @@ export const DiscountFormPanel: React.FC<DiscountFormPanelProps> = ({
       }
       onSuccess();
       onClose();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Sync failure.");
+    } catch (error: unknown) {
+      toast.error((error as { response?: { data?: { message?: string } } }).response?.data?.message || "Sync failure.");
     } finally {
       setIsSubmitting(false);
     }

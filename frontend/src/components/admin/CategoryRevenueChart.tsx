@@ -1,7 +1,7 @@
 import React from "react";
 import { formatCurrency } from "@/lib/utils";
 
-interface CategoryStat {
+export interface CategoryStat {
   id: string;
   name: string;
   revenue: number;

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Heart, Plus, Check } from "lucide-react";
 import { Product } from "@/types";
@@ -111,11 +112,13 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
       >
         <Link href={`/products/${product.id}`} className="shrink-0 w-full sm:w-64 aspect-3/4 sm:aspect-square relative overflow-hidden bg-surface-container-low group-hover:-translate-y-1 transition-transform duration-500">
           {product.images[0] && (
-            <img
+            <Image
               ref={imageRef}
               src={product.images.find(img => img.isMain)?.url || product.images[0].url}
               alt={product.name}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              fill
+              sizes="(max-width: 640px) 100vw, 256px"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
             />
           )}
           <Button
@@ -225,11 +228,13 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
         <Link href={`/products/${product.id}`} className="block">
           <div className="relative overflow-hidden aspect-3/4 bg-surface-container-low mb-6">
             {product.images[0] && (
-              <img
+              <Image
                 ref={imageRef}
                 src={product.images.find(img => img.isMain)?.url || product.images[0].url}
                 alt={product.name}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
             )}
             
@@ -329,11 +334,13 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
       <Link href={`/products/${product.id}`} className="block">
         <div className="relative aspect-4/5 bg-surface-container-low overflow-hidden mb-6 cinematic-ease duration-500 group-hover:-translate-y-2">
           {product.images[0] && (
-            <img
+            <Image
               ref={imageRef}
               src={product.images.find(img => img.isMain)?.url || product.images[0].url}
               alt={product.name}
-              className="w-full h-full object-cover cinematic-ease duration-[0.8s] group-hover:scale-110"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover cinematic-ease duration-[0.8s] group-hover:scale-110"
             />
           )}
           

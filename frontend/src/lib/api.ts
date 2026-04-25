@@ -1,7 +1,7 @@
 import api from "./axios";
 import { 
   User, Category, Brand, Product, Order, 
-  WishlistItem, Address, Review, ApiResponse, OrderStatus, AdminCustomer
+  WishlistItem, Review, ApiResponse, OrderStatus, AdminCustomer
 } from "@/types";
 
 export const authApi = {
@@ -165,11 +165,11 @@ export const adminApi = {
   updateStock: (variantId: string, stock: number) =>
     api.put<ApiResponse<unknown>>(`/admin/inventory/${variantId}`, { stock }),
   getDiscounts: () =>
-    api.get<ApiResponse<any[]>>("/admin/discounts"),
-  createDiscount: (data: any) =>
-    api.post<ApiResponse<any>>("/admin/discounts", data),
-  updateDiscount: (id: string, data: any) =>
-    api.put<ApiResponse<any>>(`/admin/discounts/${id}`, data),
+    api.get<ApiResponse<Record<string, unknown>[]>>("/admin/discounts"),
+  createDiscount: (data: Record<string, unknown>) =>
+    api.post<ApiResponse<Record<string, unknown>>>("/admin/discounts", data),
+  updateDiscount: (id: string, data: Record<string, unknown>) =>
+    api.put<ApiResponse<Record<string, unknown>>>(`/admin/discounts/${id}`, data),
   deleteDiscount: (id: string) =>
     api.delete<ApiResponse<unknown>>(`/admin/discounts/${id}`),
 };
