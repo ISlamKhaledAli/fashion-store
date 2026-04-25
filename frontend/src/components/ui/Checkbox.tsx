@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useId } from "react";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,30 +8,31 @@ import { motion, AnimatePresence } from "framer-motion";
 interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
+  label?: React.ReactNode;
 }
 
 export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ className, checked, onCheckedChange, ...props }, ref) => {
+  ({ className, checked, onCheckedChange, label, id: externalId, ...props }, ref) => {
+    const autoId = useId();
+    const inputId = externalId || autoId;
+
     return (
-      <div className="relative flex items-center justify-center cursor-pointer group w-5 h-5">
+      <label htmlFor={inputId} className={cn("relative flex items-center gap-3 cursor-pointer group", className)}>
         <input
+          id={inputId}
           type="checkbox"
-          className="absolute opacity-0 w-0 h-0 pointer-events-none"
+          className="sr-only"
           checked={checked}
           onChange={(e) => onCheckedChange?.(e.target.checked)}
           ref={ref}
           {...props}
         />
         <div
-          onClick={(e) => {
-            e.stopPropagation();
-            onCheckedChange?.(!checked);
-          }}
           className={cn(
-            "w-full h-full rounded-sm border transition-all duration-500 flex items-center justify-center",
+            "w-5 h-5 shrink-0 rounded-sm border transition-all duration-500 flex items-center justify-center",
             checked 
               ? "bg-black border-black shadow-[0_2px_10px_rgba(0,0,0,0.1)]" 
-              : "bg-transparent border-stone-300 hover:border-black"
+              : "bg-transparent border-stone-300 group-hover:border-black"
           )}
         >
           <AnimatePresence>
@@ -51,7 +52,8 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
             )}
           </AnimatePresence>
         </div>
-      </div>
+        {label && <span>{label}</span>}
+      </label>
     );
   }
 );

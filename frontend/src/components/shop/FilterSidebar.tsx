@@ -95,18 +95,19 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
           <h3 className="text-[11px] font-bold uppercase tracking-widest mb-4">Categories</h3>
           <div className="flex flex-col gap-3">
             {categories.map((cat) => (
-              <label key={cat} className="flex items-center gap-3 cursor-pointer group">
-                <Checkbox 
-                  checked={state.category.includes(cat)}
-                  onCheckedChange={() => dispatch({ type: "toggle_category", payload: cat })}
-                />
-                <span className={cn(
-                  "text-xs uppercase tracking-wider transition-colors",
-                  state.category.includes(cat) ? "text-stone-900 dark:text-stone-50" : "text-stone-400 group-hover:text-stone-900"
-                )}>
-                  {cat}
-                </span>
-              </label>
+              <Checkbox 
+                key={cat}
+                checked={state.category.includes(cat)}
+                onCheckedChange={() => dispatch({ type: "toggle_category", payload: cat })}
+                label={
+                  <span className={cn(
+                    "text-xs uppercase tracking-wider transition-colors",
+                    state.category.includes(cat) ? "text-stone-900 dark:text-stone-50" : "text-stone-400 group-hover:text-stone-900"
+                  )}>
+                    {cat}
+                  </span>
+                }
+              />
             ))}
           </div>
         </section>
@@ -117,18 +118,19 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
             <h3 className="text-[11px] font-bold uppercase tracking-widest mb-4">Brands</h3>
             <div className="flex flex-col gap-3">
               {brands.map((brand) => (
-                <label key={brand.id} className="flex items-center gap-3 cursor-pointer group">
-                  <Checkbox 
-                    checked={state.brand.includes(brand.slug)}
-                    onCheckedChange={() => dispatch({ type: "toggle_brand", payload: brand.slug })}
-                  />
-                  <span className={cn(
-                    "text-xs uppercase tracking-wider transition-colors",
-                    state.brand.includes(brand.slug) ? "text-stone-900 dark:text-stone-50" : "text-stone-400 group-hover:text-stone-900"
-                  )}>
-                    {brand.name}
-                  </span>
-                </label>
+                <Checkbox 
+                  key={brand.id}
+                  checked={state.brand.includes(brand.slug)}
+                  onCheckedChange={() => dispatch({ type: "toggle_brand", payload: brand.slug })}
+                  label={
+                    <span className={cn(
+                      "text-xs uppercase tracking-wider transition-colors",
+                      state.brand.includes(brand.slug) ? "text-stone-900 dark:text-stone-50" : "text-stone-400 group-hover:text-stone-900"
+                    )}>
+                      {brand.name}
+                    </span>
+                  }
+                />
               ))}
             </div>
           </section>
