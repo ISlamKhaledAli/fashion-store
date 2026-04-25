@@ -130,7 +130,9 @@ export const buildProductQuery = ({
     include.images = true;
     include.variants = true;
   } else {
-    include.images = { where: { isMain: true }, take: 1 };
+    include.images = { 
+      select: { url: true, isMain: true, variantColor: true }
+    };
     include.variants = {
       select: { id: true, size: true, color: true, colorHex: true, stock: true },
       take: 1,

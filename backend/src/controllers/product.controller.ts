@@ -74,7 +74,10 @@ export const getProductByIdentifier = async (req: Request, res: Response, next: 
       include: {
         category: true,
         brand: true,
-        images: true,
+        images: {
+          orderBy: { position: 'asc' },
+          select: { id: true, url: true, publicId: true, position: true, isMain: true, variantColor: true }
+        },
         variants: true,
         reviews: {
           include: { user: { select: { name: true, avatar: true } } },
@@ -88,7 +91,10 @@ export const getProductByIdentifier = async (req: Request, res: Response, next: 
         include: {
           category: true,
           brand: true,
-          images: true,
+          images: {
+            orderBy: { position: 'asc' },
+            select: { id: true, url: true, publicId: true, position: true, isMain: true, variantColor: true }
+          },
           variants: true,
           reviews: {
             include: { user: { select: { name: true, avatar: true } } },
@@ -127,7 +133,10 @@ export const getProductById = async (req: Request, res: Response, next: NextFunc
       include: {
         category: true,
         brand: true,
-        images: true,
+        images: {
+          orderBy: { position: 'asc' },
+          select: { id: true, url: true, publicId: true, position: true, isMain: true, variantColor: true }
+        },
         variants: true,
         reviews: {
           include: { user: { select: { name: true, avatar: true } } },
@@ -168,7 +177,13 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
           create: variants,
         },
         images: images ? {
-          create: images,
+          create: images.map((img: any, index: number) => ({
+            url: img.url,
+            publicId: img.publicId,
+            position: index,
+            isMain: index === 0,
+            variantColor: img.variantColor || null,
+          })),
         } : undefined,
       },
       include: {
@@ -303,7 +318,13 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
             productId: String(id),
           }));
         if (newImages.length > 0) {
-          await tx.productImage.createMany({ data: newImages as any });
+          await tx.productImage.createMany({ 
+            data: newImages.map((img: any) => ({
+              ...img,
+              variantColor: img.variantColor || null,
+              productId: String(id),
+            })) as any 
+          });
         }
       }
 
@@ -431,6 +452,30 @@ export const getAdminProducts = async (req: Request, res: Response, next: NextFu
       success: true,
       data: products,
       pagination,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateProductImage = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { variantColor, isMain, position } = req.body;
+    const image = await prisma.productImage.update({
+      where: { id: String(req.params.imageId) },
+      data: { 
+        variantColor: variantColor || null,
+        ...(isMain !== undefined && { isMain }),
+        ...(position !== undefined && { position }),
+      }
+    });
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Image updated",
+      data: image,
     });
   } catch (error) {
     next(error);

@@ -127,6 +127,8 @@ export const adminApi = {
     // Rely on product.validator.ts on the backend to strip unused fields
     return api.put<ApiResponse<Product>>(`/products/${id}`, data);
   },
+  updateProductImage: (productId: string, imageId: string, data: { variantColor?: string | null, isMain?: boolean, position?: number }) => 
+    api.put<ApiResponse<unknown>>(`/products/${productId}/images/${imageId}`, data),
   deleteProduct: (id: string) => 
     api.delete<ApiResponse<unknown>>(`/products/${id}`),
   uploadMedia: (file: File) => {

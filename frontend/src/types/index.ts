@@ -39,6 +39,7 @@ export interface ProductImage {
   url: string;
   publicId: string;
   isMain: boolean;
+  variantColor?: string | null;
 }
 
 export interface Variant {

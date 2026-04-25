@@ -16,18 +16,17 @@ import { RatingDisplay } from "../ui/RatingDisplay";
 
 interface ProductInfoProps {
   product: Product;
+  selectedColor: string | null;
+  onColorSelect: (color: string) => void;
 }
 
 
 
 type ButtonState = "idle" | "loading" | "success";
 
-export const ProductInfo = ({ product }: ProductInfoProps) => {
+export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductInfoProps) => {
   const { addItem, toggleDrawer } = useCartStore();
   
-  const [selectedColor, setSelectedColor] = useState<string>(
-    product.variants?.[0]?.color || ""
-  );
   const [selectedSize, setSelectedSize] = useState<string>(
     product.variants?.[0]?.size || ""
   );
@@ -49,6 +48,12 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
   );
 
   const colors = Array.from(new Set(product.variants.map((v) => v.color)));
+
+  const colorHasImages = (colorName: string) => {
+    return product.images?.some(
+      img => img.variantColor?.toLowerCase() === colorName.toLowerCase()
+    );
+  };
 
   const handleAddToCart = async (e?: React.MouseEvent) => {
     if (e) {
@@ -139,17 +144,21 @@ export const ProductInfo = ({ product }: ProductInfoProps) => {
               <Button
                 variant="none"
                 key={variant.color}
-                onClick={() => setSelectedColor(variant.color)}
+                onClick={() => onColorSelect(variant.color)}
                 style={{ backgroundColor: variant.colorHex || '#ccc' }}
                 className={cn(
-                  "w-7 h-7 rounded-full border-2 transition-all p-0",
+                  "w-7 h-7 rounded-full border-2 transition-all p-0 relative",
                   selectedColor === variant.color 
                     ? 'border-zinc-950 scale-110' 
                     : 'border-transparent hover:border-zinc-200'
                 )}
                 title={variant.color}
                 aria-label={`Select color ${variant.color}`}
-              />
+              >
+                {colorHasImages(variant.color) && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-zinc-900 rounded-full border border-white" />
+                )}
+              </Button>
             ))}
         </div>
       </div>

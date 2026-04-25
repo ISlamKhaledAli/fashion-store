@@ -71,6 +71,15 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/discounts", discountRoutes);
 
+// Catch-all for unmatched routes
+app.use((req: Request, res: Response) => {
+  console.log(`[404] ${req.method} ${req.originalUrl}`);
+  res.status(404).json({
+    success: false,
+    message: `Route ${req.method} ${req.originalUrl} not found`
+  });
+});
+
 // Error handling middleware
 app.use(errorHandler);
 

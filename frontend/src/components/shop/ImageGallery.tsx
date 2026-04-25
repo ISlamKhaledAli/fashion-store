@@ -10,14 +10,39 @@ import { ImageLightbox } from "./ImageLightbox";
 
 interface ImageGalleryProps {
   images: ProductImage[];
+  selectedColor?: string | null;
+  productName: string;
 }
 
-export const ImageGallery = ({ images }: ImageGalleryProps) => {
-  const [activeImage, setActiveImage] = useState(
+export const ImageGallery = ({ images, selectedColor, productName }: ImageGalleryProps) => {
+  const [activeImage, setActiveImage] = useState<ProductImage>(
     images.find((img) => img.isMain) || images[0]
   );
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const activeIndex = images.findIndex((img) => img.id === activeImage.id);
+
+  const visibleImages = React.useMemo(() => {
+    if (!selectedColor) {
+      return images.filter(img => !img.variantColor || img.isMain);
+    }
+    
+    const colorImages = images.filter(
+      img => img.variantColor?.toLowerCase() === selectedColor.toLowerCase()
+    );
+    
+    if (colorImages.length === 0) {
+      return images.filter(img => !img.variantColor);
+    }
+    
+    return colorImages;
+  }, [images, selectedColor]);
+
+  React.useEffect(() => {
+    if (visibleImages.length > 0) {
+      setActiveImage(visibleImages[0]);
+    }
+  }, [visibleImages]);
+
+  const activeIndex = images.findIndex((img) => img.id === activeImage?.id);
 
   return (
     <div className="space-y-6">
@@ -28,28 +53,30 @@ export const ImageGallery = ({ images }: ImageGalleryProps) => {
       >
         <AnimatePresence mode="wait">
           <motion.div
-            key={activeImage.id}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            key={`${selectedColor}-${activeImage?.id}`}
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             className="w-full h-full p-4"
           >
-            <Image
-              id="pdp-main-image"
-              src={activeImage.url}
-              alt="Product View"
-              fill
-              className="object-contain cinematic-reveal scale-[1.01] group-hover:scale-105 transition-transform duration-700"
-              priority
-            />
+            {activeImage && (
+              <Image
+                id="pdp-main-image"
+                src={activeImage.url}
+                alt={productName}
+                fill
+                className="object-contain cinematic-reveal scale-[1.01] group-hover:scale-105 transition-transform duration-700"
+                priority
+              />
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
 
       {/* Thumbnails */}
       <div className="flex flex-wrap gap-2">
-        {images.slice(0, 5).map((img) => (
+        {visibleImages.map((img) => (
           <Button
             key={img.id}
             variant="none"
@@ -57,7 +84,7 @@ export const ImageGallery = ({ images }: ImageGalleryProps) => {
             onClick={() => setActiveImage(img)}
             className={cn(
               "w-[80px] h-[100px] bg-[#f8f8f6] rounded-[4px] overflow-hidden cursor-pointer transition-opacity duration-300 border",
-              activeImage.id === img.id ? "border-[#1a1a1a]" : "border-transparent hover:opacity-70"
+              activeImage?.id === img.id ? "border-[#1a1a1a]" : "border-transparent hover:opacity-70"
             )}
             aria-label="View product image"
           >

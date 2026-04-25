@@ -24,6 +24,7 @@ export default function ProductDetailPage({ params }: PageProps) {
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
 
   const router = useRouter();
 
@@ -51,6 +52,9 @@ export default function ProductDetailPage({ params }: PageProps) {
           });
           if (relatedRes.data.success) {
             setRelatedProducts(relatedRes.data.data.filter(p => p.id !== fetchedProduct.id));
+          }
+          if (fetchedProduct?.variants?.length > 0) {
+            setSelectedColor(fetchedProduct.variants[0].color);
           }
         }
       } catch (error) {
@@ -139,12 +143,20 @@ export default function ProductDetailPage({ params }: PageProps) {
       <section className="bg-transparent max-w-[1440px] mx-auto px-8 lg:px-12 py-16 grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24">
         {/* Gallery Column */}
         <div className="lg:col-span-7">
-          <ImageGallery images={product.images} />
+          <ImageGallery 
+            images={product.images} 
+            selectedColor={selectedColor}
+            productName={product.name}
+          />
         </div>
         
         {/* Info Column */}
         <div className="lg:col-span-5">
-          <ProductInfo product={product} />
+          <ProductInfo 
+            product={product} 
+            selectedColor={selectedColor}
+            onColorSelect={setSelectedColor}
+          />
         </div>
       </section>
 

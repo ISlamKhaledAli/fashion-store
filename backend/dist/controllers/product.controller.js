@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAdminProducts = exports.getProductFilters = exports.deleteProduct = exports.updateProduct = exports.createProduct = exports.getProductById = exports.getProductByIdentifier = exports.getProducts = void 0;
+exports.updateProductImage = exports.getAdminProducts = exports.getProductFilters = exports.deleteProduct = exports.updateProduct = exports.createProduct = exports.getProductById = exports.getProductByIdentifier = exports.getProducts = void 0;
 const prisma_1 = require("../lib/prisma");
 const apiResponse_1 = require("../utils/apiResponse");
 const pagination_1 = require("../utils/pagination");
@@ -62,7 +62,10 @@ const getProductByIdentifier = async (req, res, next) => {
             include: {
                 category: true,
                 brand: true,
-                images: true,
+                images: {
+                    orderBy: { position: 'asc' },
+                    select: { id: true, url: true, publicId: true, position: true, isMain: true, variantColor: true }
+                },
                 variants: true,
                 reviews: {
                     include: { user: { select: { name: true, avatar: true } } },
@@ -75,7 +78,10 @@ const getProductByIdentifier = async (req, res, next) => {
                 include: {
                     category: true,
                     brand: true,
-                    images: true,
+                    images: {
+                        orderBy: { position: 'asc' },
+                        select: { id: true, url: true, publicId: true, position: true, isMain: true, variantColor: true }
+                    },
                     variants: true,
                     reviews: {
                         include: { user: { select: { name: true, avatar: true } } },
@@ -111,7 +117,10 @@ const getProductById = async (req, res, next) => {
             include: {
                 category: true,
                 brand: true,
-                images: true,
+                images: {
+                    orderBy: { position: 'asc' },
+                    select: { id: true, url: true, publicId: true, position: true, isMain: true, variantColor: true }
+                },
                 variants: true,
                 reviews: {
                     include: { user: { select: { name: true, avatar: true } } },
@@ -149,7 +158,13 @@ const createProduct = async (req, res, next) => {
                     create: variants,
                 },
                 images: images ? {
-                    create: images,
+                    create: images.map((img, index) => ({
+                        url: img.url,
+                        publicId: img.publicId,
+                        position: index,
+                        isMain: index === 0,
+                        variantColor: img.variantColor || null,
+                    })),
                 } : undefined,
             },
             include: {
@@ -265,7 +280,13 @@ const updateProduct = async (req, res, next) => {
                     productId: String(id),
                 }));
                 if (newImages.length > 0) {
-                    await tx.productImage.createMany({ data: newImages });
+                    await tx.productImage.createMany({
+                        data: newImages.map((img) => ({
+                            ...img,
+                            variantColor: img.variantColor || null,
+                            productId: String(id),
+                        }))
+                    });
                 }
             }
             // Update the product
@@ -388,3 +409,27 @@ const getAdminProducts = async (req, res, next) => {
     }
 };
 exports.getAdminProducts = getAdminProducts;
+const updateProductImage = async (req, res, next) => {
+    try {
+        const { variantColor, isMain, position } = req.body;
+        const image = await prisma_1.prisma.productImage.update({
+            where: { id: String(req.params.imageId) },
+            data: {
+                variantColor: variantColor || null,
+                ...(isMain !== undefined && { isMain }),
+                ...(position !== undefined && { position }),
+            }
+        });
+        return (0, apiResponse_1.sendResponse)({
+            res,
+            status: 200,
+            success: true,
+            message: "Image updated",
+            data: image,
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.updateProductImage = updateProductImage;

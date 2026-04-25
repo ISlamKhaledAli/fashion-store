@@ -199,11 +199,22 @@ const PricingSection = memo(({ price, comparePrice, cost, margin, onFieldChange,
 ));
 PricingSection.displayName = "PricingSection";
 
-const MediaSection = memo(({ images, onUpload, onSetMain, onRemove }: {
-  images: { url: string; publicId: string; isMain: boolean }[];
+const MediaSection = memo(({ 
+  images, 
+  onUpload, 
+  onSetMain, 
+  onRemove,
+  uniqueColors,
+  onColorChange,
+  getColorHex
+}: {
+  images: { id?: string; url: string; publicId: string; isMain: boolean; variantColor?: string | null }[];
   onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSetMain: (idx: number) => void;
   onRemove: (idx: number) => void;
+  uniqueColors: string[];
+  onColorChange: (imageId: string, color: string | null) => void;
+  getColorHex: (colorName: string) => string;
 }) => (
   <section className="space-y-8">
     <div className="flex items-center gap-4">
@@ -213,49 +224,87 @@ const MediaSection = memo(({ images, onUpload, onSetMain, onRemove }: {
     </div>
     
     <div className="grid grid-cols-3 gap-4">
-      {images.map((img: { url: string; publicId: string; isMain: boolean }, idx: number) => (
+      {images.map((img, idx: number) => (
         <motion.div 
           layout
           key={img.publicId} 
           className={cn(
-            "aspect-[3/4] rounded-sm bg-zinc-50 overflow-hidden relative group border-2 transition-all duration-500 shadow-sm",
+            "rounded-sm bg-zinc-50 overflow-hidden relative group border-2 transition-all duration-500 shadow-sm flex flex-col",
             img.isMain ? "border-zinc-950 scale-[1.02] z-10" : "border-transparent"
           )}
         >
-          <img src={img.url} className="w-full h-full object-cover" alt="Product piece" />
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-            <Button
-              type="button"
-              variant="none"
-              size="none"
-              onClick={() => onSetMain(idx)}
-              className="bg-white p-2 text-zinc-950 rounded-full hover:scale-110 transition-transform shadow-lg"
-              icon={<Check size={14} className={img.isMain ? "text-green-600" : ""} />}
-            />
-            <Button
-              type="button"
-              variant="none"
-              size="none"
-              onClick={() => onRemove(idx)}
-              className="bg-white p-2 text-red-500 rounded-full hover:scale-110 transition-transform shadow-lg"
-              icon={<Trash2 size={14} />}
-            />
+          <div className="aspect-[3/4] relative overflow-hidden group/img">
+            <img src={img.url} className="w-full h-full object-cover" alt="Product piece" />
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2">
+              <Button
+                type="button"
+                variant="none"
+                size="none"
+                onClick={() => onSetMain(idx)}
+                className="bg-white p-2 text-zinc-950 rounded-full hover:scale-110 transition-transform shadow-lg"
+                icon={<Check size={14} className={img.isMain ? "text-green-600" : ""} />}
+              />
+              <Button
+                type="button"
+                variant="none"
+                size="none"
+                onClick={() => onRemove(idx)}
+                className="bg-white p-2 text-red-500 rounded-full hover:scale-110 transition-transform shadow-lg"
+                icon={<Trash2 size={14} />}
+              />
+            </div>
+            <div className="absolute top-2 left-2 z-20">
+              <Button
+                type="button"
+                variant="none"
+                size="none"
+                onClick={() => onSetMain(idx)}
+                className={cn(
+                  "px-2 py-0.5 text-[7px] font-black uppercase tracking-widest rounded-full transition-all duration-300",
+                  img.isMain 
+                    ? "bg-black text-white shadow-lg scale-105" 
+                    : "bg-zinc-200 text-zinc-600 opacity-0 group-hover/img:opacity-100 hover:bg-zinc-300"
+                )}
+              >
+                Primary View
+              </Button>
+            </div>
+
+            {/* Color dot indicator */}
+            {img.variantColor && (
+              <div 
+                className="absolute top-2 right-2 w-3 h-3 rounded-full border-2 border-white shadow-sm z-20"
+                style={{ backgroundColor: getColorHex(img.variantColor) }}
+                title={img.variantColor}
+              />
+            )}
           </div>
-          <div className="absolute top-2 left-2 z-20">
-            <Button
-              type="button"
-              variant="none"
-              size="none"
-              onClick={() => onSetMain(idx)}
-              className={cn(
-                "px-2 py-0.5 text-[7px] font-black uppercase tracking-widest rounded-full transition-all duration-300",
-                img.isMain 
-                  ? "bg-black text-white shadow-lg scale-105" 
-                  : "bg-zinc-200 text-zinc-600 opacity-0 group-hover:opacity-100 hover:bg-zinc-300"
-              )}
+
+          <div className="p-2 bg-white space-y-2 border-t border-zinc-100">
+            <select
+              value={img.variantColor || ''}
+              onChange={(e) => onColorChange(img.id || img.publicId, e.target.value || null)}
+              className="w-full text-[10px] font-bold uppercase tracking-wider border-none bg-zinc-50 rounded px-2 py-1.5 focus:ring-1 focus:ring-black outline-none cursor-pointer appearance-none"
             >
-              Primary View
-            </Button>
+              <option value=''>All Colors</option>
+              {uniqueColors.map(color => (
+                <option key={color} value={color}>{color}</option>
+              ))}
+            </select>
+
+            <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest block text-center">
+              {img.variantColor ? (
+                <span className="flex items-center gap-1.5 justify-center">
+                  <span 
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: getColorHex(img.variantColor) }}
+                  />
+                  {img.variantColor}
+                </span>
+              ) : (
+                'General View'
+              )}
+            </span>
           </div>
         </motion.div>
       ))}
@@ -314,6 +363,25 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
   const [fetching, setFetching] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+
+  // Variant Generator State
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [selectedColors, setSelectedColors] = useState<{ name: string; hex: string }[]>([]);
+  const [baseStock, setBaseStock] = useState(10);
+
+  const SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+  const COMMON_COLORS = [
+    { name: 'Black', hex: '#000000' },
+    { name: 'White', hex: '#FFFFFF' },
+    { name: 'Navy', hex: '#1B2A4A' },
+    { name: 'Grey', hex: '#808080' },
+    { name: 'Beige', hex: '#D2B48C' },
+    { name: 'Brown', hex: '#8B4513' },
+    { name: 'Red', hex: '#CC0000' },
+    { name: 'Green', hex: '#2D6A2D' },
+    { name: 'Blue', hex: '#1A4B8C' },
+    { name: 'Camel', hex: '#C19A6B' },
+  ];
   
   const [formData, setFormData] = useState({
     name: "",
@@ -325,7 +393,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     categoryId: "",
     brandId: "",
     status: "ACTIVE" as "ACTIVE" | "DRAFT" | "ARCHIVED",
-    images: [] as { url: string; publicId: string; isMain: boolean }[],
+    images: [] as { id?: string; url: string; publicId: string; isMain: boolean; variantColor?: string | null }[],
     variants: [] as Partial<Variant>[],
   });
 
@@ -477,6 +545,64 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     }
   };
 
+
+  const toggleSize = (size: string) => {
+    setSelectedSizes(prev =>
+      prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]
+    );
+  };
+
+  const toggleColor = (color: { name: string; hex: string }) => {
+    setSelectedColors(prev =>
+      prev.find(c => c.name === color.name)
+        ? prev.filter(c => c.name !== color.name)
+        : [...prev, color]
+    );
+  };
+
+  const addCustomColor = () => {
+    const nameInput = document.getElementById('custom-color-name') as HTMLInputElement;
+    const hexInput = document.getElementById('custom-color-hex') as HTMLInputElement;
+    const name = nameInput?.value;
+    const hex = hexInput?.value;
+    if (name && hex) {
+      setSelectedColors(prev => [...prev, { name, hex }]);
+      if (nameInput) nameInput.value = "";
+    }
+  };
+
+  const generateSKU = (productName: string, color: string, size: string): string => {
+    const prefix = productName
+      .split(' ')
+      .map(w => w[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 4);
+    const colorCode = color.toUpperCase().slice(0, 3);
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `${prefix}-${colorCode}-${size}-${random}`;
+  };
+
+  const generateVariants = () => {
+    if (selectedSizes.length === 0 || selectedColors.length === 0) return;
+    
+    const timestamp = Date.now();
+    let counter = 0;
+    const generated = selectedColors.flatMap(color =>
+      selectedSizes.map(size => ({
+        id: `temp-${timestamp}-${counter++}`,
+        size,
+        color: color.name,
+        colorHex: color.hex,
+        stock: baseStock,
+        sku: generateSKU(formData.name, color.name, size),
+      }))
+    );
+    
+    setFormData(prev => ({ ...prev, variants: [...prev.variants, ...generated] }));
+    toast.success(`${generated.length} combinations manifested`);
+  };
+
   const handleSetMain = React.useCallback((idx: number) => {
     setFormData(prev => ({
       ...prev,
@@ -490,6 +616,38 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
       images: prev.images.filter((_, i) => i !== idx)
     }));
   }, []);
+  
+  const uniqueColors = useMemo(() => {
+    const colors = formData.variants
+      ?.map((v: any) => v.color)
+      ?.filter(Boolean) || [];
+    return [...new Set(colors)] as string[];
+  }, [formData.variants]);
+
+  const getColorHex = (colorName: string): string => {
+    const variant = formData.variants?.find(
+      (v: any) => v.color?.toLowerCase() === colorName?.toLowerCase()
+    );
+    return variant?.colorHex || '#ccc';
+  };
+
+  const handleImageColorChange = async (imageId: string, variantColor: string | null) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.map((img: any) => 
+        (img.id === imageId || img.publicId === imageId) ? { ...img, variantColor } : img
+      )
+    }));
+    
+    if (product?.id && imageId && !imageId.startsWith('temp-')) {
+      try {
+        await adminApi.updateProductImage(product.id, imageId, { variantColor });
+      } catch (err) {
+        console.error('Failed to update image color:', err);
+        toast.error("Failed to sync image metadata");
+      }
+    }
+  };
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   
@@ -612,9 +770,119 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
               onUpload={handleImageUpload}
               onSetMain={handleSetMain}
               onRemove={handleRemoveImage}
+              uniqueColors={uniqueColors}
+              onColorChange={handleImageColorChange}
+              getColorHex={getColorHex}
             />
 
-            <section>
+            <section className="space-y-8">
+              <div className="flex items-center gap-4">
+                <div className="h-[1px] flex-1 bg-zinc-100" />
+                <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Variant Generation</h4>
+                <div className="h-[1px] flex-1 bg-zinc-100" />
+              </div>
+
+              <div className="p-6 bg-zinc-50/50 rounded-xl border border-zinc-100 space-y-6">
+                {/* Size Selection */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block">
+                    Select Archival Sizes
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {SIZE_OPTIONS.map(size => (
+                      <button
+                        type="button"
+                        key={size}
+                        onClick={() => toggleSize(size)}
+                        className={cn(
+                          "px-4 py-2 text-[10px] font-bold uppercase tracking-widest border rounded-lg transition-all duration-300",
+                          selectedSizes.includes(size)
+                            ? "bg-black text-white border-black shadow-md scale-105"
+                            : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50"
+                        )}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Color Selection */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block">
+                    Curate Color Palette
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {COMMON_COLORS.map(color => (
+                      <button
+                        type="button"
+                        key={color.name}
+                        onClick={() => toggleColor(color)}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest border rounded-lg transition-all duration-300",
+                          selectedColors.find(c => c.name === color.name)
+                            ? "bg-white text-black border-black shadow-md scale-105"
+                            : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-400"
+                        )}
+                      >
+                        <span 
+                          className="w-2.5 h-2.5 rounded-full border border-zinc-200"
+                          style={{ backgroundColor: color.hex }}
+                        />
+                        {color.name}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Custom color input */}
+                  <div className="flex gap-3 pt-2">
+                    <input
+                      type="text"
+                      placeholder="Custom label..."
+                      className="flex-1 text-[10px] font-bold uppercase tracking-widest border border-zinc-200 rounded-lg px-4 py-2 focus:ring-1 focus:ring-black outline-none"
+                      id="custom-color-name"
+                    />
+                    <input
+                      type="color"
+                      className="w-10 h-10 border border-zinc-200 rounded-lg cursor-pointer p-1"
+                      id="custom-color-hex"
+                      defaultValue="#000000"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={addCustomColor}
+                      className="px-4 text-[10px] font-bold uppercase tracking-widest h-10"
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Generator Action */}
+                <div className="flex items-center gap-4 pt-4 border-t border-zinc-100">
+                  <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg border border-zinc-200">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Inventory base:</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={baseStock}
+                      onChange={(e) => setBaseStock(parseInt(e.target.value) || 0)}
+                      className="w-12 text-xs font-bold text-center border-none focus:ring-0 outline-none p-0"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={generateVariants}
+                    disabled={selectedSizes.length === 0 || selectedColors.length === 0}
+                    className="flex-1 py-4 h-11 text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-black/5"
+                  >
+                    Manifest {selectedSizes.length * selectedColors.length} Variations
+                  </Button>
+                </div>
+              </div>
+
               <ProductVariantsTable 
                 variants={formData.variants} 
                 onChange={(variants) => handleFieldChange("variants", variants)} 

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -34,6 +34,31 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
   const isAnimating = useRef(false);
   const imageRef = useRef<HTMLImageElement>(null);
   
+  // State for hovered color
+  const [hoveredColor, setHoveredColor] = useState<string | null>(null);
+
+  // Get unique colors from product variants
+  const uniqueColors = useMemo(() => {
+    const seen = new Set();
+    return (product.variants || []).filter(v => {
+      const key = v.color?.toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [product.variants]);
+
+  // Get image for current hovered color
+  const currentImage = useMemo(() => {
+    if (!hoveredColor) {
+      return product.images?.find(img => img.isMain) || product.images?.[0];
+    }
+    const colorImage = product.images?.find(
+      img => img.variantColor?.toLowerCase() === hoveredColor.toLowerCase()
+    );
+    return colorImage || product.images?.find(img => img.isMain) || product.images?.[0];
+  }, [hoveredColor, product.images]);
+  
   const isFavorite = isInWishlist(product.id);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
@@ -43,25 +68,27 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
     if (isAnimating.current) return;
     isAnimating.current = true;
     
-    const productVariant = product.variants?.[0];
-    if (!productVariant) return;
+    const selectedVariant = hoveredColor
+      ? product.variants?.find(v => v.color?.toLowerCase() === hoveredColor.toLowerCase())
+      : product.variants?.[0];
+
+    if (!selectedVariant) return;
     
     const start = Date.now();
     setStatus("loading");
-    flyToCart(imageRef);
     
     await addItem({
       id: '', // Server handles IDs
       cartItemId: '',
       productId: product.id,
-      variantId: productVariant.id,
+      variantId: selectedVariant.id,
       name: product.name,
-      image: product.images.find(img => img.isMain)?.url || product.images[0]?.url || "",
+      image: currentImage?.url || "",
       price: product.price,
-      size: productVariant.size,
-      color: productVariant.color,
+      size: selectedVariant.size,
+      color: selectedVariant.color,
       quantity: 1,
-      stock: productVariant.stock || 10,
+      stock: selectedVariant.stock || 10,
     });
     
     // Ensure minimum 600ms loading state
@@ -333,16 +360,29 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
     >
       <Link href={`/products/${product.id}`} className="block">
         <div className="relative aspect-4/5 bg-surface-container-low overflow-hidden mb-6 cinematic-ease duration-500 group-hover:-translate-y-2">
-          {product.images[0] && (
-            <Image
-              ref={imageRef}
-              src={product.images.find(img => img.isMain)?.url || product.images[0].url}
-              alt={product.name}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover cinematic-ease duration-[0.8s] group-hover:scale-110"
-            />
-          )}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentImage?.url || 'placeholder'}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="absolute inset-0"
+            >
+              {currentImage ? (
+                <Image
+                  ref={imageRef}
+                  src={currentImage.url}
+                  alt={product.name}
+                  fill
+                  className="object-cover cinematic-ease duration-[0.8s] group-hover:scale-110"
+                  sizes="(max-width: 768px) 100vw, 25vw"
+                />
+              ) : (
+                <div className="w-full h-full bg-zinc-100" />
+              )}
+            </motion.div>
+          </AnimatePresence>
           
           {product.variants?.[0] && (
             <Button
@@ -393,8 +433,38 @@ export const ProductCard = ({ product, className, delay = 0, variant = "default"
           <div>
             <h4 className="text-lg font-medium text-on-surface">{product.name}</h4>
             <p className="text-on-surface-variant text-sm mt-1">
-              {product.variants?.[0]?.color || "Default"}
+              {hoveredColor || product.variants?.[0]?.color || "Default"}
             </p>
+            
+            {/* Color Swatches */}
+            {uniqueColors.length > 1 && (
+              <div className="flex items-center gap-1.5 mt-2">
+                {uniqueColors.slice(0, 5).map(variant => (
+                  <button
+                    key={variant.color}
+                    type="button"
+                    onMouseEnter={() => setHoveredColor(variant.color)}
+                    onMouseLeave={() => setHoveredColor(null)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setHoveredColor(variant.color === hoveredColor ? null : variant.color);
+                    }}
+                    className={cn(
+                      "w-4 h-4 rounded-full border-2 transition-all duration-200",
+                      hoveredColor === variant.color
+                        ? "border-zinc-900 scale-110"
+                        : "border-transparent hover:border-zinc-400"
+                    )}
+                    style={{ backgroundColor: variant.colorHex || '#ccc' }}
+                    title={variant.color}
+                  />
+                ))}
+                {uniqueColors.length > 5 && (
+                  <span className="text-[10px] font-bold text-zinc-400">+{uniqueColors.length - 5}</span>
+                )}
+              </div>
+            )}
           </div>
           <span className="text-lg font-bold tracking-tighter text-on-surface">
             {formatCurrency(product.price)}
