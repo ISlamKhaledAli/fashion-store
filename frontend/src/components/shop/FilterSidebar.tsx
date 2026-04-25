@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { categoryApi, brandApi, productApi } from "@/lib/api";
 import { Category } from "@/types";
 import { Button } from "../ui/Button";
+import { Checkbox } from "../ui/Checkbox";
 
 export interface FilterState {
   category: string[];
@@ -95,11 +96,9 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
           <div className="flex flex-col gap-3">
             {categories.map((cat) => (
               <label key={cat} className="flex items-center gap-3 cursor-pointer group">
-                <input 
-                  type="checkbox" 
+                <Checkbox 
                   checked={state.category.includes(cat)}
-                  onChange={() => dispatch({ type: "toggle_category", payload: cat })}
-                  className="w-4 h-4 border-outline-variant text-primary focus:ring-primary rounded-sm bg-transparent"
+                  onCheckedChange={() => dispatch({ type: "toggle_category", payload: cat })}
                 />
                 <span className={cn(
                   "text-xs uppercase tracking-wider transition-colors",
@@ -119,11 +118,9 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
             <div className="flex flex-col gap-3">
               {brands.map((brand) => (
                 <label key={brand.id} className="flex items-center gap-3 cursor-pointer group">
-                  <input 
-                    type="checkbox" 
+                  <Checkbox 
                     checked={state.brand.includes(brand.slug)}
-                    onChange={() => dispatch({ type: "toggle_brand", payload: brand.slug })}
-                    className="w-4 h-4 border-outline-variant text-primary focus:ring-primary rounded-sm bg-transparent"
+                    onCheckedChange={() => dispatch({ type: "toggle_brand", payload: brand.slug })}
                   />
                   <span className={cn(
                     "text-xs uppercase tracking-wider transition-colors",
