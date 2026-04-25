@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cancelOrder = exports.createOrder = exports.getOrderById = exports.getOrders = void 0;
+exports.updateOrderPayment = exports.cancelOrder = exports.createOrder = exports.getOrderById = exports.getOrders = void 0;
 const client_1 = require("@prisma/client");
 const prisma_1 = require("../lib/prisma");
 const apiResponse_1 = require("../utils/apiResponse");
@@ -11,6 +11,8 @@ const order_validator_1 = require("../validators/order.validator");
 const stripe_1 = require("../services/stripe");
 const stripe_2 = __importDefault(require("../services/stripe"));
 const pricing_1 = require("../utils/pricing");
+const email_1 = require("../services/email");
+const logger_1 = __importDefault(require("../utils/logger"));
 const AppError_1 = require("../utils/AppError");
 const getOrders = async (req, res, next) => {
     try {
@@ -126,24 +128,14 @@ const createOrder = async (req, res, next) => {
             let rawDiscountAmount = 0;
             if (promoCode) {
                 const discountRecord = await tx.discount.findUnique({ where: { code: promoCode } });
-                if (!discountRecord || !discountRecord.isActive) {
+                if (!discountRecord) {
                     throw new AppError_1.ValidationError("Invalid promo code");
                 }
-                if (discountRecord.expiresAt && new Date() > discountRecord.expiresAt) {
-                    throw new AppError_1.ValidationError("Promo code has expired");
+                const result = (0, pricing_1.calculateDiscount)(subtotal, discountRecord);
+                if (!result.isValid) {
+                    throw new AppError_1.ValidationError(result.message || "Invalid promo code");
                 }
-                if (discountRecord.maxUses && discountRecord.usedCount >= discountRecord.maxUses) {
-                    throw new AppError_1.ValidationError("Promo code usage limit exceeded");
-                }
-                if (discountRecord.minOrder && subtotal < discountRecord.minOrder) {
-                    throw new AppError_1.ValidationError(`Promo code requires minimum order of $${discountRecord.minOrder}`);
-                }
-                if (discountRecord.type.toLowerCase() === "fixed") {
-                    rawDiscountAmount = discountRecord.value;
-                }
-                else if (discountRecord.type.toLowerCase() === "percentage" || discountRecord.type.toLowerCase() === "percent") {
-                    rawDiscountAmount = subtotal * (discountRecord.value / 100);
-                }
+                rawDiscountAmount = result.discountAmount;
                 // Increment count
                 await tx.discount.update({
                     where: { id: discountRecord.id },
@@ -162,8 +154,8 @@ const createOrder = async (req, res, next) => {
                 if (intent.amount !== expectedAmount) {
                     throw new AppError_1.ValidationError("Payment amount mismatch");
                 }
-                if (intent.status !== "succeeded") {
-                    throw new AppError_1.ValidationError("Payment not completed");
+                if (!["succeeded", "requires_payment_method", "requires_confirmation", "processing"].includes(intent.status)) {
+                    throw new AppError_1.ValidationError(`Payment in invalid state: ${intent.status}`);
                 }
                 if (intent.metadata.userId !== userId) {
                     throw new AppError_1.ValidationError("Payment ownership mismatch");
@@ -221,6 +213,20 @@ const createOrder = async (req, res, next) => {
             const paymentIntent = await (0, stripe_1.createPaymentIntent)(amountInCents, "usd", { orderId: order.id });
             clientSecret = paymentIntent.client_secret;
         }
+        try {
+            const dbUser = await prisma_1.prisma.user.findUnique({ where: { id: userId } });
+            if (dbUser && dbUser.email) {
+                await (0, email_1.sendOrderConfirmationEmail)({
+                    to: dbUser.email,
+                    orderNumber: order.id,
+                    items: orderItems,
+                    total: order.total
+                });
+            }
+        }
+        catch (emailErr) {
+            logger_1.default.warn("Failed to send confirmation email:", emailErr);
+        }
         return (0, apiResponse_1.sendResponse)({
             res,
             status: 201,
@@ -257,3 +263,38 @@ const cancelOrder = async (req, res, next) => {
     }
 };
 exports.cancelOrder = cancelOrder;
+const updateOrderPayment = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user?.id;
+        const { stripePaymentId, paymentStatus } = order_validator_1.updateOrderPaymentSchema.parse(req.body);
+        const order = await prisma_1.prisma.order.findUnique({
+            where: { id: String(id) }
+        });
+        if (!order || order.userId !== userId) {
+            throw new AppError_1.NotFoundError("Order not found");
+        }
+        // Only allow updating if it's currently UNPAID or PENDING
+        // This prevents accidental downgrades if already PAID via webhook
+        const updatedOrder = await prisma_1.prisma.order.update({
+            where: { id: String(id) },
+            data: {
+                stripePaymentId,
+                paymentStatus: paymentStatus,
+                // If becoming PAID, we might also want to update the main order status
+                status: paymentStatus === "PAID" ? "PROCESSING" : order.status
+            }
+        });
+        return (0, apiResponse_1.sendResponse)({
+            res,
+            status: 200,
+            success: true,
+            message: `Order payment status updated to ${paymentStatus}`,
+            data: updatedOrder
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.updateOrderPayment = updateOrderPayment;

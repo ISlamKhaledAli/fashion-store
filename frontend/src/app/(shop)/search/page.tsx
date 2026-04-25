@@ -33,49 +33,11 @@ const initialState: FilterState = {
 
 // Removed redundant local Action type to use imported FilterAction
 
-function filterReducer(state: FilterState, action: FilterAction): FilterState {
-  switch (action.type) {
-    case "toggle_category":
-      return {
-        ...state,
-        category: state.category.includes(action.payload)
-          ? state.category.filter((c) => c !== action.payload)
-          : [...state.category, action.payload],
-      };
-    case "toggle_brand":
-      return {
-        ...state,
-        brand: state.brand.includes(action.payload)
-          ? state.brand.filter((b) => b !== action.payload)
-          : [...state.brand, action.payload],
-      };
-    case "toggle_color": {
-      const normalizedPayload = action.payload.toLowerCase().trim();
-      const isSelected = state.color.some(c => c.toLowerCase().trim() === normalizedPayload);
-      const color = isSelected
-        ? state.color.filter(c => c.toLowerCase().trim() !== normalizedPayload)
-        : [...state.color, normalizedPayload];
-      return { ...state, color };
-    }
-    case "set_max_price":
-      return { ...state, maxPrice: action.payload };
-    case "set_sort":
-      return { ...state, sort: action.payload };
-    case "reset":
-      return initialState;
-    case "sync_from_url":
-      return { ...state, ...action.payload };
-    default:
-      return state;
-  }
-}
-
 function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
   
-  const [state, dispatch] = useReducer(filterReducer, initialState);
   const [products, setProducts] = useState<Product[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -84,23 +46,75 @@ function SearchContent() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const fetchProducts = useCallback(async (pageNum = 1, isLoadMore = false) => {
+  const state: FilterState = React.useMemo(() => ({
+    category: searchParams.get("category") ? searchParams.get("category")!.split(",") : [],
+    brand: searchParams.get("brand") ? searchParams.get("brand")!.split(",") : [],
+    color: searchParams.get("color") ? searchParams.get("color")!.split(",") : [],
+    minPrice: 0,
+    maxPrice: parseInt(searchParams.get("maxPrice") || "2000"),
+    sort: searchParams.get("sort") || "createdAt:desc",
+    size: []
+  }), [searchParams]);
+
+  const dispatch = useCallback((action: FilterAction) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const currentCategory = params.get("category") ? params.get("category")!.split(",") : [];
+    const currentBrand = params.get("brand") ? params.get("brand")!.split(",") : [];
+    const currentColor = params.get("color") ? params.get("color")!.split(",") : [];
+
+    switch (action.type) {
+      case "toggle_category": {
+        const newCat = currentCategory.includes(action.payload)
+          ? currentCategory.filter(c => c !== action.payload)
+          : [...currentCategory, action.payload];
+        if (newCat.length) params.set("category", newCat.join(","));
+        else params.delete("category");
+        break;
+      }
+      case "toggle_brand": {
+        const newBrand = currentBrand.includes(action.payload)
+          ? currentBrand.filter(b => b !== action.payload)
+          : [...currentBrand, action.payload];
+        if (newBrand.length) params.set("brand", newBrand.join(","));
+        else params.delete("brand");
+        break;
+      }
+      case "toggle_color": {
+        const payload = action.payload.toLowerCase().trim();
+        const newColor = currentColor.includes(payload)
+          ? currentColor.filter(c => c !== payload)
+          : [...currentColor, payload];
+        if (newColor.length) params.set("color", newColor.join(","));
+        else params.delete("color");
+        break;
+      }
+      case "set_max_price":
+        params.set("maxPrice", action.payload.toString());
+        break;
+      case "set_sort":
+        params.set("sort", action.payload);
+        break;
+      case "reset":
+        params.delete("category");
+        params.delete("brand");
+        params.delete("color");
+        params.delete("maxPrice");
+        params.delete("sort");
+        break;
+      case "sync_from_url":
+        break;
+    }
+    params.delete("page");
+    setPage(1);
+    router.push(`/search?${params.toString()}`);
+  }, [searchParams, router]);
+
+  const fetchProducts = useCallback(async (paramsToFetch: Record<string, unknown>, isLoadMore = false) => {
     if (isLoadMore) setIsMoreLoading(true);
     else setIsLoading(true);
 
     try {
-      const params: Record<string, unknown> = {
-        search: query,
-        category: state.category.join(","),
-        brand: state.brand.join(","),
-        color: state.color.join(","),
-        maxPrice: state.maxPrice,
-        sort: state.sort,
-        page: pageNum,
-        limit: 6,
-      };
-
-      const res = await productApi.getAll(params);
+      const res = await productApi.getAll(paramsToFetch);
       if (res.data.success) {
         if (isLoadMore) {
           setProducts((prev) => [...prev, ...res.data.data as Product[]]);
@@ -115,49 +129,35 @@ function SearchContent() {
       if (isLoadMore) setIsMoreLoading(false);
       else setTimeout(() => setIsLoading(false), 400);
     }
-  }, [query, state]);
+  }, []);
 
-  // Sync state from URL on mount
+  // ONE effect that fetches when URL changes
   useEffect(() => {
-    const params: Partial<FilterState> = {};
-    const cat = searchParams.get("category");
-    if (cat) params.category = cat.split(",");
-    const brand = searchParams.get("brand");
-    if (brand) params.brand = brand.split(",");
-    const color = searchParams.get("color");
-    if (color) params.color = color.split(",");
-    const max = searchParams.get("maxPrice");
-    if (max) params.maxPrice = parseInt(max);
-    const sort = searchParams.get("sort");
-    if (sort) params.sort = sort;
-
-    if (Object.keys(params).length > 0) {
-      dispatch({ type: "sync_from_url", payload: params });
-    }
-  }, [searchParams]); // Depend on searchParams to sync when URL changes explicitly
-
-  // Fetch products when query or state changes
-  useEffect(() => {
-    setPage(1); // Reset page on filter/query change
-    fetchProducts(1, false);
-    
-    // Sync URL
-    const params = new URLSearchParams();
-    params.set("q", query);
-    if (state.category.length) params.set("category", state.category.join(","));
-    if (state.brand.length) params.set("brand", state.brand.join(","));
-    if (state.color.length) params.set("color", state.color.join(","));
-    if (state.maxPrice < 2000) params.set("maxPrice", state.maxPrice.toString());
-    params.set("sort", state.sort);
-    
-    const newUrl = `/search?${params.toString()}`;
-    window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, "", newUrl);
-  }, [query, state, fetchProducts]);
+    fetchProducts({
+      search: query,
+      category: state.category.join(","),
+      brand: state.brand.join(","),
+      color: state.color.join(","),
+      maxPrice: state.maxPrice,
+      sort: state.sort,
+      page: 1,
+      limit: 6,
+    }, false);
+  }, [query, state.category, state.brand, state.color, state.maxPrice, state.sort, fetchProducts]);
 
   const handleLoadMore = () => {
     const nextPage = page + 1;
     setPage(nextPage);
-    fetchProducts(nextPage, true);
+    fetchProducts({
+      search: query,
+      category: state.category.join(","),
+      brand: state.brand.join(","),
+      color: state.color.join(","),
+      maxPrice: state.maxPrice,
+      sort: state.sort,
+      page: nextPage,
+      limit: 6,
+    }, true);
   };
 
   return (

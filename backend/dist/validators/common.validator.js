@@ -32,6 +32,7 @@ exports.createDiscountSchema = zod_1.z.object({
     value: zod_1.z.number().positive(),
     minOrder: zod_1.z.number().optional(),
     maxUses: zod_1.z.number().int().optional(),
+    startDate: zod_1.z.string().optional().transform(v => v ? new Date(v) : undefined),
     expiresAt: zod_1.z.string().optional().transform(v => v ? new Date(v) : undefined),
     isActive: zod_1.z.boolean().default(true),
 });

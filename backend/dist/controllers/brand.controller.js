@@ -7,7 +7,11 @@ const common_validator_1 = require("../validators/common.validator");
 const AppError_1 = require("../utils/AppError");
 const getBrands = async (req, res, next) => {
     try {
-        const brands = await prisma_1.prisma.brand.findMany();
+        const brands = await prisma_1.prisma.brand.findMany({
+            include: {
+                _count: { select: { products: true } }
+            }
+        });
         return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data: brands });
     }
     catch (error) {

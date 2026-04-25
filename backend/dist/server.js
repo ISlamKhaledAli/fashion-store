@@ -14,10 +14,13 @@ const app_module_1 = __importDefault(require("./app.module"));
 exports.app = app_module_1.default;
 const logger_1 = __importDefault(require("./utils/logger"));
 const PORT = validateEnv_1.env.PORT || 5000;
+const cleanupAbandonedOrders_1 = require("./jobs/cleanupAbandonedOrders");
 async function startServer() {
     try {
         await prisma_1.prisma.$connect();
         logger_1.default.info("✅ Database connected successfully");
+        // Start cleanup job (runs every hour)
+        (0, cleanupAbandonedOrders_1.setupCleanupJobs)();
         return app_module_1.default.listen(PORT, () => {
             logger_1.default.info(`🚀 Server running on port ${PORT} in ${validateEnv_1.env.NODE_ENV} mode`);
         });

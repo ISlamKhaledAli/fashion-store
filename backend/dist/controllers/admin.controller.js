@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDiscounts = exports.createDiscount = exports.getInventory = exports.getTopProducts = exports.getRevenueAnalytics = exports.getAnalyticsOverview = exports.deleteCustomer = exports.updateCustomerStatus = exports.getCustomers = exports.bulkDeleteOrders = exports.bulkUpdateOrdersStatus = exports.updateOrderStatus = exports.getAdminOrders = exports.reorderCategories = exports.getAdminCategories = void 0;
+exports.getGeographicData = exports.deleteDiscount = exports.updateDiscount = exports.getDiscounts = exports.createDiscount = exports.updateInventoryStock = exports.getInventory = exports.getCustomerRetention = exports.getCategoryRevenue = exports.getTopProducts = exports.getRevenueAnalytics = exports.getAnalyticsOverview = exports.deleteCustomer = exports.updateCustomerStatus = exports.getCustomers = exports.bulkDeleteOrders = exports.bulkUpdateOrdersStatus = exports.updateOrderStatus = exports.getAdminOrders = exports.reorderCategories = exports.getAdminCategories = void 0;
 const prisma_1 = require("../lib/prisma");
 const apiResponse_1 = require("../utils/apiResponse");
 const pagination_1 = require("../utils/pagination");
@@ -235,28 +235,72 @@ const deleteCustomer = async (req, res, next) => {
 exports.deleteCustomer = deleteCustomer;
 const getAnalyticsOverview = async (req, res, next) => {
     try {
-        const totalRevenue = await prisma_1.prisma.order.aggregate({
-            where: { paymentStatus: "PAID" },
+        const now = new Date();
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+        // Current period (0-30 days)
+        const [totalRevenue, totalOrders, totalCustomers, paidOrdersCount] = await Promise.all([
+            prisma_1.prisma.order.aggregate({
+                where: { paymentStatus: "PAID" },
+                _sum: { total: true },
+            }),
+            prisma_1.prisma.order.count(),
+            prisma_1.prisma.user.count({ where: { role: "CUSTOMER" } }),
+            prisma_1.prisma.order.count({ where: { paymentStatus: "PAID" } }),
+        ]);
+        // Trend calculation data
+        const [prevRevenue, prevOrders, prevCustomers, prevPaidOrders] = await Promise.all([
+            prisma_1.prisma.order.aggregate({
+                where: { paymentStatus: "PAID", createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } },
+                _sum: { total: true },
+            }),
+            prisma_1.prisma.order.count({ where: { createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } }),
+            prisma_1.prisma.user.count({ where: { role: "CUSTOMER", createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } }),
+            prisma_1.prisma.order.count({ where: { paymentStatus: "PAID", createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } }),
+        ]);
+        const curRevenue = await prisma_1.prisma.order.aggregate({
+            where: { paymentStatus: "PAID", createdAt: { gte: thirtyDaysAgo } },
             _sum: { total: true },
         });
+        const curOrders = await prisma_1.prisma.order.count({ where: { createdAt: { gte: thirtyDaysAgo } } });
+        const curCustomers = await prisma_1.prisma.user.count({ where: { role: "CUSTOMER", createdAt: { gte: thirtyDaysAgo } } });
+        const curPaidOrders = await prisma_1.prisma.order.count({ where: { paymentStatus: "PAID", createdAt: { gte: thirtyDaysAgo } } });
+        // Calculate trends
+        const calculateTrend = (current, previous) => {
+            if (previous === 0)
+                return current > 0 ? 100 : 0;
+            return parseFloat(((current - previous) / previous * 100).toFixed(1));
+        };
+        const revenueTrend = calculateTrend(curRevenue._sum.total || 0, prevRevenue._sum.total || 0);
+        const ordersTrend = calculateTrend(curOrders, prevOrders);
+        const customersTrend = calculateTrend(curCustomers, prevCustomers);
+        const curConv = curCustomers > 0 ? (curPaidOrders / curCustomers) * 100 : 0;
+        const prevConv = prevCustomers > 0 ? (prevPaidOrders / prevCustomers) * 100 : 0;
+        const conversionTrend = calculateTrend(curConv, prevConv);
         const startOfToday = new Date();
         startOfToday.setHours(0, 0, 0, 0);
         const todayRevenue = await prisma_1.prisma.order.aggregate({
             where: { paymentStatus: "PAID", createdAt: { gte: startOfToday } },
             _sum: { total: true },
         });
-        const totalOrders = await prisma_1.prisma.order.count();
-        const totalCustomers = await prisma_1.prisma.user.count({ where: { role: "CUSTOMER" } });
-        // Conversion rate: (paid orders / total customers) - naive but works for overview
-        const paidOrders = await prisma_1.prisma.order.count({ where: { paymentStatus: "PAID" } });
-        const conversionRate = totalCustomers > 0 ? (paidOrders / totalCustomers) * 100 : 0;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const [ordersToday, newCustomers, rawStatusCounts] = await Promise.all([
-            prisma_1.prisma.order.count({ where: { createdAt: { gte: today } } }),
-            prisma_1.prisma.user.count({ where: { createdAt: { gte: today }, role: 'CUSTOMER' } }),
+        const [ordersToday, newCustomers, rawStatusCounts, dailyRevenueRaw] = await Promise.all([
+            prisma_1.prisma.order.count({ where: { createdAt: { gte: startOfToday } } }),
+            prisma_1.prisma.user.count({ where: { createdAt: { gte: startOfToday }, role: 'CUSTOMER' } }),
             prisma_1.prisma.order.groupBy({ by: ['status'], _count: true }),
+            prisma_1.prisma.order.groupBy({
+                by: ['createdAt'],
+                where: { paymentStatus: "PAID", createdAt: { gte: thirtyDaysAgo } },
+                _sum: { total: true },
+                orderBy: { createdAt: 'asc' }
+            })
         ]);
+        // Format daily revenue for sparklines
+        const dailyRevenueMap = {};
+        dailyRevenueRaw.forEach(day => {
+            const date = day.createdAt.toISOString().split('T')[0];
+            dailyRevenueMap[date] = (dailyRevenueMap[date] || 0) + (day._sum.total || 0);
+        });
+        const dailyRevenue = Object.entries(dailyRevenueMap).map(([date, amount]) => ({ date, amount }));
         const statusCounts = rawStatusCounts.reduce((acc, s) => ({ ...acc, [s.status]: s._count }), {});
         return (0, apiResponse_1.sendResponse)({
             res,
@@ -264,13 +308,18 @@ const getAnalyticsOverview = async (req, res, next) => {
             success: true,
             data: {
                 totalRevenue: totalRevenue._sum.total || 0,
+                revenueTrend,
                 todayRevenue: todayRevenue._sum.total || 0,
                 totalOrders,
+                ordersTrend,
                 totalCustomers,
-                conversionRate,
+                customersTrend,
+                conversionRate: totalCustomers > 0 ? (paidOrdersCount / totalCustomers) * 100 : 0,
+                conversionTrend,
                 ordersToday,
                 newCustomers,
                 statusCounts,
+                dailyRevenue
             },
         });
     }
@@ -316,13 +365,21 @@ const getTopProducts = async (req, res, next) => {
         });
         const products = await prisma_1.prisma.product.findMany({
             where: { id: { in: topProducts.map(p => p.productId) } },
-            select: { id: true, name: true, price: true },
+            select: {
+                id: true,
+                name: true,
+                price: true,
+                images: { where: { isMain: true }, take: 1 },
+                category: { select: { name: true } },
+            },
         });
         const result = topProducts.map(tp => {
             const product = products.find(p => p.id === tp.productId);
             return {
                 id: tp.productId,
                 name: product?.name,
+                image: product?.images?.[0]?.url || null,
+                categoryName: product?.category?.name || null,
                 quantity: tp._sum.quantity,
                 revenue: (tp._sum.quantity || 0) * (product?.price || 0),
             };
@@ -334,19 +391,96 @@ const getTopProducts = async (req, res, next) => {
     }
 };
 exports.getTopProducts = getTopProducts;
+const getCategoryRevenue = async (req, res, next) => {
+    try {
+        const orderItems = await prisma_1.prisma.orderItem.findMany({
+            include: {
+                product: {
+                    include: { category: { select: { id: true, name: true } } },
+                },
+            },
+        });
+        const categoryMap = {};
+        for (const item of orderItems) {
+            const catName = item.product?.category?.name || "Uncategorized";
+            const catId = item.product?.category?.id || "uncategorized";
+            if (!categoryMap[catName]) {
+                categoryMap[catName] = { id: catId, name: catName, orders: 0, revenue: 0 };
+            }
+            categoryMap[catName].orders += item.quantity;
+            categoryMap[catName].revenue += item.price * item.quantity;
+        }
+        const data = Object.values(categoryMap).sort((a, b) => b.revenue - a.revenue);
+        return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getCategoryRevenue = getCategoryRevenue;
+const getCustomerRetention = async (req, res, next) => {
+    try {
+        // Get all customers with their order count
+        const customers = await prisma_1.prisma.user.findMany({
+            where: { role: 'CUSTOMER' },
+            select: {
+                id: true,
+                createdAt: true,
+                _count: { select: { orders: true } }
+            }
+        });
+        const newCustomers = customers.filter(c => c._count.orders <= 1).length;
+        const returningCustomers = customers.filter(c => c._count.orders > 1).length;
+        const total = customers.length;
+        const data = {
+            newCustomers,
+            returningCustomers,
+            total,
+            newPercentage: total > 0 ? Math.round((newCustomers / total) * 100) : 0,
+            returningPercentage: total > 0 ? Math.round((returningCustomers / total) * 100) : 0,
+        };
+        return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getCustomerRetention = getCustomerRetention;
 const getInventory = async (req, res, next) => {
     try {
-        const lowStockVariants = await prisma_1.prisma.variant.findMany({
-            where: { stock: { lt: 5 } },
-            include: { product: { select: { name: true } } },
+        const products = await prisma_1.prisma.product.findMany({
+            include: {
+                category: { select: { name: true } },
+                images: true,
+                variants: true,
+            },
+            orderBy: { createdAt: "desc" },
         });
-        return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data: lowStockVariants });
+        return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data: products });
     }
     catch (error) {
         next(error);
     }
 };
 exports.getInventory = getInventory;
+const updateInventoryStock = async (req, res, next) => {
+    try {
+        const { variantId } = req.params;
+        const { stock } = req.body;
+        if (stock === undefined || isNaN(parseInt(stock))) {
+            return (0, apiResponse_1.sendResponse)({ res, status: 400, success: false, message: "Valid stock quantity is required" });
+        }
+        const variant = await prisma_1.prisma.variant.update({
+            where: { id: String(variantId) },
+            data: { stock: parseInt(stock) },
+        });
+        return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data: variant, message: "Stock updated successfully" });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.updateInventoryStock = updateInventoryStock;
 const createDiscount = async (req, res, next) => {
     try {
         const validatedData = common_validator_1.createDiscountSchema.parse(req.body);
@@ -360,11 +494,87 @@ const createDiscount = async (req, res, next) => {
 exports.createDiscount = createDiscount;
 const getDiscounts = async (req, res, next) => {
     try {
-        const discounts = await prisma_1.prisma.discount.findMany();
-        return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data: discounts });
+        const discounts = await prisma_1.prisma.discount.findMany({
+            orderBy: { createdAt: "desc" }
+        });
+        // Fetch revenue per code for PAID orders
+        const revenueData = await prisma_1.prisma.order.groupBy({
+            by: ["promoCode"],
+            where: { paymentStatus: "PAID", promoCode: { not: null } },
+            _sum: { total: true }
+        });
+        const revenueMap = {};
+        revenueData.forEach(item => {
+            if (item.promoCode)
+                revenueMap[item.promoCode] = item._sum.total || 0;
+        });
+        const discountsWithRevenue = discounts.map(d => ({
+            ...d,
+            revenueGenerated: revenueMap[d.code] || 0
+        }));
+        return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data: discountsWithRevenue });
     }
     catch (error) {
         next(error);
     }
 };
 exports.getDiscounts = getDiscounts;
+const updateDiscount = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const validatedData = common_validator_1.createDiscountSchema.partial().parse(req.body);
+        const discount = await prisma_1.prisma.discount.update({
+            where: { id: String(id) },
+            data: validatedData
+        });
+        return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data: discount });
+    }
+    catch (error) {
+        if (error instanceof Error && error.code === "P2025") {
+            throw new AppError_1.NotFoundError("Discount not found");
+        }
+        next(error);
+    }
+};
+exports.updateDiscount = updateDiscount;
+const deleteDiscount = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        await prisma_1.prisma.discount.delete({ where: { id: String(id) } });
+        return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, message: "Discount purged" });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.deleteDiscount = deleteDiscount;
+const getGeographicData = async (req, res, next) => {
+    try {
+        const orders = await prisma_1.prisma.order.findMany({
+            where: { paymentStatus: "PAID" },
+            select: {
+                total: true,
+                address: {
+                    select: { country: true }
+                }
+            }
+        });
+        const countryMap = {};
+        for (const order of orders) {
+            const country = order.address?.country || "Unknown";
+            if (!countryMap[country])
+                countryMap[country] = { orders: 0, revenue: 0 };
+            countryMap[country].orders += 1;
+            countryMap[country].revenue += order.total;
+        }
+        const data = Object.entries(countryMap)
+            .map(([country, stats]) => ({ country, ...stats }))
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 10);
+        return (0, apiResponse_1.sendResponse)({ res, status: 200, success: true, data });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getGeographicData = getGeographicData;

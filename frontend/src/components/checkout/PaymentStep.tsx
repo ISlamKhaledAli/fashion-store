@@ -20,6 +20,10 @@ interface PaymentStepProps {
   onNext: (clientSecret: string, paymentIntentId: string) => void;
   onBack: () => void;
   shippingMethod?: string;
+  total: number;
+  subtotal: number;
+  shipping: number;
+  discountAmount: number;
 }
 
 interface CheckoutFormProps extends PaymentStepProps {
@@ -28,7 +32,7 @@ interface CheckoutFormProps extends PaymentStepProps {
   promoCode: string | null;
 }
 
-const CheckoutForm = ({ onNext, onBack, paymentIntentId, addressId, shippingMethod, promoCode }: CheckoutFormProps) => {
+const CheckoutForm = ({ onNext, onBack, paymentIntentId, addressId, shippingMethod, promoCode, total, subtotal, shipping, discountAmount }: CheckoutFormProps) => {
   const stripe = useStripe();
   const elements = useElements();
   const [error, setError] = useState<string | null>(null);
@@ -155,22 +159,18 @@ const CheckoutForm = ({ onNext, onBack, paymentIntentId, addressId, shippingMeth
   );
 };
 
-export const PaymentStep = ({ onNext, onBack, shippingMethod = "standard" }: PaymentStepProps) => {
+export const PaymentStep = ({ onNext, onBack, shippingMethod = "standard", total, subtotal, shipping, discountAmount }: PaymentStepProps) => {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [addressId, setAddressId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { getTotalPrice, promoCode, discountAmount } = useCartStore();
+  const { promoCode } = useCartStore();
   const [lastTotal, setLastTotal] = useState(0);
-
-  // Calculate current total for dependency tracking
-  const subtotal = getTotalPrice();
-  const currentTotal = subtotal + 10 - discountAmount; // Simplified local total for diffing
 
   useEffect(() => {
     const fetchIntent = async () => {
-      if (currentTotal <= 0) return;
+      if (total <= 0) return;
       
       setLoading(true);
       setError(null);
@@ -185,7 +185,7 @@ export const PaymentStep = ({ onNext, onBack, shippingMethod = "standard" }: Pay
         const res = await api.post(
           "/payment/intent", 
           { 
-            amount: subtotal,
+            amount: total,
             shippingMethod,
             promoCode: promoCode || undefined
           },
@@ -195,7 +195,7 @@ export const PaymentStep = ({ onNext, onBack, shippingMethod = "standard" }: Pay
         if (res.data.success) {
           setClientSecret(res.data.data.clientSecret);
           setPaymentIntentId(res.data.data.paymentIntentId);
-          setLastTotal(currentTotal);
+          setLastTotal(total);
         }
       } catch (err: unknown) {
         const error = err as { response?: { data?: { message?: string } } };
@@ -205,10 +205,10 @@ export const PaymentStep = ({ onNext, onBack, shippingMethod = "standard" }: Pay
       }
     };
 
-    if (currentTotal !== lastTotal && currentTotal > 0) {
+    if (total !== lastTotal && total > 0) {
       fetchIntent();
     }
-  }, [currentTotal, shippingMethod, promoCode, lastTotal, subtotal]);
+  }, [total, shippingMethod, promoCode, lastTotal]);
 
 
   if (loading) {
@@ -238,6 +238,10 @@ export const PaymentStep = ({ onNext, onBack, shippingMethod = "standard" }: Pay
         addressId={addressId} 
         shippingMethod={shippingMethod}
         promoCode={promoCode}
+        total={total}
+        subtotal={subtotal}
+        shipping={shipping}
+        discountAmount={discountAmount}
       />
     </Elements>
   );

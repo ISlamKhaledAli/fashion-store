@@ -346,7 +346,7 @@ export default function DiscountsPage() {
   }, [discounts]);
 
   return (
-    <ProtectedRoute adminOnly>
+    <>
       <div className="space-y-12 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-1000">
         {/* Page Header */}
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-8">
@@ -574,6 +574,6 @@ export default function DiscountsPage() {
             onSuccess={fetchDiscounts}
         />
       </div>
-    </ProtectedRoute>
+    </>
   );
 }

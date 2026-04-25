@@ -172,17 +172,10 @@ const calculateTotals = async (req, res, next) => {
         let rawDiscountAmount = 0;
         if (promoCode) {
             const discountRecord = await prisma_1.prisma.discount.findUnique({ where: { code: promoCode } });
-            if (discountRecord && discountRecord.isActive) {
-                const isNotExpired = !discountRecord.expiresAt || new Date() <= discountRecord.expiresAt;
-                const isNotOverused = !discountRecord.maxUses || discountRecord.usedCount < discountRecord.maxUses;
-                const meetsMinOrder = !discountRecord.minOrder || subtotal >= discountRecord.minOrder;
-                if (isNotExpired && isNotOverused && meetsMinOrder) {
-                    if (discountRecord.type.toLowerCase() === "fixed") {
-                        rawDiscountAmount = discountRecord.value;
-                    }
-                    else if (discountRecord.type.toLowerCase() === "percentage" || discountRecord.type.toLowerCase() === "percent") {
-                        rawDiscountAmount = subtotal * (discountRecord.value / 100);
-                    }
+            if (discountRecord) {
+                const result = (0, pricing_1.calculateDiscount)(subtotal, discountRecord);
+                if (result.isValid) {
+                    rawDiscountAmount = result.discountAmount;
                 }
             }
         }

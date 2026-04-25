@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/store/authStore";
+import { useCartStore } from "@/store/cartStore";
 import { StepProgress } from "@/components/checkout/StepProgress";
 import { ShippingStep } from "@/components/checkout/ShippingStep";
 import { PaymentStep } from "@/components/checkout/PaymentStep";
@@ -44,6 +45,14 @@ function CheckoutPageContent() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<{ id: string } | null>(null);
+
+  const { items: cartItems, discountAmount: storeDiscount } = useCartStore();
+  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const shipping = shippingData?.shippingMethod === 'overnight' ? 24.99 : (shippingData?.shippingMethod === 'express' ? 9.99 : 10);
+  const discountedSubtotal = Math.max(0, subtotal - storeDiscount);
+  const tax = Math.round(discountedSubtotal * 0.1 * 100) / 100;
+  const discountAmount = storeDiscount;
+  const total = Math.round((discountedSubtotal + shipping + tax) * 100) / 100;
 
   useEffect(() => {
     // 1. Restore minimal state from sessionStorage securely
@@ -146,6 +155,10 @@ function CheckoutPageContent() {
               onNext={handlePaymentNext} 
               onBack={() => setCurrentStep(1)}
               shippingMethod={shippingData?.shippingMethod || "standard"}
+              total={total}
+              subtotal={subtotal}
+              shipping={shipping}
+              discountAmount={discountAmount}
             />
           </motion.div>
         );

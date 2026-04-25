@@ -325,16 +325,27 @@ const getProductFilters = async (req, res, next) => {
                 color: true,
                 colorHex: true,
             },
+            where: { product: { status: "ACTIVE" } }
         });
-        const colors = variants.map(v => ({
-            name: v.color,
-            hex: v.colorHex || "#000000"
-        }));
+        const seen = new Set();
+        const uniqueColors = [];
+        for (const v of variants) {
+            if (!v.color)
+                continue;
+            const key = v.color.toLowerCase().trim();
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniqueColors.push({
+                    name: v.color,
+                    hex: v.colorHex || "#000000"
+                });
+            }
+        }
         return (0, apiResponse_1.sendResponse)({
             res,
             status: 200,
             success: true,
-            data: { colors },
+            data: { colors: uniqueColors },
         });
     }
     catch (error) {

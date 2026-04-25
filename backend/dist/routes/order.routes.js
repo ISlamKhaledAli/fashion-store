@@ -8,5 +8,6 @@ router.use(auth_1.authMiddleware);
 router.get("/", order_controller_1.getOrders);
 router.get("/:id", order_controller_1.getOrderById);
 router.post("/", order_controller_1.createOrder);
+router.put("/:id/payment", order_controller_1.updateOrderPayment);
 router.put("/:id/cancel", order_controller_1.cancelOrder);
 exports.default = router;

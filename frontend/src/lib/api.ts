@@ -11,8 +11,6 @@ export const authApi = {
     api.post<ApiResponse<{ user: User; accessToken: string; refreshToken: string }>>("/auth/register", data),
   getMe: () => 
     api.get<ApiResponse<User>>("/auth/me"),
-  refresh: (refreshToken: string) => 
-    api.post<ApiResponse<{ accessToken: string; refreshToken: string }>>("/auth/refresh", { refreshToken }),
 };
 
 export const productApi = {
@@ -63,12 +61,8 @@ export const cartApi = {
 };
 
 export const orderApi = {
-  create: (data: Record<string, unknown>) => 
-    api.post<ApiResponse<{ order: Order; clientSecret: string }>>("/orders", data),
   getMine: (params?: Record<string, unknown>) => 
     api.get<ApiResponse<Order[]>>("/orders", { params }),
-  getById: (id: string) => 
-    api.get<ApiResponse<Order>>(`/orders/${id}`),
   cancel: (id: string) => 
     api.put<ApiResponse<unknown>>(`/orders/${id}/cancel`),
 };
@@ -121,8 +115,6 @@ export const adminApi = {
     api.get<ApiResponse<AdminCustomer[]>>("/admin/customers", { params }),
   updateCustomerStatus: (id: string, status: 'ACTIVE' | 'BANNED') =>
     api.put<ApiResponse<unknown>>(`/admin/customers/${id}/status`, { status }),
-  deleteCustomer: (id: string) =>
-    api.delete<ApiResponse<unknown>>(`/admin/customers/${id}`),
   getProducts: (params?: Record<string, unknown>) => 
     api.get<ApiResponse<Product[]>>("/admin/products", { params }),
   getBrands: () =>

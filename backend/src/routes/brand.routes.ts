@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { getBrands, createBrand, updateBrand, deleteBrand } from "../controllers/brand.controller";
 import { authMiddleware } from "../middleware/auth";
-import { adminMiddleware } from "../middleware/admin";
+import { adminMiddleware } from "../middleware/auth";
 
 const router = Router();
 
