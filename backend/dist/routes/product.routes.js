@@ -11,8 +11,8 @@ router.get("/filters", product_controller_1.getProductFilters);
 router.get("/admin/:id", auth_1.authMiddleware, auth_2.adminMiddleware, product_controller_1.getProductById);
 router.get("/:identifier", product_controller_1.getProductByIdentifier);
 // Admin only routes
+router.put("/:id/images/:imageId", auth_1.authMiddleware, auth_2.adminMiddleware, product_controller_1.updateProductImage);
 router.post("/", auth_1.authMiddleware, auth_2.adminMiddleware, product_controller_1.createProduct);
 router.put("/:id", auth_1.authMiddleware, auth_2.adminMiddleware, product_controller_1.updateProduct);
 router.delete("/:id", auth_1.authMiddleware, auth_2.adminMiddleware, product_controller_1.deleteProduct);
-router.put("/:id/images/:imageId", auth_1.authMiddleware, auth_2.adminMiddleware, product_controller_1.updateProductImage);
 exports.default = router;

@@ -20,6 +20,7 @@ import addressRoutes from "./routes/address.routes";
 import uploadRoutes from "./routes/upload.routes";
 import adminRoutes from "./routes/admin.routes";
 import discountRoutes from "./routes/discount.routes";
+import chatRoutes from "./routes/chat.routes";
 
 const app: Application = express();
 
@@ -70,6 +71,7 @@ app.use("/api/addresses", addressRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/discounts", discountRoutes);
+app.use("/api/chat", chatRoutes);
 
 // Catch-all for unmatched routes
 app.use((req: Request, res: Response) => {
