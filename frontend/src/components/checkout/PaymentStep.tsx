@@ -179,17 +179,13 @@ export const PaymentStep = ({ onNext, onBack, shippingMethod = "standard", total
         const addresses = (addressRes.data?.data || []) as { id: string }[];
         setAddressId(addresses[0]?.id || null);
 
-        const token = useAuthStore.getState().accessToken;
-
-
         const res = await api.post(
           "/payment/intent", 
           { 
             amount: total,
             shippingMethod,
             promoCode: promoCode || undefined
-          },
-          { headers: { Authorization: `Bearer ${token}` } }
+          }
         );
 
         if (res.data.success) {

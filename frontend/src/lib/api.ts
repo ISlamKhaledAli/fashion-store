@@ -6,9 +6,9 @@ import {
 
 export const authApi = {
   login: (credentials: Record<string, unknown>) => 
-    api.post<ApiResponse<{ user: User; accessToken: string; refreshToken: string }>>("/auth/login", credentials),
+    api.post<ApiResponse<{ user: User }>>("/auth/login", credentials),
   register: (data: Record<string, unknown>) => 
-    api.post<ApiResponse<{ user: User; accessToken: string; refreshToken: string }>>("/auth/register", data),
+    api.post<ApiResponse<{ user: User }>>("/auth/register", data),
   getMe: () => 
     api.get<ApiResponse<User>>("/auth/me"),
 };
@@ -24,6 +24,8 @@ export const productApi = {
     api.get<ApiResponse<{ colors: { name: string; hex: string }[] }>>("/products/filters"),
   getReviews: (productId: string) => 
     api.get<ApiResponse<Review[]>>(`/reviews/product/${productId}`),
+  getRecommendations: (productId: string) => 
+    api.get<{ success: boolean; source: string; recommendations: Product[] }>(`/products/${productId}/recommendations`),
 };
 
 export const categoryApi = {
@@ -166,4 +168,10 @@ export const adminApi = {
     api.put<ApiResponse<Record<string, unknown>>>(`/admin/discounts/${id}`, data),
   deleteDiscount: (id: string) =>
     api.delete<ApiResponse<unknown>>(`/admin/discounts/${id}`),
+};
+
+export const sizeApi = {
+  getMeasurements: () => api.get<ApiResponse<any>>("/size/measurements"),
+  updateMeasurements: (data: Record<string, unknown>) => api.put<ApiResponse<any>>("/size/measurements", data),
+  clearMeasurements: () => api.delete<ApiResponse<any>>("/size/measurements"),
 };

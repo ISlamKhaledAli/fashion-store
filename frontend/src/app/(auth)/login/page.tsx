@@ -41,8 +41,8 @@ function LoginForm() {
     try {
       const response = await authApi.login(data);
       if (response.data.success) {
-        const { user, accessToken, refreshToken } = response.data.data;
-        login({ user, accessToken, refreshToken });
+        const { user } = response.data.data;
+        login({ user });
         router.push(redirect || "/");
       }
     } catch (err: unknown) {

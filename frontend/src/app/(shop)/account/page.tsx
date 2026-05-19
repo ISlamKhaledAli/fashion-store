@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { AccountSidebar } from "@/components/account/AccountSidebar";
-import { orderApi, wishlistApi } from "@/lib/api";
+import { orderApi, wishlistApi, sizeApi } from "@/lib/api";
 import { Order, WishlistItem } from "@/types";
 import { formatCurrency, cn } from "@/lib/utils";
 import Link from "next/link";
@@ -20,16 +20,26 @@ export default function AccountPage() {
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [measurements, setMeasurements] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<any>({});
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [ordersRes, wishlistRes] = await Promise.all([
+        const [ordersRes, wishlistRes, measurementsRes] = await Promise.all([
           orderApi.getMine({ limit: 5 }),
-          wishlistApi.getAll()
+          wishlistApi.getAll(),
+          sizeApi.getMeasurements()
         ]);
 
         if (ordersRes.data.success) setOrders(ordersRes.data.data);
         if (wishlistRes.data.success) setWishlist(wishlistRes.data.data);
+        if (measurementsRes.data.success) {
+          setMeasurements(measurementsRes.data.data);
+          setFormData(measurementsRes.data.data || {});
+        }
       } catch (err) {
         console.error("Failed to fetch account data", err);
       } finally {
@@ -39,6 +49,46 @@ export default function AccountPage() {
 
     fetchData();
   }, []);
+
+  const handleSaveMeasurements = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      const res = await sizeApi.updateMeasurements(formData);
+      if (res.data.success) {
+        setMeasurements(res.data.data);
+        setFormData(res.data.data);
+        setIsEditing(false);
+        const { toast } = await import("sonner");
+        toast.success("Measurements successfully saved!");
+      }
+    } catch (err) {
+      console.error("Failed to save measurements:", err);
+      const { toast } = await import("sonner");
+      toast.error("Failed to save measurements. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleClearMeasurements = async () => {
+    if (!confirm("Are you sure you want to clear your boutique measurements profile?")) {
+      return;
+    }
+    try {
+      const res = await sizeApi.clearMeasurements();
+      if (res.data.success) {
+        setMeasurements(null);
+        setFormData({});
+        const { toast } = await import("sonner");
+        toast.success("Measurements cleared from your profile.");
+      }
+    } catch (err) {
+      console.error("Failed to clear measurements:", err);
+      const { toast } = await import("sonner");
+      toast.error("Failed to clear measurements.");
+    }
+  };
 
   const handleReorder = async (order: Order) => {
     // Add each order item back to cart
@@ -202,6 +252,156 @@ export default function AccountPage() {
             </div>
           </div>
         </div>
+
+        {/* My Measurements Section */}
+        <section className="mt-16 border-t border-outline-variant/15 pt-12">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h2 className="text-xl font-semibold text-on-surface">My Measurements</h2>
+              <p className="text-xs text-on-surface-variant mt-1">
+                Customize your body profile for accurate, automated size recommendations across all products.
+              </p>
+            </div>
+            {measurements && (
+              <span className="bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] uppercase font-bold tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Measurements Saved
+              </span>
+            )}
+          </div>
+
+          {isEditing ? (
+            <form onSubmit={handleSaveMeasurements} className="bg-surface-container-lowest p-8 rounded-sm border border-outline-variant/10 max-w-3xl space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Height (cm)</label>
+                  <input
+                    type="number"
+                    value={formData.heightCm || ""}
+                    onChange={(e) => setFormData({ ...formData, heightCm: e.target.value })}
+                    className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-on-surface"
+                    placeholder="178"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Weight (kg)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={formData.weightKg || ""}
+                    onChange={(e) => setFormData({ ...formData, weightKg: e.target.value })}
+                    className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-on-surface"
+                    placeholder="75"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Fit Preference</label>
+                  <select
+                    value={formData.fitPreference || ""}
+                    onChange={(e) => setFormData({ ...formData, fitPreference: e.target.value })}
+                    className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-on-surface outline-none"
+                  >
+                    <option value="">Select fit...</option>
+                    <option value="slim">Slim Fit</option>
+                    <option value="regular">Regular Fit</option>
+                    <option value="relaxed">Relaxed Fit</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Chest (cm)</label>
+                  <input
+                    type="number"
+                    value={formData.chestCm || ""}
+                    onChange={(e) => setFormData({ ...formData, chestCm: e.target.value })}
+                    className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-on-surface"
+                    placeholder="96"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Waist (cm)</label>
+                  <input
+                    type="number"
+                    value={formData.waistCm || ""}
+                    onChange={(e) => setFormData({ ...formData, waistCm: e.target.value })}
+                    className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-on-surface"
+                    placeholder="84"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Hips (cm)</label>
+                  <input
+                    type="number"
+                    value={formData.hipsCm || ""}
+                    onChange={(e) => setFormData({ ...formData, hipsCm: e.target.value })}
+                    className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-on-surface"
+                    placeholder="98"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Shoe Size (EU)</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={formData.shoeEU || ""}
+                    onChange={(e) => setFormData({ ...formData, shoeEU: e.target.value })}
+                    className="w-full bg-surface border border-outline-variant/30 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary text-on-surface"
+                    placeholder="42.5"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-4 border-t border-outline-variant/10">
+                <Button type="submit" disabled={isSaving}>
+                  {isSaving ? "Saving..." : "Save Measurements"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setFormData(measurements || {});
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          ) : measurements ? (
+            <div className="bg-surface-container-lowest p-8 rounded-sm border border-outline-variant/10 max-w-3xl shadow-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
+                <MeasurementDisplay label="Height" value={measurements.heightCm ? `${measurements.heightCm} cm` : "—"} />
+                <MeasurementDisplay label="Weight" value={measurements.weightKg ? `${measurements.weightKg} kg` : "—"} />
+                <MeasurementDisplay label="Fit Preference" value={measurements.fitPreference ? `${measurements.fitPreference.toUpperCase()}` : "—"} />
+                <MeasurementDisplay label="Shoe Size" value={measurements.shoeEU ? `EU ${measurements.shoeEU}` : "—"} />
+                <MeasurementDisplay label="Chest" value={measurements.chestCm ? `${measurements.chestCm} cm` : "—"} />
+                <MeasurementDisplay label="Waist" value={measurements.waistCm ? `${measurements.waistCm} cm` : "—"} />
+                <MeasurementDisplay label="Hips" value={measurements.hipsCm ? `${measurements.hipsCm} cm` : "—"} />
+                <MeasurementDisplay label="Last Updated" value={new Date(measurements.updatedAt).toLocaleDateString()} />
+              </div>
+
+              <div className="flex gap-4 mt-8 pt-6 border-t border-outline-variant/10">
+                <Button onClick={() => setIsEditing(true)}>
+                  Edit Profile
+                </Button>
+                <Button variant="outline" onClick={handleClearMeasurements} className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300">
+                  Clear Profile
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-surface-container-lowest p-8 rounded-sm border border-outline-variant/10 max-w-3xl text-center shadow-sm">
+              <p className="text-sm text-on-surface-variant italic">
+                No saved measurements yet.
+              </p>
+              <p className="text-xs text-on-surface/50 mt-2 max-w-md mx-auto leading-relaxed">
+                Use the interactive <strong>AI Size Advisor</strong> on any product detail page to automatically calculate and save your personalized boutique fit profile.
+              </p>
+              <Button onClick={() => { setIsEditing(true); setFormData({}); }} className="mt-6">
+                Enter Measurements Manually
+              </Button>
+            </div>
+          )}
+        </section>
       </main>
     </div>
     </ProtectedRoute>
@@ -251,6 +451,15 @@ function QuickReorderItem({ name, price, image, onReorder }: { name: string; pri
           Reorder <span className="material-symbols-outlined !text-[12px]">arrow_forward</span>
         </Button>
       </div>
+    </div>
+  );
+}
+
+function MeasurementDisplay({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em] mb-2">{label}</p>
+      <p className="text-lg font-medium text-on-surface tracking-tight">{value}</p>
     </div>
   );
 }

@@ -1,13 +1,15 @@
 import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import helmet from "helmet";
+import cookieParser from "cookie-parser";
 import { errorHandler } from "./middleware/errorHandler";
 import httpLogger from "./middleware/httpLogger";
-import { generalRateLimit } from "./middleware/rateLimit";
+import { generalLimiter } from "./middleware/rateLimiter";
 import { env } from "./utils/validateEnv";
 
 // Import routes
 import authRoutes from "./routes/auth.routes";
+import recommendationRoutes from "./routes/recommendation.routes";
 import productRoutes from "./routes/product.routes";
 import categoryRoutes from "./routes/category.routes";
 import brandRoutes from "./routes/brand.routes";
@@ -21,12 +23,14 @@ import uploadRoutes from "./routes/upload.routes";
 import adminRoutes from "./routes/admin.routes";
 import discountRoutes from "./routes/discount.routes";
 import chatRoutes from "./routes/chat.routes";
+import sizeRoutes from "./routes/size.routes";
 
 const app: Application = express();
 
 // Security middleware
 app.use(helmet());
 app.use(httpLogger); // Request logging
+app.use(cookieParser()); // Enable cookie parsing
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -51,7 +55,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Rate limiting
-app.use("/api", generalRateLimit);
+app.use("/api", generalLimiter);
 
 // Health check
 app.get("/health", (req: Request, res: Response) => {
@@ -60,6 +64,7 @@ app.get("/health", (req: Request, res: Response) => {
 
 // Routes initialization
 app.use("/api/auth", authRoutes);
+app.use("/api/products", recommendationRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/brands", brandRoutes);
@@ -72,6 +77,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/discounts", discountRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/size", sizeRoutes);
 
 // Catch-all for unmatched routes
 app.use((req: Request, res: Response) => {

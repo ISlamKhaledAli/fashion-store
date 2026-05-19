@@ -13,7 +13,7 @@ import { HorizontalScroll } from "@/components/shop/HorizontalScroll";
 import { ProductReviews } from "@/components/shop/ProductReviews";
 import { ProductCard } from "@/components/shop/ProductCard";
 import Skeleton from "@/components/ui/Skeleton";
-import { YouMayAlsoLike } from "@/components/shop/YouMayAlsoLike";
+import { RecommendedProducts } from "@/components/shop/RecommendedProducts";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -174,16 +174,16 @@ export default function ProductDetailPage({ params, searchParams }: PageProps) {
       {/* 4. Complete the Look Horizontal Scroll */}
       <HorizontalScroll excludeId={product.id} />
 
-      {/* 5. Reviews Section */}
+      {/* 5. AI Recommendations Section */}
+      <RecommendedProducts currentProductId={product.id} />
+
+      {/* 6. Reviews Section */}
       <ProductReviews 
         productId={product.id} 
         avgRating={product.avgRating} 
         reviewCount={product.reviewCount} 
       />
 
-      {/* 6. You May Also Like Section */}
-      {/* @ts-expect-error - category is populated from backend even if type doesn't reflect it */}
-      <YouMayAlsoLike categorySlug={product.category?.slug} excludeId={product.id} />
     </main>
   );
 }

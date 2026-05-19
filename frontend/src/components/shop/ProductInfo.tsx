@@ -13,6 +13,7 @@ import { Button } from "../ui/Button";
 import { flyToCart } from "@/lib/animations";
 import { toast } from "sonner";
 import { RatingDisplay } from "../ui/RatingDisplay";
+import { SizeAdvisorChat } from "./SizeAdvisorChat";
 
 interface ProductInfoProps {
   product: Product;
@@ -32,6 +33,7 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
   );
   const [quantity, setQuantity] = useState(1);
   const [buttonState, setButtonState] = useState<ButtonState>("idle");
+  const [isSizeAdvisorOpen, setIsSizeAdvisorOpen] = useState(false);
   const isAnimating = useRef(false);
   const { isAuthenticated } = useAuthStore();
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
@@ -166,14 +168,23 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <p className="text-xs font-label tracking-widest uppercase">Size</p>
-          <a 
-            href="/size-guide"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs underline text-on-surface-variant hover:text-primary transition-colors"
-          >
-            Size Guide
-          </a>
+          <div className="flex gap-4">
+            <button
+              onClick={() => setIsSizeAdvisorOpen(true)}
+              className="text-xs underline text-primary font-medium hover:opacity-85 transition-opacity flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 outline-none"
+            >
+              <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+              Find my size
+            </button>
+            <a 
+              href="/size-guide"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs underline text-on-surface-variant hover:text-primary transition-colors"
+            >
+              Size Guide
+            </a>
+          </div>
         </div>
         <div className="grid grid-cols-4 gap-2">
           {availableSizes.map((size) => (
@@ -294,6 +305,15 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
           <p className="text-sm text-on-surface-variant">Complimentary Carbon-Neutral Shipping</p>
         </div>
       </div>
+
+      <SizeAdvisorChat
+        productId={product.id}
+        productName={product.name}
+        availableSizes={availableSizes}
+        isOpen={isSizeAdvisorOpen}
+        onClose={() => setIsSizeAdvisorOpen(false)}
+        onSizeRecommended={setSelectedSize}
+      />
     </div>
   );
 };

@@ -38,8 +38,8 @@ export default function RegisterPage() {
     try {
       const response = await authApi.register(data);
       if (response.data.success) {
-        const { user, accessToken, refreshToken } = response.data.data;
-        login({ user, accessToken, refreshToken });
+        const { user } = response.data.data;
+        login({ user });
         router.push("/");
       }
     } catch (err: unknown) {

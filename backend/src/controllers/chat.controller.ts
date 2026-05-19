@@ -1,10 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
 import { env } from "../utils/validateEnv";
+import { tools, executeTool } from "../lib/tools";
 
-export function buildSystemPrompt(catalog: any[], user: any | null, cart: any | null) {
-  const catalogText = JSON.stringify(catalog, null, 2);
-
+export function buildSystemPrompt(user: any | null, cart: any | null) {
   const userContext = user ? `
 USER CONTEXT:
 - Name: ${user.name}
@@ -32,95 +31,22 @@ Your goal is to help customers find exactly what they need, increase satisfactio
 
 ---
 
-## WHAT YOU KNOW (Context injected per request)
-Use the live data below to give personalized, accurate answers. Never invent products or prices.
-
----
-
-## YOUR CAPABILITIES
-
-### 1. PRODUCT SEARCH & RECOMMENDATION
-When a user asks for a product:
-- Match by category, color, price range, style, occasion, or season.
-- Return 2-4 best matches (not more — quality over quantity).
-- For each product, mention: name, price, key feature, and why it suits them.
-- If nothing matches exactly, suggest the closest option and explain why.
-
-### 2. OUTFIT BUILDING
-When asked "what goes with this?" or "build me an outfit":
-- Suggest complementary items from the catalog.
-- Explain the styling logic briefly ("the navy blazer balances the casual jeans").
-- Upsell naturally — only suggest items that genuinely work together.
-
-### 3. SIZE GUIDANCE
-When a user asks about sizing:
-- If they provided measurements: use them to recommend the right size.
-- If not: ask for height and weight (and chest for tops).
-- Base size recommendations on the product's size chart if available.
-- Always add: "If between sizes, we recommend sizing up for comfort".
-
-### 4. ORDER & STOCK AWARENESS
-- If a product is out of stock, proactively suggest the closest alternative.
-- If an item is low stock (≤3 left), mention it subtly: "Only a few left in your size".
-- Never promise delivery dates unless explicitly provided in the context.
-
-### 5. CART ASSISTANT
-- If the user's cart is provided, you can reference it: "I see you have X in your cart — this would pair well with it".
-- Help users complete their look based on what's already in their cart.
-
-### 6. UPSELLING (Subtle & Natural)
-- Only upsell when it genuinely adds value.
-- Max 1 upsell suggestion per response.
-- Never mention upselling explicitly — just suggest naturally.
-
----
-
-## RESPONSE FORMAT
-
-### For product recommendations, always use this format structure (extremely important for automatic rendering):
-**[Product Name]** — [Price]
-[One sentence: why it's perfect for them]
-Sizes available: S, M, L | Colors: Black, White
-[Link or product ID if needed]
-
-### For outfit suggestions:
-Present as a complete look with a brief style note.
-
-### For general questions:
-Keep it conversational — 2-4 sentences max.
+## YOUR CAPABILITIES & TOOLS
+You do NOT know the full product catalog. You MUST use the provided tools to search for and details retrieve catalog items:
+- Use \`search_products\` to find items matching the search query, category, price, and color filters.
+- Use \`get_product_details\` to retrieve full size ranges, color variants, and descriptions for a specific product by its ID.
 
 ---
 
 ## STRICT RULES
-- NEVER make up products, prices, or availability — only use what's in CATALOG.
-- NEVER discuss competitors or compare with other stores.
-- NEVER ask for payment info or personal data beyond name/sizes.
-- If asked something outside shopping (politics, personal advice, etc.), politely redirect: "I'm here to help you find the perfect outfit! 😊"
-- If catalog has no relevant results: say so honestly and offer to help differently.
+- NEVER make up products, prices, or availability — only speak about products returned by tools.
 - Keep responses under 150 words unless building a full outfit or answering a complex question.
+- Format product recommendations as:
+  **[Product Name]** — $[Price]
+  [One sentence: why it's perfect for them]
+  Sizes available: S, M, L | Colors: Black, White
 
 ---
-
-## SMART BEHAVIORS
-
-### Proactive suggestions:
-- If a user is browsing a category for >2 messages, suggest a bestseller: "Many customers love our [product] this season."
-- If cart has been idle: "Want me to check if everything in your cart is still available in your size?"
-
-### Memory within conversation:
-- Remember what the user said earlier in the chat (sizes, preferences, budget).
-- Don't ask for the same info twice.
-
-### Handling vague requests:
-- "Show me something nice" → Ask 1 clarifying question: "Any occasion in mind, or just casual everyday wear?"
-- "I don't know what I want" → Offer a quiz-style flow: "Let's find your style! Are you looking for something casual, formal, or sporty?"
-
----
-LIVE DATA:
-
-CATALOG (available products):
-${catalogText}
-
 ${userContext}
 
 ${cartContext}
@@ -136,42 +62,7 @@ export const handleChat = async (req: Request, res: Response, next: NextFunction
       return;
     }
 
-    // 1. Fetch live catalog (ACTIVE products with relations)
-    const activeProducts = await prisma.product.findMany({
-      where: { status: "ACTIVE" },
-      include: {
-        category: true,
-        brand: true,
-        variants: true,
-      },
-    });
-
-    const catalog = activeProducts.map((p) => {
-      const sizes = Array.from(new Set(p.variants.map((v) => v.size)));
-      const colors = Array.from(new Set(p.variants.map((v) => v.color)));
-      const totalStock = p.variants.reduce((acc, v) => acc + v.stock, 0);
-
-      return {
-        id: p.id,
-        name: p.name,
-        slug: p.slug,
-        category: p.category.name,
-        brand: p.brand?.name || "The Curator",
-        price: p.price,
-        comparePrice: p.comparePrice,
-        description: p.description,
-        sizes,
-        colors,
-        stock: totalStock,
-        variants: p.variants.map((v) => ({
-          size: v.size,
-          color: v.color,
-          stock: v.stock,
-        })),
-      };
-    });
-
-    // 2. Fetch User Personalization Context if authenticated
+    // 1. Fetch User Personalization Context if authenticated
     let userContext: any = null;
     let cartContext: any = null;
 
@@ -225,8 +116,7 @@ export const handleChat = async (req: Request, res: Response, next: NextFunction
         // Collect wishlist
         const wishlist = user.wishlist.map((w) => w.product.name);
 
-        // Collect saved sizes (extract from past purchases or profile settings if there were any)
-        // Here we just collect sizes of clothing they bought in their last order
+        // Collect saved sizes (clothing bought in last orders)
         const sizesPurchased = new Set<string>();
         user.orders.forEach((o) => {
           o.items.forEach((item) => {
@@ -252,7 +142,6 @@ export const handleChat = async (req: Request, res: Response, next: NextFunction
           }));
 
           const total = items.reduce((acc, i) => acc + i.price * i.qty, 0);
-
           cartContext = { items, total };
         }
       }
@@ -269,14 +158,13 @@ export const handleChat = async (req: Request, res: Response, next: NextFunction
       }));
 
       const total = items.reduce((acc: number, i: any) => acc + i.price * i.qty, 0);
-
       cartContext = { items, total };
     }
 
-    // 3. Assemble the dynamic system prompt
-    const systemPrompt = buildSystemPrompt(catalog, userContext, cartContext);
+    // 2. Assemble the dynamic system prompt (without catalog!)
+    const systemPrompt = buildSystemPrompt(userContext, cartContext);
 
-    // 4. Request completions stream from OpenRouter
+    // 3. Setup OpenRouter Configuration
     const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
     const requestHeaders: Record<string, string> = {
       "Authorization": `Bearer ${env.OPENROUTER_API_KEY}`,
@@ -285,34 +173,104 @@ export const handleChat = async (req: Request, res: Response, next: NextFunction
       "X-Title": "The Curator Shopping Assistant",
     };
 
-    const requestBody = {
-      model: "google/gemini-2.0-flash-001",
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...messages,
-      ],
-      stream: true,
-      max_tokens: 600,
-      temperature: 0.7,
-    };
+    // Filter messages to avoid sending internal tool representation if client sent unexpected formats
+    const apiMessages: any[] = [
+      { role: "system", content: systemPrompt },
+      ...messages.map((m: any) => ({
+        role: m.role,
+        content: m.content,
+      })),
+    ];
 
-    console.log("[DEBUG] Dispatching chat query to OpenRouter...");
+    let loopCount = 0;
+    const maxLoops = 3;
+    let hasToolCalls = true;
 
-    const response = await fetch(openRouterUrl, {
+    // Agentic tool-calling loop (limit 3 steps)
+    while (hasToolCalls && loopCount < maxLoops) {
+      console.log(`[DEBUG] Dispatching chat query to OpenRouter (Loop ${loopCount + 1})...`);
+
+      const response = await fetch(openRouterUrl, {
+        method: "POST",
+        headers: requestHeaders,
+        body: JSON.stringify({
+          model: "anthropic/claude-3.5-sonnet",
+          messages: apiMessages,
+          tools: tools,
+          tool_choice: "auto",
+          stream: false,
+          max_tokens: 1000,
+          temperature: 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[ERROR] OpenRouter request failed:", { status: response.status, errorText });
+        res.status(500).json({ success: false, message: "Failed to connect to OpenRouter service" });
+        return;
+      }
+
+      const responseData = (await response.json()) as any;
+      const choice = responseData.choices?.[0];
+      const responseMessage = choice?.message;
+      const toolCalls = responseMessage?.tool_calls;
+
+      if (toolCalls && toolCalls.length > 0) {
+        console.log(`[DEBUG] Tool calls requested:`, toolCalls);
+        
+        // Push the assistant tool_calls message
+        apiMessages.push(responseMessage);
+
+        for (const toolCall of toolCalls) {
+          const functionName = toolCall.function.name;
+          let args = {};
+          try {
+            args = JSON.parse(toolCall.function.arguments || "{}");
+          } catch (err) {
+            console.error("[ERROR] Failed to parse tool arguments:", err);
+          }
+
+          console.log(`[DEBUG] Executing tool: ${functionName} with args:`, args);
+          const result = await executeTool(functionName, args);
+
+          apiMessages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            name: functionName,
+            content: JSON.stringify(result),
+          });
+        }
+
+        loopCount++;
+      } else {
+        hasToolCalls = false;
+      }
+    }
+
+    // Now call OpenRouter for the final streaming text generation
+    console.log("[DEBUG] Dispatching final stream query to OpenRouter...");
+    const streamResponse = await fetch(openRouterUrl, {
       method: "POST",
       headers: requestHeaders,
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({
+        model: "anthropic/claude-3.5-sonnet",
+        messages: apiMessages,
+        stream: true,
+        max_tokens: 600,
+        temperature: 0.7,
+      }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[ERROR] OpenRouter request failed:", { status: response.status, errorText });
-      res.status(500).json({ success: false, message: "Failed to connect to OpenRouter service" });
+    if (!streamResponse.ok) {
+      const errorText = await streamResponse.text();
+      console.error("[ERROR] OpenRouter final stream failed:", { status: streamResponse.status, errorText });
+      res.status(500).json({ success: false, message: "Failed to stream final response from OpenRouter" });
       return;
     }
 
-    if (!response.body) {
-      res.status(500).json({ success: false, message: "Empty response from completions provider" });
+    if (!streamResponse.body) {
+      res.status(500).json({ success: false, message: "Empty final stream response from completions provider" });
       return;
     }
 
@@ -322,7 +280,7 @@ export const handleChat = async (req: Request, res: Response, next: NextFunction
     res.setHeader("Connection", "keep-alive");
 
     // Process chunk stream
-    const bodyReader = response.body as unknown as AsyncIterable<any>;
+    const bodyReader = streamResponse.body as unknown as AsyncIterable<any>;
     try {
       for await (const chunk of bodyReader) {
         res.write(chunk);

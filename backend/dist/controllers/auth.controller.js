@@ -25,6 +25,19 @@ const register = async (req, res, next) => {
         });
         const accessToken = (0, jwt_1.generateAccessToken)(user.id, user.role);
         const refreshToken = (0, jwt_1.generateRefreshToken)(user.id);
+        // Set secure cookies (SameSite=Strict, HttpOnly)
+        res.cookie("accessToken", accessToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            maxAge: 60 * 60 * 1000, // 1 hour
+        });
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
         return (0, apiResponse_1.sendResponse)({
             res,
             status: 201,
@@ -37,8 +50,6 @@ const register = async (req, res, next) => {
                     email: user.email,
                     role: user.role,
                 },
-                accessToken,
-                refreshToken,
             },
         });
     }
@@ -58,6 +69,19 @@ const login = async (req, res, next) => {
         }
         const accessToken = (0, jwt_1.generateAccessToken)(user.id, user.role);
         const refreshToken = (0, jwt_1.generateRefreshToken)(user.id);
+        // Set secure cookies (SameSite=Strict, HttpOnly)
+        res.cookie("accessToken", accessToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            maxAge: 60 * 60 * 1000, // 1 hour
+        });
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
         return (0, apiResponse_1.sendResponse)({
             res,
             status: 200,
@@ -70,8 +94,6 @@ const login = async (req, res, next) => {
                     email: user.email,
                     role: user.role,
                 },
-                accessToken,
-                refreshToken,
             },
         });
     }
@@ -82,7 +104,9 @@ const login = async (req, res, next) => {
 exports.login = login;
 const refresh = async (req, res, next) => {
     try {
-        const { refreshToken } = auth_validator_1.refreshSchema.parse(req.body);
+        const { refreshToken } = auth_validator_1.refreshSchema.parse({
+            refreshToken: req.cookies?.refreshToken,
+        });
         let decoded;
         try {
             decoded = (0, jwt_1.verifyRefreshToken)(refreshToken);
@@ -95,11 +119,18 @@ const refresh = async (req, res, next) => {
             throw new AppError_1.NotFoundError("User not found");
         }
         const accessToken = (0, jwt_1.generateAccessToken)(user.id, user.role);
+        // Set new secure access token cookie
+        res.cookie("accessToken", accessToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+            maxAge: 60 * 60 * 1000, // 1 hour
+        });
         return (0, apiResponse_1.sendResponse)({
             res,
             status: 200,
             success: true,
-            data: { accessToken },
+            message: "Token refreshed successfully",
         });
     }
     catch (error) {
@@ -108,6 +139,16 @@ const refresh = async (req, res, next) => {
 };
 exports.refresh = refresh;
 const logout = async (req, res, next) => {
+    res.clearCookie("accessToken", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+    });
+    res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+    });
     return (0, apiResponse_1.sendResponse)({
         res,
         status: 200,

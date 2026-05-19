@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, X, Send, Sparkles, ArrowRight, ShoppingBag, ShoppingCart } from "lucide-react";
+import { MessageSquare, X, Send, Sparkles, Trash2 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/cartStore";
+import { useChatStore } from "@/store/chatStore";
 import Link from "next/link";
 
 // High-resolution product images to match store seed
@@ -22,11 +23,6 @@ const PRODUCT_IMAGES: Record<string, string> = {
   "zara-crossbody-city-bag": "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=600&q=80",
   "puma-essentials-baseball-cap": "https://images.unsplash.com/photo-1575425186775-b8de9a427e67?auto=format&fit=crop&w=600&q=80"
 };
-
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-}
 
 interface ProductCardProps {
   name: string;
@@ -95,13 +91,16 @@ const InteractiveProductCard: React.FC<ProductCardProps> = ({
 };
 
 export const ChatAssistant = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: "Hello! I am your personal stylist at **The Curator** 🌌. How can I help you complete your look today? Feel free to ask in English or Arabic! 😊"
-    }
-  ]);
+  const {
+    messages,
+    isOpen,
+    setIsOpen,
+    addMessage,
+    updateLastMessage,
+    clearChat,
+    initializeSession
+  } = useChatStore();
+
   const [inputVal, setInputVal] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -109,8 +108,13 @@ export const ChatAssistant = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   
-  const { user, accessToken } = useAuthStore();
+  const { user } = useAuthStore();
   const { items: cartItems } = useCartStore();
+
+  // Initialize persistent sessionId
+  useEffect(() => {
+    initializeSession();
+  }, [initializeSession]);
 
   // Scroll to bottom on messages change
   useEffect(() => {
@@ -132,24 +136,25 @@ export const ChatAssistant = () => {
     if (!customText) setInputVal("");
     setShowTooltip(false);
 
-    const newUserMsg: Message = { role: "user", content: text };
-    const updatedMessages = [...messages, newUserMsg];
-    setMessages(updatedMessages);
+    // 1. Add user message to store
+    addMessage({ role: "user", content: text });
     setIsLoading(true);
 
-    // Add dummy assistant response placeholder for streaming
-    setMessages(prev => [...prev, { role: "assistant", content: "" }]);
+    // 2. Fetch fresh snapshot of conversation history to post to API
+    const updatedMessages = useChatStore.getState().messages;
+
+    // 3. Add placeholder assistant message for streaming response
+    addMessage({ role: "assistant", content: "" });
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(accessToken ? { "Authorization": `Bearer ${accessToken}` } : {})
         },
         body: JSON.stringify({
-          messages: updatedMessages,
-          guestCart: !accessToken ? {
+          messages: updatedMessages.map(m => ({ role: m.role, content: m.content })),
+          guestCart: !user ? {
             items: cartItems.map(item => ({
               name: item.name,
               size: item.size,
@@ -194,14 +199,7 @@ export const ChatAssistant = () => {
               assistantReply += content;
               
               // Dynamically update the streaming response
-              setMessages(prev => {
-                const nextMsg = [...prev];
-                nextMsg[nextMsg.length - 1] = {
-                  role: "assistant",
-                  content: assistantReply
-                };
-                return nextMsg;
-              });
+              updateLastMessage(assistantReply);
             } catch (e) {
               // Ignore split JSON chunks
             }
@@ -210,14 +208,7 @@ export const ChatAssistant = () => {
       }
     } catch (err) {
       console.error("Chat request failed:", err);
-      setMessages(prev => {
-        const copy = [...prev];
-        copy[copy.length - 1] = {
-          role: "assistant",
-          content: "I'm sorry, I ran into a connection issue 🔌. Please try asking again in a moment."
-        };
-        return copy;
-      });
+      updateLastMessage("I'm sorry, I ran into a connection issue 🔌. Please try asking again in a moment.");
     } finally {
       setIsLoading(false);
     }
@@ -241,7 +232,7 @@ export const ChatAssistant = () => {
     while (i < lines.length) {
       const line = lines[i].trim();
 
-      // Matches "**[Product Name]** — [Price]" or similar variations
+      // Matches "**[Product Name]** — $[Price]" or similar variations
       const productMatch = line.match(/^\*\*([^*]+)\*\* — \$?([0-9.,]+)/i);
 
       if (productMatch) {
@@ -413,12 +404,25 @@ export const ChatAssistant = () => {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all cursor-pointer border-none"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    if (confirm("Are you sure you want to clear the conversation?")) {
+                      clearChat();
+                    }
+                  }}
+                  title="Clear conversation"
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all cursor-pointer border-none"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all cursor-pointer border-none"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Messages Area */}
@@ -426,26 +430,31 @@ export const ChatAssistant = () => {
               ref={chatContainerRef}
               className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-stone-50/50"
             >
-              {messages.map((msg, index) => (
-                <div
-                  key={index}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start animate-fade-in"}`}
-                >
+              {messages.map((msg, index) => {
+                if (msg.role === "assistant" && msg.content === "") {
+                  return null;
+                }
+                return (
                   <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-[13px] shadow-sm border ${
-                      msg.role === "user"
-                        ? "bg-stone-900 border-stone-800 text-white rounded-br-none font-sans"
-                        : "bg-white border-stone-200 text-on-surface rounded-bl-none font-sans"
-                    }`}
+                    key={msg.id || index}
+                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start animate-fade-in"}`}
                   >
-                    {msg.role === "user" ? (
-                      <p className="leading-relaxed font-light">{msg.content}</p>
-                    ) : (
-                      renderMessageContent(msg.content)
-                    )}
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-4 py-3 text-[13px] shadow-sm border ${
+                        msg.role === "user"
+                          ? "bg-stone-900 border-stone-800 text-white rounded-br-none font-sans"
+                          : "bg-white border-stone-200 text-on-surface rounded-bl-none font-sans"
+                      }`}
+                    >
+                      {msg.role === "user" ? (
+                        <p className="leading-relaxed font-light">{msg.content}</p>
+                      ) : (
+                        renderMessageContent(msg.content)
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {isLoading && messages[messages.length - 1]?.content === "" && (
                 <div className="flex justify-start">

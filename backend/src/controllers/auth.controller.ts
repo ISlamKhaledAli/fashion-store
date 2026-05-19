@@ -30,6 +30,21 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const accessToken = generateAccessToken(user.id, user.role);
     const refreshToken = generateRefreshToken(user.id);
 
+    // Set secure cookies (SameSite=Strict, HttpOnly)
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
     return sendResponse({
       res,
       status: 201,
@@ -42,8 +57,6 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
           email: user.email,
           role: user.role,
         },
-        accessToken,
-        refreshToken,
       },
     });
   } catch (error) {
@@ -66,6 +79,21 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const accessToken = generateAccessToken(user.id, user.role);
     const refreshToken = generateRefreshToken(user.id);
 
+    // Set secure cookies (SameSite=Strict, HttpOnly)
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
     return sendResponse({
       res,
       status: 200,
@@ -78,8 +106,6 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
           email: user.email,
           role: user.role,
         },
-        accessToken,
-        refreshToken,
       },
     });
   } catch (error) {
@@ -89,7 +115,9 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
 export const refresh = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { refreshToken } = refreshSchema.parse(req.body);
+    const { refreshToken } = refreshSchema.parse({
+      refreshToken: req.cookies?.refreshToken,
+    });
     
     let decoded;
     try {
@@ -104,11 +132,20 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
     }
 
     const accessToken = generateAccessToken(user.id, user.role);
+
+    // Set new secure access token cookie
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
+
     return sendResponse({
       res,
       status: 200,
       success: true,
-      data: { accessToken },
+      message: "Token refreshed successfully",
     });
   } catch (error) {
     next(error);
@@ -116,6 +153,17 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
 };
 
 export const logout = async (req: Request, res: Response, next: NextFunction) => {
+  res.clearCookie("accessToken", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+  });
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+  });
+
   return sendResponse({
     res,
     status: 200,

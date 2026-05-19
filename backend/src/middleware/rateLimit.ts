@@ -3,6 +3,7 @@ import rateLimit from "express-rate-limit";
 export const generalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 500,
+  skip: (req) => process.env.NODE_ENV === "development" || req.ip === "127.0.0.1" || req.ip === "::1" || req.ip === "::ffff:127.0.0.1",
   message: {
     success: false,
     message: "Too many requests, please try again after 15 minutes",
@@ -12,6 +13,7 @@ export const generalRateLimit = rateLimit({
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
+  skip: (req) => process.env.NODE_ENV === "development" || req.ip === "127.0.0.1" || req.ip === "::1" || req.ip === "::ffff:127.0.0.1",
   message: {
     success: false,
     message: "Too many auth attempts, please try again after 15 minutes",
