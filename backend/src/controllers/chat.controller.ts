@@ -194,7 +194,7 @@ export const handleChat = async (req: Request, res: Response, next: NextFunction
         method: "POST",
         headers: requestHeaders,
         body: JSON.stringify({
-          model: "anthropic/claude-3.5-sonnet",
+          model: "anthropic/claude-3-haiku",
           messages: apiMessages,
           tools: tools,
           tool_choice: "auto",
@@ -254,7 +254,7 @@ export const handleChat = async (req: Request, res: Response, next: NextFunction
       method: "POST",
       headers: requestHeaders,
       body: JSON.stringify({
-        model: "anthropic/claude-3.5-sonnet",
+        model: "anthropic/claude-3-haiku",
         messages: apiMessages,
         stream: true,
         max_tokens: 600,

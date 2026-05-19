@@ -110,7 +110,7 @@ TONE: Friendly, confident, concise. Like a helpful friend who works in fashion â
       method: "POST",
       headers: requestHeaders,
       body: JSON.stringify({
-        model: "anthropic/claude-3.5-sonnet",
+        model: "anthropic/claude-3-haiku",
         messages: apiMessages,
         stream: true,
         max_tokens: 600,

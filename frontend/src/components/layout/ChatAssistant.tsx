@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/cartStore";
 import { useChatStore } from "@/store/chatStore";
 import Link from "next/link";
+import { toast } from "sonner";
 
 // High-resolution product images to match store seed
 const PRODUCT_IMAGES: Record<string, string> = {
@@ -129,6 +130,28 @@ export const ChatAssistant = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Listen to measurements-saved custom event to display green success toast
+  useEffect(() => {
+    const handleMeasurementsSaved = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const details = customEvent.detail;
+      const parts = [];
+      if (details.heightCm) parts.push(`Height: ${details.heightCm}cm`);
+      if (details.weightKg) parts.push(`Weight: ${details.weightKg}kg`);
+      if (details.chestCm) parts.push(`Chest: ${details.chestCm}cm`);
+      
+      toast.success(`Styling profile updated! 📏 ${parts.join(" | ")}`, {
+        duration: 5000,
+        description: "Your measurements have been securely saved to your account."
+      });
+    };
+
+    window.addEventListener("measurements-saved", handleMeasurementsSaved);
+    return () => {
+      window.removeEventListener("measurements-saved", handleMeasurementsSaved);
+    };
+  }, []);
+
   const handleSendMessage = async (customText?: string) => {
     const text = (customText || inputVal).trim();
     if (!text || isLoading) return;
@@ -143,16 +166,38 @@ export const ChatAssistant = () => {
     // 2. Fetch fresh snapshot of conversation history to post to API
     const updatedMessages = useChatStore.getState().messages;
 
+    // Detect active sizing productId
+    const lastTriggerIndex = [...updatedMessages].reverse().findIndex(m => m.isTrigger);
+    let activeSizeProductId = null;
+    if (lastTriggerIndex !== -1) {
+      const originalIndex = updatedMessages.length - 1 - lastTriggerIndex;
+      const triggerMsg = updatedMessages[originalIndex];
+      const messagesAfterTrigger = updatedMessages.slice(originalIndex + 1);
+      const recommendationGiven = messagesAfterTrigger.some(
+        m => m.role === "assistant" && 
+        (m.content.toLowerCase().includes("i recommend size") || 
+         m.content.toLowerCase().includes("i recommend **size"))
+      );
+      if (!recommendationGiven) {
+        activeSizeProductId = triggerMsg.productId || null;
+      }
+    }
+
     // 3. Add placeholder assistant message for streaming response
     addMessage({ role: "assistant", content: "" });
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/chat`, {
+      const url = activeSizeProductId
+        ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/size/recommend?productId=${activeSizeProductId}`
+        : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/chat`;
+
+      const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          productId: activeSizeProductId || undefined,
           messages: updatedMessages.map(m => ({ role: m.role, content: m.content })),
           guestCart: !user ? {
             items: cartItems.map(item => ({
@@ -195,6 +240,14 @@ export const ChatAssistant = () => {
             if (dataStr === "[DONE]") continue;
             try {
               const parsed = JSON.parse(dataStr);
+              
+              if (parsed.measurementsSaved) {
+                if (typeof window !== "undefined") {
+                  window.dispatchEvent(new CustomEvent("measurements-saved", { detail: parsed.measurements }));
+                }
+                continue;
+              }
+
               const content = parsed.choices?.[0]?.delta?.content || "";
               assistantReply += content;
               
@@ -434,25 +487,65 @@ export const ChatAssistant = () => {
                 if (msg.role === "assistant" && msg.content === "") {
                   return null;
                 }
+
+                // Detect if it is a size recommendation message to show divider AFTER it
+                const isRecommendationMessage = msg.role === "assistant" &&
+                  (msg.content.toLowerCase().includes("i recommend size") ||
+                   msg.content.toLowerCase().includes("i recommend **size"));
+
                 return (
-                  <div
-                    key={msg.id || index}
-                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start animate-fade-in"}`}
-                  >
+                  <React.Fragment key={msg.id || index}>
+                    {/* BEFORE trigger message divider */}
+                    {msg.isTrigger && (
+                      <div className="w-full flex items-center justify-center my-4 gap-3 animate-fade-in">
+                        <div className="h-px bg-stone-200/80 flex-1" />
+                        <span className="text-[9px] uppercase font-bold tracking-widest text-on-surface/40 whitespace-nowrap px-2">
+                          ── Size advisor ──
+                        </span>
+                        <div className="h-px bg-stone-200/80 flex-1" />
+                      </div>
+                    )}
+
                     <div
-                      className={`max-w-[85%] rounded-2xl px-4 py-3 text-[13px] shadow-sm border ${
-                        msg.role === "user"
-                          ? "bg-stone-900 border-stone-800 text-white rounded-br-none font-sans"
-                          : "bg-white border-stone-200 text-on-surface rounded-bl-none font-sans"
-                      }`}
+                      className={`flex ${msg.role === "user" ? "justify-end" : "justify-start animate-fade-in"}`}
                     >
-                      {msg.role === "user" ? (
-                        <p className="leading-relaxed font-light">{msg.content}</p>
+                      {msg.isTrigger ? (
+                        <div className="flex flex-col items-end gap-1.5 max-w-[85%]">
+                          <span className="text-[9px] uppercase font-bold tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20 flex items-center gap-1 select-none font-sans font-semibold">
+                            <Sparkles className="w-2.5 h-2.5 animate-pulse" /> Size advisor
+                          </span>
+                          <div className="rounded-2xl px-4 py-3 text-[13px] shadow-sm border bg-stone-100 border-stone-200 text-on-surface rounded-br-none w-full">
+                            <p className="leading-relaxed font-semibold font-sans">{msg.content}</p>
+                          </div>
+                        </div>
                       ) : (
-                        renderMessageContent(msg.content)
+                        <div
+                          className={`max-w-[85%] rounded-2xl px-4 py-3 text-[13px] shadow-sm border ${
+                            msg.role === "user"
+                              ? "bg-stone-900 border-stone-800 text-white rounded-br-none font-sans"
+                              : "bg-white border-stone-200 text-on-surface rounded-bl-none font-sans"
+                          }`}
+                        >
+                          {msg.role === "user" ? (
+                            <p className="leading-relaxed font-light font-sans">{msg.content}</p>
+                          ) : (
+                            renderMessageContent(msg.content)
+                          )}
+                        </div>
                       )}
                     </div>
-                  </div>
+
+                    {/* AFTER recommendation message divider */}
+                    {isRecommendationMessage && (
+                      <div className="w-full flex items-center justify-center my-4 gap-3 animate-fade-in">
+                        <div className="h-px bg-stone-200/80 flex-1" />
+                        <span className="text-[9px] uppercase font-bold tracking-widest text-on-surface/40 whitespace-nowrap px-2">
+                          ── Back to chat ──
+                        </span>
+                        <div className="h-px bg-stone-200/80 flex-1" />
+                      </div>
+                    )}
+                  </React.Fragment>
                 );
               })}
 

@@ -13,7 +13,7 @@ import { Button } from "../ui/Button";
 import { flyToCart } from "@/lib/animations";
 import { toast } from "sonner";
 import { RatingDisplay } from "../ui/RatingDisplay";
-import { SizeAdvisorChat } from "./SizeAdvisorChat";
+import { useChatStore } from "@/store/chatStore";
 
 interface ProductInfoProps {
   product: Product;
@@ -33,7 +33,6 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
   );
   const [quantity, setQuantity] = useState(1);
   const [buttonState, setButtonState] = useState<ButtonState>("idle");
-  const [isSizeAdvisorOpen, setIsSizeAdvisorOpen] = useState(false);
   const isAnimating = useRef(false);
   const { isAuthenticated } = useAuthStore();
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
@@ -170,7 +169,7 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
           <p className="text-xs font-label tracking-widest uppercase">Size</p>
           <div className="flex gap-4">
             <button
-              onClick={() => setIsSizeAdvisorOpen(true)}
+              onClick={() => useChatStore.getState().triggerSizeAdvisor(product.id, product.name)}
               className="text-xs underline text-primary font-medium hover:opacity-85 transition-opacity flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 outline-none"
             >
               <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
@@ -305,15 +304,6 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
           <p className="text-sm text-on-surface-variant">Complimentary Carbon-Neutral Shipping</p>
         </div>
       </div>
-
-      <SizeAdvisorChat
-        productId={product.id}
-        productName={product.name}
-        availableSizes={availableSizes}
-        isOpen={isSizeAdvisorOpen}
-        onClose={() => setIsSizeAdvisorOpen(false)}
-        onSizeRecommended={setSelectedSize}
-      />
     </div>
   );
 };
