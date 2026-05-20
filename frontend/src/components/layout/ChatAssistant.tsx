@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, X, Send, Sparkles, Trash2 } from "lucide-react";
+import { MessageSquare, X, Send, Sparkles, Trash2, Search, Shirt, ShoppingBag } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/cartStore";
 import { useChatStore } from "@/store/chatStore";
@@ -10,6 +10,7 @@ import ReactMarkdown from "react-markdown";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "../ui/Button";
+import { cn } from "@/lib/utils";
 
 // High-resolution product images to match store seed
 const PRODUCT_IMAGES: Record<string, string> = {
@@ -367,11 +368,24 @@ export const ChatAssistant = () => {
   };
 
   const starterPrompts = [
-    { label: "🔍 Sizing guidance", text: "I need help with sizes. What do you recommend?" },
-    { label: "👗 Build weekend look", text: "Can you build me a complete weekend outfit from the catalog?" },
-    { label: "👟 Browse Sneakers", text: "Show me the best sneakers under $140." },
-    { label: "👜 Accessorize", text: "What accessories go well with a Zara hoodie?" }
+    { label: "Sizing guidance", text: "I need help with sizes. What do you recommend?", icon: "search" },
+    { label: "Build weekend look", text: "Can you build me a complete weekend outfit from the catalog?", icon: "shirt" },
+    { label: "Browse Sneakers", text: "Show me the best sneakers under $140.", icon: "bag" },
+    { label: "Accessorize", text: "What accessories go well with a Zara hoodie?", icon: "sparkles" }
   ];
+
+  const getPromptIcon = (iconName: string) => {
+    switch (iconName) {
+      case "search":
+        return <Search className="w-3.5 h-3.5 text-stone-500 group-hover:text-stone-900 transition-colors" />;
+      case "shirt":
+        return <Shirt className="w-3.5 h-3.5 text-stone-500 group-hover:text-stone-900 transition-colors" />;
+      case "bag":
+        return <ShoppingBag className="w-3.5 h-3.5 text-stone-500 group-hover:text-stone-900 transition-colors" />;
+      default:
+        return <Sparkles className="w-3.5 h-3.5 text-stone-500 group-hover:text-stone-900 transition-colors" />;
+    }
+  };
 
   return (
     <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end">
@@ -455,21 +469,21 @@ export const ChatAssistant = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 30 }}
             transition={{ type: "spring", damping: 25, stiffness: 220 }}
-            className="absolute bottom-18 right-0 w-[92vw] sm:w-[400px] h-[550px] bg-stone-50 border border-stone-200/90 shadow-2xl rounded-2xl flex flex-col overflow-hidden backdrop-blur-3xl font-sans"
+            className="absolute bottom-18 right-0 w-[92vw] sm:w-[400px] h-[570px] bg-white/90 border border-stone-250/30 shadow-[0_24px_60px_rgba(0,0,0,0.12)] rounded-3xl flex flex-col overflow-hidden backdrop-blur-xl font-sans"
           >
             {/* Header */}
-            <div className="bg-stone-900 px-5 py-4 flex items-center justify-between border-b border-stone-800">
+            <div className="bg-white/85 px-6 py-4 flex items-center justify-between border-b border-stone-100 backdrop-blur-md">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-primary">
+                <div className="w-8 h-8 rounded-full bg-stone-950 flex items-center justify-center text-white">
                   <Sparkles className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-[13px] font-bold tracking-widest text-white uppercase font-sans">
+                  <h3 className="text-[12px] font-black tracking-[0.18em] text-stone-900 uppercase font-sans">
                     THE CURATOR AI
                   </h3>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                    <span className="text-[10px] text-stone-400 font-medium">Styling Assistant Online</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[10px] text-stone-500 font-medium">Styling Assistant Online</span>
                   </div>
                 </div>
               </div>
@@ -483,17 +497,17 @@ export const ChatAssistant = () => {
                     }
                   }}
                   title="Clear conversation"
-                  className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all border-none"
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-stone-50 hover:bg-stone-100 text-stone-400 hover:text-stone-900 border border-stone-100 hover:border-stone-200 transition-all duration-300"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </Button>
                 <Button
                   variant="none"
                   size="none"
                   onClick={() => setIsOpen(false)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all border-none"
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-stone-50 hover:bg-stone-100 text-stone-400 hover:text-stone-900 border border-stone-100 hover:border-stone-200 transition-all duration-300"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </Button>
               </div>
             </div>
@@ -501,7 +515,7 @@ export const ChatAssistant = () => {
             {/* Messages Area */}
             <div
               ref={chatContainerRef}
-              className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-stone-50/50"
+              className="flex-1 overflow-y-auto px-5 py-5 space-y-4 bg-stone-50/20 scrollbar-none"
             >
               {messages.map((msg, index) => {
                 if (msg.role === "assistant" && msg.content === "") {
@@ -518,11 +532,11 @@ export const ChatAssistant = () => {
                     {/* BEFORE trigger message divider */}
                     {msg.isTrigger && (
                       <div className="w-full flex items-center justify-center my-4 gap-3 animate-fade-in">
-                        <div className="h-px bg-stone-200/80 flex-1" />
-                        <span className="text-[9px] uppercase font-bold tracking-widest text-on-surface/40 whitespace-nowrap px-2">
+                        <div className="h-[1px] bg-gradient-to-r from-transparent via-amber-200 to-transparent flex-1" />
+                        <span className="text-[9px] uppercase font-bold tracking-widest text-amber-700/80 whitespace-nowrap px-2">
                           ── Size advisor ──
                         </span>
-                        <div className="h-px bg-stone-200/80 flex-1" />
+                        <div className="h-[1px] bg-gradient-to-r from-transparent via-amber-200 to-transparent flex-1" />
                       </div>
                     )}
 
@@ -531,23 +545,23 @@ export const ChatAssistant = () => {
                     >
                       {msg.isTrigger ? (
                         <div className="flex flex-col items-end gap-1.5 max-w-[85%]">
-                          <span className="text-[9px] uppercase font-bold tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20 flex items-center gap-1 select-none font-sans font-semibold">
-                            <Sparkles className="w-2.5 h-2.5 animate-pulse" /> Size advisor
+                          <span className="text-[9px] uppercase font-bold tracking-wider text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/50 flex items-center gap-1 select-none font-sans font-semibold">
+                            <Sparkles className="w-2.5 h-2.5 animate-pulse text-amber-500" /> Size advisor
                           </span>
-                          <div className="rounded-2xl px-4 py-3 text-[13px] shadow-sm border bg-stone-100 border-stone-200 text-on-surface rounded-br-none w-full">
-                            <p className="leading-relaxed font-semibold font-sans">{msg.content}</p>
+                          <div className="rounded-2xl px-4 py-3 text-[13px] shadow-[0_4px_12px_rgba(0,0,0,0.03)] border bg-amber-50/20 border-amber-200/40 text-stone-800 rounded-br-sm w-full font-sans">
+                            <p className="leading-relaxed font-medium">{msg.content}</p>
                           </div>
                         </div>
                       ) : (
                         <div
-                          className={`max-w-[85%] rounded-2xl px-4 py-3 text-[13px] shadow-sm border ${
+                          className={`max-w-[85%] rounded-2xl px-4 py-3 text-[13px] shadow-[0_2px_10px_-4px_rgba(0,0,0,0.04)] border ${
                             msg.role === "user"
-                              ? "bg-stone-900 border-stone-800 text-white rounded-br-none font-sans"
-                              : "bg-white border-stone-200 text-on-surface rounded-bl-none font-sans"
+                              ? "bg-stone-950 border-stone-900 text-white rounded-br-sm font-sans"
+                              : "bg-white border-stone-200/80 text-stone-850 rounded-bl-sm font-sans"
                           }`}
                         >
                           {msg.role === "user" ? (
-                            <p className="leading-relaxed font-light font-sans">{msg.content}</p>
+                            <p className="leading-relaxed font-light">{msg.content}</p>
                           ) : (
                             renderMessageContent(msg.content)
                           )}
@@ -559,7 +573,7 @@ export const ChatAssistant = () => {
                     {isRecommendationMessage && (
                       <div className="w-full flex items-center justify-center my-4 gap-3 animate-fade-in">
                         <div className="h-px bg-stone-200/80 flex-1" />
-                        <span className="text-[9px] uppercase font-bold tracking-widest text-on-surface/40 whitespace-nowrap px-2">
+                        <span className="text-[9px] uppercase font-bold tracking-widest text-stone-400 whitespace-nowrap px-2">
                           ── Back to chat ──
                         </span>
                         <div className="h-px bg-stone-200/80 flex-1" />
@@ -571,11 +585,11 @@ export const ChatAssistant = () => {
 
               {isLoading && messages[messages.length - 1]?.content === "" && (
                 <div className="flex justify-start">
-                  <div className="bg-white border border-stone-200 text-on-surface rounded-2xl rounded-bl-none px-4 py-3 shadow-sm">
+                  <div className="bg-white border border-stone-200/80 text-stone-800 rounded-2xl rounded-bl-sm px-4 py-3.5 shadow-sm">
                     <div className="flex items-center gap-1.5 py-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-stone-800/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-stone-800/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-stone-800/60 animate-bounce" style={{ animationDelay: "300ms" }} />
                     </div>
                   </div>
                 </div>
@@ -584,21 +598,22 @@ export const ChatAssistant = () => {
             </div>
 
             {/* Bottom Panel */}
-            <div className="p-4 bg-white border-t border-stone-200/80 flex flex-col gap-3">
+            <div className="p-5 bg-gradient-to-b from-transparent to-white/50 border-t border-stone-100 flex flex-col gap-4">
               {/* Starter prompts if only initial assistant message present */}
               {messages.length === 1 && !isLoading && (
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-on-surface/40 mb-0.5">Suggested Questions</span>
-                  <div className="grid grid-cols-2 gap-1.5">
+                <div className="flex flex-col gap-2.5">
+                  <span className="text-[9px] uppercase font-bold tracking-widest text-stone-400 mb-0.5 ml-1">Suggested</span>
+                  <div className="flex flex-wrap gap-2">
                     {starterPrompts.map((p, idx) => (
                       <Button
                         variant="none"
                         size="none"
                         key={idx}
                         onClick={() => handleSendMessage(p.text)}
-                        className="p-2 border border-stone-200 rounded-xl text-left text-[11px] text-on-surface/80 hover:border-primary hover:bg-stone-50 transition-all font-sans leading-snug"
+                        className="group px-3.5 py-2 border border-stone-200/60 bg-white/70 backdrop-blur-sm shadow-[0_2px_8px_-2px_rgba(0,0,0,0.04)] rounded-full text-left text-[11.5px] text-stone-600 hover:border-stone-400 hover:text-stone-900 hover:shadow-md transition-all duration-300 font-sans flex items-center gap-2 cursor-pointer"
                       >
-                        {p.label}
+                        {getPromptIcon(p.icon)}
+                        <span>{p.label}</span>
                       </Button>
                     ))}
                   </div>
@@ -606,28 +621,29 @@ export const ChatAssistant = () => {
               )}
 
               {/* TextInput Input Group */}
-              <div className="flex items-center gap-2 bg-stone-50 border border-stone-200 rounded-xl px-3 py-1 bg-clip-padding">
+              <div className="relative flex items-center gap-2 bg-white/80 border border-stone-200 shadow-[0_2px_14px_-6px_rgba(0,0,0,0.08)] rounded-full px-2 py-1.5 focus-within:border-stone-300 focus-within:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-500">
                 <input
                   type="text"
                   value={inputVal}
                   onChange={(e) => setInputVal(e.target.value)}
                   onKeyDown={handleKeyPress}
-                  placeholder={user ? `Styling tips, ${user.name.split(" ")[0]}...` : "Style advice or search items..."}
+                  placeholder={user ? `Styling tips, ${user.name.split(" ")[0]}...` : "Style advice or search..."}
                   disabled={isLoading}
-                  className="flex-1 bg-transparent border-none text-[13px] focus:outline-none focus:ring-0 text-on-surface placeholder-on-surface/40 py-2.5 outline-none font-sans font-light"
+                  className="flex-1 bg-transparent border-none text-[13.5px] focus:outline-none focus:ring-0 text-stone-800 placeholder-stone-400 py-2.5 px-4 outline-none font-sans"
                 />
                 <Button
                   variant="none"
                   size="none"
                   onClick={() => handleSendMessage()}
                   disabled={!inputVal.trim() || isLoading}
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all border-none ${
+                  className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-none shrink-0",
                     inputVal.trim() && !isLoading
-                      ? "bg-primary text-on-primary hover:opacity-90"
-                      : "bg-stone-100 text-stone-400 pointer-events-none"
-                  }`}
+                      ? "bg-stone-950 text-white shadow-md hover:scale-105 active:scale-95"
+                      : "bg-stone-50 text-stone-300 pointer-events-none"
+                  )}
                 >
-                  <Send className="w-3.5 h-3.5" />
+                  <Send className="w-4 h-4 ml-0.5" />
                 </Button>
               </div>
             </div>

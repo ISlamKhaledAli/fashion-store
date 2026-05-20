@@ -17,7 +17,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             {label}
           </label>
         )}
-        <div className="relative group">
+        <div className="relative group/textarea">
           <textarea
             id={id}
             ref={ref}
@@ -29,7 +29,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             )}
             {...props}
           />
-          <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-primary transition-all duration-500 group-focus-within:w-full rounded-b-md" />
+          <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-primary transition-all duration-500 group-focus-within/textarea:w-full rounded-b-md" />
         </div>
         {error && (
           <p className="text-[10px] text-error font-medium uppercase tracking-wider">{error}</p>

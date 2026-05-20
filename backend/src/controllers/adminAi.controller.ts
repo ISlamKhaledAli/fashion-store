@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { env } from "../utils/validateEnv";
+import { adminTools, executeAdminTool } from "../lib/adminTools";
 
 export const generateDescription = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   console.log("[DEBUG] generateDescription: req.user =", req.user);
@@ -453,3 +454,155 @@ Daily Revenue: ${JSON.stringify(revenueTimeline || [])}`;
   }
 };
 
+export const adminChat = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { messages } = req.body;
+
+    if (!messages || !Array.isArray(messages)) {
+      res.status(400).json({ success: false, message: "Messages array is required" });
+      return;
+    }
+
+    const systemPrompt = `You are an intelligent store management assistant for a luxury fashion e-commerce admin. You have access to real-time store data through tools. Help the admin with:
+- Store performance summaries
+- Inventory alerts and restocking advice  
+- Order management insights
+- Product performance analysis
+- Quick answers about any store metric
+
+Be concise and direct. Use actual numbers from the data. When you detect issues (low stock, declining sales, pending orders), proactively mention them. Format numbers with $ and commas. Always use the tools to get fresh data before answering — never guess.`;
+
+    const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
+    const requestHeaders: Record<string, string> = {
+      "Authorization": `Bearer ${env.OPENROUTER_API_KEY}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": env.CLIENT_URL || "http://localhost:3000",
+      "X-Title": "The Curator Admin AI Assistant",
+    };
+
+    const apiMessages: any[] = [
+      { role: "system", content: systemPrompt },
+      ...messages.map((m: any) => ({
+        role: m.role,
+        content: m.content,
+      })),
+    ];
+
+    let loopCount = 0;
+    const maxLoops = 3;
+    let hasToolCalls = true;
+
+    while (hasToolCalls && loopCount < maxLoops) {
+      console.log(`[DEBUG] Dispatching admin chat query to OpenRouter (Loop ${loopCount + 1})...`);
+
+      const response = await fetch(openRouterUrl, {
+        method: "POST",
+        headers: requestHeaders,
+        body: JSON.stringify({
+          model: "anthropic/claude-3-haiku",
+          messages: apiMessages,
+          tools: adminTools,
+          tool_choice: "auto",
+          stream: false,
+          max_tokens: 1000,
+          temperature: 0.7,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[ERROR] OpenRouter request failed:", { status: response.status, errorText });
+        res.status(500).json({ success: false, message: "Failed to connect to OpenRouter service" });
+        return;
+      }
+
+      const responseData = (await response.json()) as any;
+      const choice = responseData.choices?.[0];
+      const responseMessage = choice?.message;
+      const toolCalls = responseMessage?.tool_calls;
+
+      if (toolCalls && toolCalls.length > 0) {
+        console.log(`[DEBUG] Admin tool calls requested:`, toolCalls);
+        
+        apiMessages.push(responseMessage);
+
+        for (const toolCall of toolCalls) {
+          const functionName = toolCall.function.name;
+          let args = {};
+          try {
+            args = JSON.parse(toolCall.function.arguments || "{}");
+          } catch (err) {
+            console.error("[ERROR] Failed to parse admin tool arguments:", err);
+          }
+
+          console.log(`[DEBUG] Executing admin tool: ${functionName} with args:`, args);
+          const result = await executeAdminTool(functionName, args);
+
+          apiMessages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            name: functionName,
+            content: JSON.stringify(result),
+          });
+        }
+
+        loopCount++;
+      } else {
+        hasToolCalls = false;
+      }
+    }
+
+    console.log("[DEBUG] Dispatching final admin stream query to OpenRouter...");
+    const streamResponse = await fetch(openRouterUrl, {
+      method: "POST",
+      headers: requestHeaders,
+      body: JSON.stringify({
+        model: "anthropic/claude-3-haiku",
+        messages: apiMessages,
+        stream: true,
+        max_tokens: 600,
+        temperature: 0.7,
+      }),
+    });
+
+    if (!streamResponse.ok) {
+      const errorText = await streamResponse.text();
+      console.error("[ERROR] OpenRouter admin final stream failed:", { status: streamResponse.status, errorText });
+      res.status(500).json({ success: false, message: "Failed to stream final response from OpenRouter" });
+      return;
+    }
+
+    if (!streamResponse.body) {
+      res.status(500).json({ success: false, message: "Empty final stream response from completions provider" });
+      return;
+    }
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+
+    try {
+      if (streamResponse.body) {
+        if (typeof (streamResponse.body as any).getReader === "function") {
+          const reader = (streamResponse.body as any).getReader();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            res.write(value);
+          }
+        } else {
+          for await (const chunk of streamResponse.body as any) {
+            res.write(chunk);
+          }
+        }
+      }
+    } catch (streamError) {
+      console.error("[ERROR] Error in OpenRouter admin connection stream:", streamError);
+    } finally {
+      res.end();
+    }
+  } catch (error) {
+    console.error("[ERROR] Admin Chat Controller failed:", error);
+    next(error);
+  }
+};

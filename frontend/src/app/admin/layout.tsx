@@ -7,6 +7,7 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { Bell, Menu } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { AdminChatWidget } from "@/components/admin/AdminChatWidget";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -111,6 +112,7 @@ export default function AdminLayout({
           </div>
         </motion.main>
       </div>
+      <AdminChatWidget />
     </ProtectedRoute>
   );
 }

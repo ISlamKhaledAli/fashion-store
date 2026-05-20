@@ -367,6 +367,8 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
   const [generationError, setGenerationError] = useState(false);
   const [accordionAiLoading, setAccordionAiLoading] = useState<Record<number, boolean>>({});
   const [accordionAiError, setAccordionAiError] = useState<Record<number, boolean>>({});
+  const [featureAiLoading, setFeatureAiLoading] = useState<Record<number, boolean>>({});
+  const [featureAiError, setFeatureAiError] = useState<Record<number, boolean>>({});
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
 
@@ -655,6 +657,45 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
       setAccordionAiError((prev) => ({ ...prev, [index]: true }));
     } finally {
       setAccordionAiLoading((prev) => ({ ...prev, [index]: false }));
+    }
+  };
+
+  const generateFeatureContent = async (index: number, title: string) => {
+    if (!title.trim()) return;
+
+    setFeatureAiLoading((prev) => ({ ...prev, [index]: true }));
+    setFeatureAiError((prev) => ({ ...prev, [index]: false }));
+
+    try {
+      const selectedCategoryName = flatCategoryOptions.find(
+        (opt) => opt.value === formData.categoryId
+      )?.label?.trim();
+      const selectedBrandName = brandOptions.find(
+        (opt) => opt.value === formData.brandId
+      )?.label?.trim();
+
+      // We reuse the accordion generation endpoint because it does exactly what we need:
+      // writes a single paragraph for a specific title in a luxurious tone.
+      const res = await adminApi.generateAccordion({
+        title,
+        productName: formData.name,
+        category: selectedCategoryName,
+        brand: selectedBrandName,
+      });
+
+      if (res.data.success) {
+        const updated = [...(formData.features || [])];
+        updated[index] = { ...updated[index], description: res.data.content };
+        setFormData((prev) => ({ ...prev, features: updated }));
+        toast.success("AI feature description generated");
+      } else {
+        setFeatureAiError((prev) => ({ ...prev, [index]: true }));
+      }
+    } catch (err) {
+      console.error("AI feature description generation failed:", err);
+      setFeatureAiError((prev) => ({ ...prev, [index]: true }));
+    } finally {
+      setFeatureAiLoading((prev) => ({ ...prev, [index]: false }));
     }
   };
 
@@ -1175,8 +1216,8 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
                       <Trash2 size={16} />
                     </Button>
 
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
-                      <div className="md:col-span-1 space-y-2">
+                    <div className="flex flex-col md:flex-row gap-6 items-end">
+                      <div className="shrink-0 space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block">
                           Icon
                         </label>
@@ -1209,7 +1250,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
                         </div>
                       </div>
 
-                      <div className="md:col-span-11 space-y-2">
+                      <div className="flex-1 space-y-2 w-full">
                         <Input
                           label="Feature Title"
                           value={feature.title}
@@ -1224,9 +1265,43 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block">
-                        Feature Description
-                      </label>
+                      <div className="flex items-center gap-3">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block">
+                          Feature Description
+                        </label>
+                        <div className="relative group/tooltip flex flex-col items-start gap-1">
+                          <Button
+                            type="button"
+                            variant="none"
+                            size="none"
+                            disabled={!feature.title.trim() || featureAiLoading[idx]}
+                            onClick={() => generateFeatureContent(idx, feature.title)}
+                            className={cn(
+                              "px-2 py-0.5 rounded border border-zinc-200 bg-white hover:bg-zinc-50 text-[10px] font-bold tracking-wide transition duration-200 flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100",
+                              featureAiLoading[idx] ? "text-zinc-400" : "text-zinc-700 hover:text-zinc-950"
+                            )}
+                          >
+                            {featureAiLoading[idx] ? (
+                              <>
+                                <div className="h-2.5 w-2.5 animate-spin rounded-full border border-zinc-300/60 border-t-zinc-700" />
+                                Generating...
+                              </>
+                            ) : (
+                              "✦ Generate with AI"
+                            )}
+                          </Button>
+                          {!feature.title.trim() && (
+                            <div className="absolute left-0 bottom-full mb-2 hidden group-hover/tooltip:block bg-zinc-900 text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap z-50 font-bold uppercase tracking-widest pointer-events-none">
+                              Enter a feature title first
+                            </div>
+                          )}
+                          {featureAiError[idx] && (
+                            <span className="text-[9px] text-red-500 font-bold uppercase tracking-wider leading-none">
+                              Generation failed. Try again.
+                            </span>
+                          )}
+                        </div>
+                      </div>
                       <Textarea
                         value={feature.description}
                         onChange={(e) => {

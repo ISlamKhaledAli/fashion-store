@@ -278,10 +278,12 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
             {isDropdownOpen && (
               <div className="absolute right-0 top-full mt-1 bg-white shadow-lg rounded-md border border-zinc-100 overflow-hidden z-[60] min-w-[140px]">
                 {dateRangeOpts.map(opt => (
-                  <button
+                  <Button
                     key={opt.value}
+                    variant="none"
+                    size="none"
                     className={cn(
-                      "w-full text-left px-4 py-3 text-sm transition-colors hover:bg-zinc-50",
+                      "w-full text-left px-4 py-3 text-sm transition-colors hover:bg-zinc-50 [&_span]:justify-start",
                       days === opt.value ? "font-bold text-zinc-900 bg-zinc-50/50" : "font-medium text-zinc-500"
                     )}
                     onClick={() => {
@@ -294,7 +296,7 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
                     }}
                   >
                     {opt.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}

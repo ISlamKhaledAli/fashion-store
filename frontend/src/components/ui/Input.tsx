@@ -15,7 +15,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     if (variant === "floating") {
       return (
         <div className="w-full space-y-1">
-          <div className="relative group">
+          <div className="relative group/input">
             {icon && (
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant peer-focus:text-primary transition-colors pointer-events-none flex items-center justify-center">
                 {React.isValidElement(icon) 
@@ -53,7 +53,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 {label}
               </label>
             )}
-            <div className="absolute bottom-0 left-0 h-[1px] w-0 bg-primary transition-all duration-500 group-focus-within:w-full rounded-b-md" />
+            <div className="absolute bottom-0 left-0 h-[1px] w-0 bg-primary transition-all duration-500 group-focus-within/input:w-full rounded-b-md" />
           </div>
           {error && (
             <p className="text-[10px] text-error font-medium uppercase tracking-wider pt-1">{error}</p>
@@ -69,9 +69,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             {label}
           </label>
         )}
-        <div className="relative group">
+        <div className="relative group/input">
           {icon && (
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors pointer-events-none flex items-center justify-center">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within/input:text-primary transition-colors pointer-events-none flex items-center justify-center">
               {React.isValidElement(icon) 
                 ? React.cloneElement(icon as React.ReactElement, { 
                     size: 18, 
@@ -92,7 +92,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             )}
             {...props}
           />
-          <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-primary transition-all duration-500 group-focus-within:w-full rounded-b-md" />
+          <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-primary transition-all duration-500 group-focus-within/input:w-full rounded-b-md" />
         </div>
         {error && (
           <p className="text-[10px] text-error font-medium uppercase tracking-wider">{error}</p>
