@@ -6,6 +6,7 @@ import { MessageSquare, X, Send, Sparkles, Trash2 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/cartStore";
 import { useChatStore } from "@/store/chatStore";
+import ReactMarkdown from "react-markdown";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "../ui/Button";
@@ -120,7 +121,9 @@ export const ChatAssistant = () => {
 
   // Scroll to bottom on messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, [messages, isLoading]);
 
   // Show welcome tooltip after 4 seconds
@@ -293,8 +296,8 @@ export const ChatAssistant = () => {
         // Flush active text paragraph
         if (currentParagraph.length > 0) {
           elements.push(
-            <div key={`text-${i}`} className="text-[13px] leading-relaxed text-on-surface/85 whitespace-pre-line mb-3 font-sans font-light">
-              {currentParagraph.join("\n")}
+            <div key={`text-${i}`} className="text-[13px] leading-relaxed text-on-surface/85 mb-3 font-sans font-light prose prose-sm max-w-none prose-p:leading-relaxed prose-strong:font-bold prose-strong:text-stone-900 prose-ul:list-disc prose-ul:pl-4 prose-li:mb-1">
+              <ReactMarkdown>{currentParagraph.join("\n")}</ReactMarkdown>
             </div>
           );
           currentParagraph = [];
@@ -342,8 +345,8 @@ export const ChatAssistant = () => {
           currentParagraph.push(line);
         } else if (currentParagraph.length > 0) {
           elements.push(
-            <div key={`text-${i}`} className="text-[13px] leading-relaxed text-on-surface/85 whitespace-pre-line mb-3 font-sans font-light">
-              {currentParagraph.join("\n")}
+            <div key={`text-${i}`} className="text-[13px] leading-relaxed text-on-surface/85 mb-3 font-sans font-light prose prose-sm max-w-none prose-p:leading-relaxed prose-strong:font-bold prose-strong:text-stone-900 prose-ul:list-disc prose-ul:pl-4 prose-li:mb-1">
+              <ReactMarkdown>{currentParagraph.join("\n")}</ReactMarkdown>
             </div>
           );
           currentParagraph = [];
@@ -354,8 +357,8 @@ export const ChatAssistant = () => {
 
     if (currentParagraph.length > 0) {
       elements.push(
-        <div key="text-final" className="text-[13px] leading-relaxed text-on-surface/85 whitespace-pre-line mb-1 font-sans font-light">
-          {currentParagraph.join("\n")}
+        <div key="text-final" className="text-[13px] leading-relaxed text-on-surface/85 mb-1 font-sans font-light prose prose-sm max-w-none prose-p:leading-relaxed prose-strong:font-bold prose-strong:text-stone-900 prose-ul:list-disc prose-ul:pl-4 prose-li:mb-1">
+          <ReactMarkdown>{currentParagraph.join("\n")}</ReactMarkdown>
         </div>
       );
     }

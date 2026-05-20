@@ -183,6 +183,18 @@ export const adminApi = {
     category?: string;
     brand?: string;
   }) => api.post<{ success: boolean; content: string }>("/admin/ai/generate-accordion", data, { withCredentials: true }),
+  generateFeatures: (data: {
+    productName: string;
+    description?: string;
+    category?: string;
+    brand?: string;
+  }) => api.post<{ success: boolean; features: { icon: string; title: string; description: string }[] }>("/admin/ai/generate-features", data, { withCredentials: true }),
+  generateAllAccordions: (data: {
+    productName: string;
+    description?: string;
+    category?: string;
+    brand?: string;
+  }) => api.post<{ success: boolean; details: { title: string; content: string }[] }>("/admin/ai/generate-all-accordions", data, { withCredentials: true }),
 };
 
 export const sizeApi = {

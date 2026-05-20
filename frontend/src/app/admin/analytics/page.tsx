@@ -14,6 +14,7 @@ import { RevenueChart } from "@/components/admin/RevenueChart";
 import { OrdersDonut } from "@/components/admin/OrdersDonut";
 import { TopProductsTable, TopProduct } from "@/components/admin/TopProductsTable";
 import { CategoryRevenueChart, CategoryStat } from "@/components/admin/CategoryRevenueChart";
+import { AIInsightsPanel } from "@/components/admin/AIInsightsPanel";
 import { Button } from "@/components/ui/Button";
 
 export const dynamic = 'force-dynamic';
@@ -154,6 +155,38 @@ export default function AdminAnalyticsPage() {
           )}
         </div>
       </div>
+
+
+      {/* AI Insights Panel */}
+      <AIInsightsPanel 
+        days={days}
+        setDays={setDays}
+        isLoadingData={isLoading}
+        analyticsData={{
+          period: `${days}days`,
+          totalRevenue: overview?.totalRevenue || 0,
+          revenueChange: overview?.revenueTrend || 0,
+          totalOrders: overview?.totalOrders || 0,
+          ordersChange: overview?.ordersTrend || 0,
+          topProducts: topProducts.map(p => ({
+            name: p.name,
+            unitsSold: p.quantity,
+            revenue: p.revenue
+          })),
+          categoryBreakdown: categoryData.map(c => ({
+            category: c.name,
+            revenue: c.revenue,
+            percentage: categoryData.reduce((acc, curr) => acc + curr.revenue, 0) > 0 
+              ? Math.round((c.revenue / categoryData.reduce((acc, curr) => acc + curr.revenue, 0)) * 100) 
+              : 0
+          })),
+          newVsReturning: {
+            newCustomers: retention.newCustomers,
+            returning: retention.returningCustomers
+          },
+          revenueTimeline: revenueData
+        }}
+      />
 
       {/* Row 1: Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

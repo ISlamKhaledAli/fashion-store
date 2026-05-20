@@ -362,6 +362,8 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+  const [isGeneratingFeatures, setIsGeneratingFeatures] = useState(false);
+  const [isGeneratingAllAccordions, setIsGeneratingAllAccordions] = useState(false);
   const [generationError, setGenerationError] = useState(false);
   const [accordionAiLoading, setAccordionAiLoading] = useState<Record<number, boolean>>({});
   const [accordionAiError, setAccordionAiError] = useState<Record<number, boolean>>({});
@@ -653,6 +655,77 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
       setAccordionAiError((prev) => ({ ...prev, [index]: true }));
     } finally {
       setAccordionAiLoading((prev) => ({ ...prev, [index]: false }));
+    }
+  };
+
+  const handleGenerateFeatures = async () => {
+    if (!formData.name.trim()) return;
+
+    setIsGeneratingFeatures(true);
+
+    try {
+      const selectedCategoryName = flatCategoryOptions.find(
+        (opt) => opt.value === formData.categoryId
+      )?.label?.trim();
+      const selectedBrandName = brandOptions.find(
+        (opt) => opt.value === formData.brandId
+      )?.label?.trim();
+
+      const res = await adminApi.generateFeatures({
+        productName: formData.name,
+        description: formData.description,
+        category: selectedCategoryName,
+        brand: selectedBrandName,
+      });
+
+      if (res.data.success && res.data.features) {
+        setFormData((prev) => ({ ...prev, features: res.data.features }));
+        toast.success("AI showcase features generated");
+      } else {
+        toast.error("Failed to generate features");
+      }
+    } catch (err) {
+      console.error("AI features generation failed:", err);
+      toast.error("Generation failed");
+    } finally {
+      setIsGeneratingFeatures(false);
+    }
+  };
+
+  const handleGenerateAllAccordions = async () => {
+    if (!formData.name.trim()) return;
+
+    setIsGeneratingAllAccordions(true);
+
+    try {
+      const selectedCategoryName = flatCategoryOptions.find(
+        (opt) => opt.value === formData.categoryId
+      )?.label?.trim();
+      const selectedBrandName = brandOptions.find(
+        (opt) => opt.value === formData.brandId
+      )?.label?.trim();
+
+      const res = await adminApi.generateAllAccordions({
+        productName: formData.name,
+        description: formData.description,
+        category: selectedCategoryName,
+        brand: selectedBrandName,
+      });
+
+      if (res.data.success && res.data.details) {
+        // If there are already some accordions that are NOT empty, append or merge them?
+        // Let's just append to the existing non-empty ones, or replace if empty
+        const currentDetails = formData.details?.filter(d => d.title.trim() || d.content.trim()) || [];
+        setFormData((prev) => ({ ...prev, details: [...currentDetails, ...res.data.details] }));
+        toast.success("Standard AI accordions generated");
+      } else {
+        toast.error("Failed to generate accordions");
+      }
+    } catch (err) {
+      console.error("AI accordions generation failed:", err);
+      toast.error("Generation failed");
+    } finally {
+      setIsGeneratingAllAccordions(false);
     }
   };
 
@@ -1048,11 +1121,40 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
             {/* Dynamic Showcase Features Section */}
             <section className="space-y-8">
               <div className="border-t border-zinc-100 pt-10 mt-6">
-                <div>
-                  <h3 className="text-lg font-bold text-zinc-900 uppercase tracking-widest">Showcase Features</h3>
-                  <p className="text-[10px] font-bold text-zinc-400 mt-1 uppercase tracking-[0.2em]">
-                    Add dynamic storytelling cards with Material symbols (shown in the Sticky Showcase)
-                  </p>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-zinc-900 uppercase tracking-widest">Showcase Features</h3>
+                    <p className="text-[10px] font-bold text-zinc-400 mt-1 uppercase tracking-[0.2em]">
+                      Add dynamic storytelling cards with Material symbols (shown in the Sticky Showcase)
+                    </p>
+                  </div>
+                  <div className="relative group/tooltip flex flex-col items-end gap-1">
+                    <Button
+                      type="button"
+                      variant="none"
+                      size="none"
+                      disabled={!formData.name.trim() || isGeneratingFeatures}
+                      onClick={handleGenerateFeatures}
+                      className={cn(
+                        "px-2.5 py-1 rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 text-[11px] font-bold tracking-wide transition duration-200 flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100",
+                        isGeneratingFeatures ? "text-zinc-400" : "text-zinc-700 hover:text-zinc-950"
+                      )}
+                    >
+                      {isGeneratingFeatures ? (
+                        <>
+                          <div className="h-3 w-3 animate-spin rounded-full border border-zinc-300/60 border-t-zinc-700" />
+                          Generating...
+                        </>
+                      ) : (
+                        "✦ Generate Features with AI"
+                      )}
+                    </Button>
+                    {!formData.name.trim() && (
+                      <div className="absolute right-0 bottom-full mb-2 hidden group-hover/tooltip:block bg-zinc-900 text-white text-[10px] px-2.5 py-1.5 rounded shadow-lg whitespace-nowrap z-50 font-bold uppercase tracking-widest pointer-events-none">
+                        Enter a product name first
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -1158,11 +1260,40 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
             {/* Dynamic Accordions Section */}
             <section className="space-y-8">
               <div className="border-t border-zinc-100 pt-10 mt-6">
-                <div>
-                  <h3 className="text-lg font-bold text-zinc-900 uppercase tracking-widest">Detail Accordions</h3>
-                  <p className="text-[10px] font-bold text-zinc-400 mt-1 uppercase tracking-[0.2em]">
-                    Add custom sections for Materials, Care, Shipping, or general product details
-                  </p>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-zinc-900 uppercase tracking-widest">Detail Accordions</h3>
+                    <p className="text-[10px] font-bold text-zinc-400 mt-1 uppercase tracking-[0.2em]">
+                      Add custom sections for Materials, Care, Shipping, or general product details
+                    </p>
+                  </div>
+                  <div className="relative group/tooltip flex flex-col items-end gap-1">
+                    <Button
+                      type="button"
+                      variant="none"
+                      size="none"
+                      disabled={!formData.name.trim() || isGeneratingAllAccordions}
+                      onClick={handleGenerateAllAccordions}
+                      className={cn(
+                        "px-2.5 py-1 rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 text-[11px] font-bold tracking-wide transition duration-200 flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100",
+                        isGeneratingAllAccordions ? "text-zinc-400" : "text-zinc-700 hover:text-zinc-950"
+                      )}
+                    >
+                      {isGeneratingAllAccordions ? (
+                        <>
+                          <div className="h-3 w-3 animate-spin rounded-full border border-zinc-300/60 border-t-zinc-700" />
+                          Generating...
+                        </>
+                      ) : (
+                        "✦ Generate Standard Sections with AI"
+                      )}
+                    </Button>
+                    {!formData.name.trim() && (
+                      <div className="absolute right-0 bottom-full mb-2 hidden group-hover/tooltip:block bg-zinc-900 text-white text-[10px] px-2.5 py-1.5 rounded shadow-lg whitespace-nowrap z-50 font-bold uppercase tracking-widest pointer-events-none">
+                        Enter a product name first
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

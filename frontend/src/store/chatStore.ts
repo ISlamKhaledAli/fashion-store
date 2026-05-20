@@ -216,7 +216,7 @@ export const useChatStore = create<ChatState>()(
     }),
     {
       name: "chat-storage",
-      storage: createJSONStorage(() => sessionStorage),
+      storage: createJSONStorage(() => localStorage),
     }
   )
 );

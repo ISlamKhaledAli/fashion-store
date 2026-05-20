@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../ui/Button";
+import ReactMarkdown from "react-markdown";
 
 interface AccordionItem {
   title: string;
@@ -51,7 +52,9 @@ export const ProductAccordions = ({ items }: ProductAccordionsProps) => {
                 >
                   <div className="pb-8 text-on-surface-variant leading-relaxed space-y-4">
                     {typeof item.content === "string" ? (
-                      <p>{item.content}</p>
+                      <div className="prose prose-sm max-w-none prose-p:leading-relaxed prose-strong:font-bold prose-strong:text-zinc-900 prose-ul:list-disc prose-ul:pl-4 prose-li:mb-1">
+                        <ReactMarkdown>{item.content}</ReactMarkdown>
+                      </div>
                     ) : (
                       item.content
                     )}
