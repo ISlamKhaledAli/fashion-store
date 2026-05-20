@@ -97,47 +97,56 @@ export default function ProductDetailPage({ params, searchParams }: PageProps) {
     );
   }
 
-  const features = [
-    {
-      icon: "eco",
-      title: "Virgin Wool Blend",
-      description: "Sourced from the finest Italian mills, our virgin wool is processed without harsh chemicals, maintaining its natural lanolin for weather resistance."
-    },
-    {
-      icon: "architecture",
-      title: "Anatomical Tailoring",
-      description: "Developed over eighteen months, our fit pattern follows the natural curvature of the spine and shoulders, ensuring comfort and silhouette."
-    },
-    {
-      icon: "history",
-      title: "Heirloom Quality",
-      description: "Every seam is reinforced with silk-wrapped thread. Designed to be an investment piece passed down through generations."
-    },
-    {
-      icon: "ac_unit",
-      title: "Thermal Regulation",
-      description: "The dense weave provides natural insulation for temperatures as low as -10°C while remaining breathable for spring transitions."
-    }
-  ];
+  const features = product.features && product.features.length > 0
+    ? product.features
+    : [
+        {
+          icon: "eco",
+          title: "Virgin Wool Blend",
+          description: "Sourced from the finest Italian mills, our virgin wool is processed without harsh chemicals, maintaining its natural lanolin for weather resistance."
+        },
+        {
+          icon: "architecture",
+          title: "Anatomical Tailoring",
+          description: "Developed over eighteen months, our fit pattern follows the natural curvature of the spine and shoulders, ensuring comfort and silhouette."
+        },
+        {
+          icon: "history",
+          title: "Heirloom Quality",
+          description: "Every seam is reinforced with silk-wrapped thread. Designed to be an investment piece passed down through generations."
+        },
+        {
+          icon: "ac_unit",
+          title: "Thermal Regulation",
+          description: "The dense weave provides natural insulation for temperatures as low as -10°C while remaining breathable for spring transitions."
+        }
+      ];
 
-  const accordionItems = [
-    {
-      title: "Description",
-      content: product.description || "A modern interpretation of the classic naval bridge coat. Features a double-breasted closure, oversized notched lapels, and hidden internal pockets."
-    },
-    {
-      title: "Materials",
-      content: "100% Virgin Wool Exterior, 100% Cupro Silk Lining. Sustainably sourced in compliance with international environmental standards."
-    },
-    {
-      title: "Care",
-      content: "Professional dry clean only. Store on a wide-shouldered hanger to maintain internal structure. Brush gently with a natural garment brush after wear."
-    },
-    {
-      title: "Shipping & Returns",
-      content: "Complimentary Carbon-Neutral Shipping worldwide. Returns accepted within 14 days of delivery in original condition."
-    }
-  ];
+  const defaultDescription = {
+    title: "Description",
+    content: product.description || "A modern interpretation of the classic naval bridge coat. Features a double-breasted closure, oversized notched lapels, and hidden internal pockets."
+  };
+
+  const accordionItems = product.details && product.details.length > 0
+    ? [
+        ...(product.details.some(d => d.title.toLowerCase() === "description") ? [] : [defaultDescription]),
+        ...product.details
+      ]
+    : [
+        defaultDescription,
+        {
+          title: "Materials",
+          content: "100% Virgin Wool Exterior, 100% Cupro Silk Lining. Sustainably sourced in compliance with international environmental standards."
+        },
+        {
+          title: "Care",
+          content: "Professional dry clean only. Store on a wide-shouldered hanger to maintain internal structure. Brush gently with a natural garment brush after wear."
+        },
+        {
+          title: "Shipping & Returns",
+          content: "Complimentary Carbon-Neutral Shipping worldwide. Returns accepted within 14 days of delivery in original condition."
+        }
+      ];
 
   return (
     <main className="pt-24 min-h-screen">
@@ -164,7 +173,7 @@ export default function ProductDetailPage({ params, searchParams }: PageProps) {
 
       {/* 2. Scroll Storytelling Section */}
       <StickyShowcase 
-        image={product.images[0]?.url} 
+        image={product.images.find(img => img.isMain)?.url || product.images[0]?.url || ""} 
         stories={features} 
       />
 

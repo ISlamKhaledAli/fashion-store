@@ -327,7 +327,7 @@ export const SearchOverlay = () => {
                         >
                           <div className="aspect-[3/4] overflow-hidden bg-surface-container mb-4 relative rounded-md">
                             <Image
-                              src={product.images[0]?.url || "/placeholder-product.png"}
+                              src={product.images.find(img => img.isMain)?.url || product.images[0]?.url || "/placeholder-product.png"}
                               alt={product.name}
                               fill
                               className="object-cover group-hover:scale-105 transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"

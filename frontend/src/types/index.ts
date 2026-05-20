@@ -70,6 +70,8 @@ export interface Product {
   avgRating?: number | null;
   reviewCount?: number;
   status?: string;
+  features?: { icon: string; title: string; description: string }[];
+  details?: { title: string; content: string }[];
   createdAt: string;
 }
 

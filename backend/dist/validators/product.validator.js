@@ -14,6 +14,15 @@ const imageSchema = zod_1.z.object({
     publicId: zod_1.z.string().min(1, "Public ID is required"),
     isMain: zod_1.z.boolean().default(false),
 });
+const featureSchema = zod_1.z.object({
+    icon: zod_1.z.string().min(1, "Icon name is required"),
+    title: zod_1.z.string().min(1, "Title is required"),
+    description: zod_1.z.string().min(1, "Description is required"),
+});
+const detailSchema = zod_1.z.object({
+    title: zod_1.z.string().min(1, "Title is required"),
+    content: zod_1.z.string().min(1, "Content is required"),
+});
 exports.createProductSchema = zod_1.z.object({
     name: zod_1.z.string().min(1, "Name is required"),
     slug: zod_1.z.string().optional(),
@@ -27,6 +36,8 @@ exports.createProductSchema = zod_1.z.object({
     featured: zod_1.z.boolean().default(false),
     variants: zod_1.z.array(variantSchema).min(1, "At least one variant is required"),
     images: zod_1.z.array(imageSchema).optional(),
+    features: zod_1.z.array(featureSchema).optional().nullable(),
+    details: zod_1.z.array(detailSchema).optional().nullable(),
 });
 exports.updateProductSchema = zod_1.z.object({
     name: zod_1.z.string().min(1).optional(),
@@ -53,4 +64,6 @@ exports.updateProductSchema = zod_1.z.object({
         publicId: zod_1.z.string().optional(),
         isMain: zod_1.z.boolean().optional(),
     })).optional(),
+    features: zod_1.z.array(featureSchema).optional().nullable(),
+    details: zod_1.z.array(detailSchema).optional().nullable(),
 });

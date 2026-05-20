@@ -395,6 +395,8 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     status: "ACTIVE" as "ACTIVE" | "DRAFT" | "ARCHIVED",
     images: [] as { id?: string; url: string; publicId: string; isMain: boolean; variantColor?: string | null }[],
     variants: [] as Partial<Variant>[],
+    features: [] as { icon: string; title: string; description: string }[],
+    details: [] as { title: string; content: string }[],
   });
 
   const flatCategoryOptions = useMemo(() => {
@@ -462,6 +464,8 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
               status: (full.status as "ACTIVE" | "DRAFT" | "ARCHIVED") || "ACTIVE",
               images: full.images,
               variants: full.variants,
+              features: full.features || [],
+              details: full.details || [],
             });
           }
         } catch (err) {
@@ -479,6 +483,8 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
             status: (product.status as "ACTIVE" | "DRAFT" | "ARCHIVED") || "ACTIVE",
             images: product.images,
             variants: product.variants,
+            features: product.features || [],
+            details: product.details || [],
           });
         } finally {
           setFetching(false);
@@ -498,6 +504,8 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
         status: "ACTIVE",
         images: [],
         variants: [],
+        features: [],
+        details: [],
       });
       setFetching(false);
     }
@@ -508,7 +516,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     setFormData(prev => ({ ...prev, name, slug }));
   }, []);
 
-  const handleFieldChange = React.useCallback((field: string, value: string | number | Partial<Variant>[]) => {
+  const handleFieldChange = React.useCallback((field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
@@ -685,6 +693,8 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
       ...formData,
       variants: formData.variants.filter(v => v.size || v.color || v.sku), // Remove empty rows
       images: formData.images.filter(img => !img.publicId.startsWith('temp-')), // Ensure only synced images go
+      features: (formData.features || []).filter(f => f.title.trim() && f.description.trim()),
+      details: (formData.details || []).filter(d => d.title.trim() && d.content.trim()),
     };
 
     try {
@@ -893,6 +903,185 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
                 onChange={(variants) => handleFieldChange("variants", variants)} 
                 errors={formErrors}
               />
+            </section>
+
+            {/* Dynamic Showcase Features Section */}
+            <section className="space-y-8">
+              <div className="border-t border-zinc-100 pt-10 mt-6">
+                <div>
+                  <h3 className="text-lg font-bold text-zinc-900 uppercase tracking-widest">Showcase Features</h3>
+                  <p className="text-[10px] font-bold text-zinc-400 mt-1 uppercase tracking-[0.2em]">
+                    Add dynamic storytelling cards with Material symbols (shown in the Sticky Showcase)
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {formData.features?.map((feature, idx) => (
+                  <div key={idx} className="p-6 bg-zinc-50 border border-zinc-200 rounded-xl relative group space-y-4 animate-in fade-in duration-300">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextFeatures = [...formData.features];
+                        nextFeatures.splice(idx, 1);
+                        handleFieldChange("features", nextFeatures);
+                      }}
+                      className="absolute top-4 right-4 text-zinc-400 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+                      <div className="md:col-span-1 space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block">
+                          Icon
+                        </label>
+                        <div className="relative w-10 h-10 border border-zinc-200 bg-white rounded-lg hover:border-zinc-300 transition-colors focus-within:ring-1 focus-within:ring-black flex items-center justify-center">
+                          <select
+                            value={feature.icon}
+                            onChange={(e) => {
+                              const nextFeatures = [...formData.features];
+                              nextFeatures[idx].icon = e.target.value;
+                              handleFieldChange("features", nextFeatures);
+                            }}
+                            className="material-symbols-outlined text-lg bg-transparent cursor-pointer appearance-none outline-none border-none p-0 m-0 w-full h-full text-zinc-800"
+                            style={{ 
+                              fontVariationSettings: "'FILL' 0, 'wght' 400",
+                              textAlignLast: "center",
+                              textAlign: "center"
+                            }}
+                          >
+                            <option value="eco" className="material-symbols-outlined text-zinc-800">eco</option>
+                            <option value="architecture" className="material-symbols-outlined text-zinc-800">architecture</option>
+                            <option value="history" className="material-symbols-outlined text-zinc-800">history</option>
+                            <option value="ac_unit" className="material-symbols-outlined text-zinc-800">ac_unit</option>
+                            <option value="shield" className="material-symbols-outlined text-zinc-800">shield</option>
+                            <option value="auto_awesome" className="material-symbols-outlined text-zinc-800">auto_awesome</option>
+                            <option value="apparel" className="material-symbols-outlined text-zinc-800">apparel</option>
+                            <option value="package_2" className="material-symbols-outlined text-zinc-800">package_2</option>
+                            <option value="water_drop" className="material-symbols-outlined text-zinc-800">water_drop</option>
+                            <option value="local_shipping" className="material-symbols-outlined text-zinc-800">local_shipping</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-11 space-y-2">
+                        <Input
+                          label="Feature Title"
+                          value={feature.title}
+                          onChange={(e) => {
+                            const nextFeatures = [...formData.features];
+                            nextFeatures[idx].title = e.target.value;
+                            handleFieldChange("features", nextFeatures);
+                          }}
+                          placeholder="e.g. Anatomical Tailoring"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block">
+                        Feature Description
+                      </label>
+                      <Textarea
+                        value={feature.description}
+                        onChange={(e) => {
+                          const nextFeatures = [...formData.features];
+                          nextFeatures[idx].description = e.target.value;
+                          handleFieldChange("features", nextFeatures);
+                        }}
+                        placeholder="e.g. Sourced from the finest Italian mills..."
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    handleFieldChange("features", [
+                      ...(formData.features || []),
+                      { icon: "eco", title: "", description: "" }
+                    ]);
+                  }}
+                  className="w-full py-4 text-[10px] font-black uppercase tracking-[0.2em] h-11"
+                >
+                  + Add Showcase Feature Card
+                </Button>
+              </div>
+            </section>
+
+            {/* Dynamic Accordions Section */}
+            <section className="space-y-8">
+              <div className="border-t border-zinc-100 pt-10 mt-6">
+                <div>
+                  <h3 className="text-lg font-bold text-zinc-900 uppercase tracking-widest">Detail Accordions</h3>
+                  <p className="text-[10px] font-bold text-zinc-400 mt-1 uppercase tracking-[0.2em]">
+                    Add custom sections for Materials, Care, Shipping, or general product details
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {formData.details?.map((detail, idx) => (
+                  <div key={idx} className="p-6 bg-zinc-50 border border-zinc-200 rounded-xl relative group space-y-4 animate-in fade-in duration-300">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextDetails = [...formData.details];
+                        nextDetails.splice(idx, 1);
+                        handleFieldChange("details", nextDetails);
+                      }}
+                      className="absolute top-4 right-4 text-zinc-400 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+
+                    <Input
+                      label="Accordion Section Title"
+                      value={detail.title}
+                      onChange={(e) => {
+                        const nextDetails = [...formData.details];
+                        nextDetails[idx].title = e.target.value;
+                        handleFieldChange("details", nextDetails);
+                      }}
+                      placeholder="e.g. Care Instructions"
+                    />
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block">
+                        Accordion Content
+                      </label>
+                      <Textarea
+                        value={detail.content}
+                        onChange={(e) => {
+                          const nextDetails = [...formData.details];
+                          nextDetails[idx].content = e.target.value;
+                          handleFieldChange("details", nextDetails);
+                        }}
+                        placeholder="Detail terms and specifications..."
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    handleFieldChange("details", [
+                      ...(formData.details || []),
+                      { title: "", content: "" }
+                    ]);
+                  }}
+                  className="w-full py-4 text-[10px] font-black uppercase tracking-[0.2em] h-11"
+                >
+                  + Add Accordion Item
+                </Button>
+              </div>
             </section>
 
             <section className="space-y-8">

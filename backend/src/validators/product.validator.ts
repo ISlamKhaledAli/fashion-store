@@ -14,6 +14,17 @@ const imageSchema = z.object({
   isMain: z.boolean().default(false),
 });
 
+const featureSchema = z.object({
+  icon: z.string().min(1, "Icon name is required"),
+  title: z.string().min(1, "Title is required"),
+  description: z.string().min(1, "Description is required"),
+});
+
+const detailSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  content: z.string().min(1, "Content is required"),
+});
+
 export const createProductSchema = z.object({
   name: z.string().min(1, "Name is required"),
   slug: z.string().optional(),
@@ -27,6 +38,8 @@ export const createProductSchema = z.object({
   featured: z.boolean().default(false),
   variants: z.array(variantSchema).min(1, "At least one variant is required"),
   images: z.array(imageSchema).optional(),
+  features: z.array(featureSchema).optional().nullable(),
+  details: z.array(detailSchema).optional().nullable(),
 });
 
 export const updateProductSchema = z.object({
@@ -54,4 +67,6 @@ export const updateProductSchema = z.object({
     publicId: z.string().optional(),
     isMain: z.boolean().optional(),
   })).optional(),
+  features: z.array(featureSchema).optional().nullable(),
+  details: z.array(detailSchema).optional().nullable(),
 });

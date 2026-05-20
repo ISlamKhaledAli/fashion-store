@@ -29,9 +29,9 @@ export const OrderSummary = ({ items }: OrderSummaryProps) => {
               {/* Product */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                 <div style={{ width: '56px', height: '72px', flexShrink: 0, overflow: 'hidden', borderRadius: '4px', border: '1px solid #f4f4f5', background: '#fafafa' }}>
-                  {item.product.images?.[0] && (
+                  {item.product.images && item.product.images.length > 0 && (
                     <img
-                      src={item.product.images[0].url}
+                      src={item.product.images.find(img => img.isMain)?.url || item.product.images[0].url}
                       alt={item.product.name}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />

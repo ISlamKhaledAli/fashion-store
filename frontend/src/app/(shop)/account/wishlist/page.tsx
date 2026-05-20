@@ -44,7 +44,7 @@ const WishlistItemCard = ({ item, onRemove }: { item: WishlistItem; onRemove: (i
       productId: item.productId,
       variantId: variant.id,
       name: item.product.name,
-      image: item.product.images?.[0]?.url || "",
+      image: item.product.images?.find((img) => img.isMain)?.url || item.product.images?.[0]?.url || "",
       price: item.product.price,
       size: variant.size,
       color: variant.color,
@@ -96,7 +96,7 @@ const WishlistItemCard = ({ item, onRemove }: { item: WishlistItem; onRemove: (i
           {item?.product?.images?.[0]?.url ? (
             <img 
               ref={imageRef}
-              src={item.product.images[0].url} 
+              src={item.product.images.find(img => img.isMain)?.url || item.product.images[0].url} 
               alt={item?.product?.name || "Product"} 
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
             />

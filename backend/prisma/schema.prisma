@@ -90,6 +90,8 @@ model Product {
   brandId      String?
   status       ProductStatus  @default(DRAFT)
   featured     Boolean        @default(false)
+  features     Json?
+  details      Json?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   orderItems   OrderItem[]
