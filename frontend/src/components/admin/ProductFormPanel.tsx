@@ -17,12 +17,23 @@ import { ProductVariantsTable } from "./ProductVariantsTable";
 
 // --- Memoized Sections ---
 
+export type AccordionItem = {
+  title: string;
+  content: string;
+  titleInputFocused?: boolean;
+};
+
+export const ACCORDION_PRESETS = [
+  'Materials',
+  'Care',
+  'Shipping & Returns',
+];
+
 interface IdentitySectionProps {
   name: string;
   slug: string;
   categoryId: string;
   brandId: string;
-  description: string;
   status: string;
   categoryOptions: { label: string; value: string }[];
   brandOptions: { label: string; value: string }[];
@@ -31,18 +42,17 @@ interface IdentitySectionProps {
   errors: Record<string, string>;
 }
 
-const IdentitySection = memo(({ 
-  name, 
+const IdentitySection = memo(({
+  name,
   slug,
-  categoryId, 
-  brandId, 
-  description, 
+  categoryId,
+  brandId,
   status,
-  categoryOptions, 
-  brandOptions, 
-  onNameChange, 
+  categoryOptions,
+  brandOptions,
+  onNameChange,
   onFieldChange,
-  errors
+  errors,
 }: IdentitySectionProps) => (
   <section className="space-y-8">
     <div className="flex items-center gap-4">
@@ -50,7 +60,7 @@ const IdentitySection = memo(({
       <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Core Identity</h4>
       <div className="h-[1px] flex-1 bg-zinc-100" />
     </div>
-    
+
     <div className="space-y-6">
       <Input
         label="Product Name"
@@ -82,8 +92,8 @@ const IdentitySection = memo(({
           />
         </div>
         <div className="space-y-2">
-           <label className="text-xs font-bold uppercase tracking-widest text-zinc-400">Source / Brand</label>
-           <Select
+          <label className="text-xs font-bold uppercase tracking-widest text-zinc-400">Source / Brand</label>
+          <Select
             options={brandOptions}
             value={brandId}
             onChange={(val) => onFieldChange("brandId", val)}
@@ -93,16 +103,6 @@ const IdentitySection = memo(({
           />
         </div>
       </div>
-
-      <Textarea
-        label="Editorial Description"
-        value={description}
-        onChange={(e) => onFieldChange("description", e.target.value)}
-        rows={5}
-        placeholder="Crafted from Italian wool..."
-        error={errors?.description}
-        required
-      />
 
       <div className="flex items-center justify-between gap-6 px-5 py-4 bg-white border border-zinc-200 rounded-xl shadow-sm">
         <div className="flex flex-col flex-1">
@@ -122,22 +122,22 @@ const IdentitySection = memo(({
               status === 'ARCHIVED' && "opacity-50 cursor-not-allowed"
             )}
           >
-            <motion.div 
+            <motion.div
               initial={false}
               animate={{ x: status === 'ACTIVE' ? 24 : 0 }}
               transition={{ duration: 0.2, ease: "easeInOut" }}
-              className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm pointer-events-none" 
+              className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm pointer-events-none"
             />
           </Button>
-          
+
           <Button
             type="button"
             variant={status === 'ARCHIVED' ? 'primary' : 'outline'}
             onClick={() => onFieldChange("status", status === 'ARCHIVED' ? 'DRAFT' : 'ARCHIVED')}
             className={cn(
               "px-4 py-2 h-9 rounded-lg text-[11px] font-bold uppercase tracking-widest transition shrink-0",
-              status === 'ARCHIVED' 
-                ? "bg-stone-900 text-white border-stone-900 hover:bg-stone-800" 
+              status === 'ARCHIVED'
+                ? "bg-stone-900 text-white border-stone-900 hover:bg-stone-800"
                 : "border-zinc-200 hover:bg-zinc-50"
             )}
           >
@@ -199,10 +199,10 @@ const PricingSection = memo(({ price, comparePrice, cost, margin, onFieldChange,
 ));
 PricingSection.displayName = "PricingSection";
 
-const MediaSection = memo(({ 
-  images, 
-  onUpload, 
-  onSetMain, 
+const MediaSection = memo(({
+  images,
+  onUpload,
+  onSetMain,
   onRemove,
   uniqueColors,
   onColorChange,
@@ -222,12 +222,12 @@ const MediaSection = memo(({
       <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Archival Imagery</h4>
       <div className="h-[1px] flex-1 bg-zinc-100" />
     </div>
-    
+
     <div className="grid grid-cols-3 gap-4">
       {images.map((img, idx: number) => (
-        <motion.div 
+        <motion.div
           layout
-          key={img.publicId} 
+          key={img.publicId}
           className={cn(
             "rounded-sm bg-zinc-50 overflow-hidden relative group border-2 transition-all duration-500 shadow-sm flex flex-col",
             img.isMain ? "border-zinc-950 scale-[1.02] z-10" : "border-transparent"
@@ -261,8 +261,8 @@ const MediaSection = memo(({
                 onClick={() => onSetMain(idx)}
                 className={cn(
                   "px-2 py-0.5 text-[7px] font-black uppercase tracking-widest rounded-full transition-all duration-300",
-                  img.isMain 
-                    ? "bg-black text-white shadow-lg scale-105" 
+                  img.isMain
+                    ? "bg-black text-white shadow-lg scale-105"
                     : "bg-zinc-200 text-zinc-600 opacity-0 group-hover/img:opacity-100 hover:bg-zinc-300"
                 )}
               >
@@ -272,7 +272,7 @@ const MediaSection = memo(({
 
             {/* Color dot indicator */}
             {img.variantColor && (
-              <div 
+              <div
                 className="absolute top-2 right-2 w-3 h-3 rounded-full border-2 border-white shadow-sm z-20"
                 style={{ backgroundColor: getColorHex(img.variantColor) }}
                 title={img.variantColor}
@@ -295,7 +295,7 @@ const MediaSection = memo(({
             <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest block text-center">
               {img.variantColor ? (
                 <span className="flex items-center gap-1.5 justify-center">
-                  <span 
+                  <span
                     className="w-1.5 h-1.5 rounded-full"
                     style={{ backgroundColor: getColorHex(img.variantColor) }}
                   />
@@ -361,6 +361,10 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+  const [generationError, setGenerationError] = useState(false);
+  const [accordionAiLoading, setAccordionAiLoading] = useState<Record<number, boolean>>({});
+  const [accordionAiError, setAccordionAiError] = useState<Record<number, boolean>>({});
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
 
@@ -382,29 +386,29 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     { name: 'Blue', hex: '#1A4B8C' },
     { name: 'Camel', hex: '#C19A6B' },
   ];
-  
+
   const [formData, setFormData] = useState({
-    name: "",
-    slug: "",
-    description: "",
-    price: 0,
-    comparePrice: 0,
-    cost: 0,
-    categoryId: "",
-    brandId: "",
-    status: "ACTIVE" as "ACTIVE" | "DRAFT" | "ARCHIVED",
-    images: [] as { id?: string; url: string; publicId: string; isMain: boolean; variantColor?: string | null }[],
-    variants: [] as Partial<Variant>[],
-    features: [] as { icon: string; title: string; description: string }[],
-    details: [] as { title: string; content: string }[],
+    description: product?.description ?? "",
+    name: product?.name ?? "",
+    slug: product?.slug ?? "",
+    price: product?.price ?? 0,
+    comparePrice: product?.comparePrice ?? 0,
+    cost: product?.cost ?? 0,
+    categoryId: product?.categoryId ?? "",
+    brandId: product?.brandId ?? "",
+    status: (product?.status as "ACTIVE" | "DRAFT" | "ARCHIVED") || "ACTIVE",
+    images: (product?.images ?? []) as { id?: string; url: string; publicId: string; isMain: boolean; variantColor?: string | null }[],
+    variants: (product?.variants ?? []) as Partial<Variant>[],
+    features: (product?.features ?? []) as { icon: string; title: string; description: string }[],
+    details: (product?.details ?? []) as AccordionItem[],
   });
 
   const flatCategoryOptions = useMemo(() => {
     const flatten = (cats: Category[], level = 0): { label: string; value: string }[] => {
       return cats.reduce((acc: { label: string; value: string }[], cat) => {
-        acc.push({ 
-          label: level > 0 ? `${"\u00A0".repeat(level * 4)} ${cat.name}` : cat.name, 
-          value: cat.id 
+        acc.push({
+          label: level > 0 ? `${"\u00A0".repeat(level * 4)} ${cat.name}` : cat.name,
+          value: cat.id
         });
         if (cat.children && cat.children.length > 0) {
           acc.push(...flatten(cat.children, level + 1));
@@ -453,9 +457,9 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
           if (res.data.success) {
             const full = res.data.data as Product;
             setFormData({
+              description: full.description ?? "",
               name: full.name,
               slug: full.slug,
-              description: full.description,
               price: full.price,
               comparePrice: full.comparePrice || 0,
               cost: full.cost || 0,
@@ -472,9 +476,9 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
           console.error("Failed to fetch full product", err);
           // Fallback
           setFormData({
+            description: product.description ?? "",
             name: product.name,
             slug: product.slug,
-            description: product.description,
             price: product.price,
             comparePrice: product.comparePrice || 0,
             cost: product.cost || 0,
@@ -493,9 +497,9 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
       fetchFullProduct();
     } else if (!product && isOpen) {
       setFormData({
+        description: "",
         name: "",
         slug: "",
-        description: "",
         price: 0,
         comparePrice: 0,
         cost: 0,
@@ -520,13 +524,145 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
+  const handleGenerateDescription = async () => {
+    if (!formData.name.trim()) return;
+
+    setIsGeneratingDescription(true);
+    setGenerationError(false);
+
+    try {
+      const selectedCategoryName = flatCategoryOptions.find(
+        (opt) => opt.value === formData.categoryId
+      )?.label?.trim();
+      const selectedBrandName = brandOptions.find(
+        (opt) => opt.value === formData.brandId
+      )?.label?.trim();
+
+      const colors = Array.from(
+        new Set(
+          formData.variants
+            .map((v) => v.color?.trim())
+            .filter(Boolean)
+        )
+      ) as string[];
+
+      const sizes = Array.from(
+        new Set(
+          formData.variants
+            .map((v) => v.size?.trim())
+            .filter(Boolean)
+        )
+      ) as string[];
+
+      // Convert images to base64
+      const imageBase64List: string[] = [];
+      for (const img of (formData.images ?? []) as any[]) {
+        if (img.base64) {
+          imageBase64List.push(img.base64);
+        } else if (img.file) {
+          const b64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve((reader.result as string).split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(img.file!);
+          });
+          imageBase64List.push(b64);
+        } else if (img.url) {
+          // For existing images with URL only — fetch and convert
+          try {
+            const res = await fetch(img.url);
+            const blob = await res.blob();
+            const b64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve((reader.result as string).split(',')[1]);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+            imageBase64List.push(b64);
+          } catch {
+            // skip this image if fetch fails
+          }
+        }
+      }
+
+      const res = await adminApi.generateDescription({
+        productName: formData.name,
+        category: selectedCategoryName,
+        brand: selectedBrandName,
+        price: formData.price,
+        colors,
+        sizes,
+        images: imageBase64List,
+      });
+
+      const returnedDesc = res.data.description || (res.data as any).data?.description;
+      if (res.data.success && returnedDesc) {
+        setFormData((prev) => ({
+          ...prev,
+          description: returnedDesc,
+        }));
+        toast.success("AI description generated");
+      } else {
+        setGenerationError(true);
+      }
+    } catch (err) {
+      console.error("AI description generation failed:", err);
+      setGenerationError(true);
+    } finally {
+      setIsGeneratingDescription(false);
+    }
+  };
+
+  const updateAccordion = (index: number, field: keyof AccordionItem, value: string | boolean) => {
+    const updated = [...(formData.details || [])];
+    updated[index] = { ...updated[index], [field]: value };
+    handleFieldChange("details", updated);
+  };
+
+  const generateAccordionContent = async (index: number, title: string) => {
+    if (!title.trim()) return;
+
+    setAccordionAiLoading((prev) => ({ ...prev, [index]: true }));
+    setAccordionAiError((prev) => ({ ...prev, [index]: false }));
+
+    try {
+      const selectedCategoryName = flatCategoryOptions.find(
+        (opt) => opt.value === formData.categoryId
+      )?.label?.trim();
+      const selectedBrandName = brandOptions.find(
+        (opt) => opt.value === formData.brandId
+      )?.label?.trim();
+
+      const res = await adminApi.generateAccordion({
+        title,
+        productName: formData.name,
+        category: selectedCategoryName,
+        brand: selectedBrandName,
+      });
+
+      if (res.data.success) {
+        const updated = [...(formData.details || [])];
+        updated[index] = { ...updated[index], content: res.data.content };
+        setFormData((prev) => ({ ...prev, details: updated }));
+        toast.success("AI accordion content generated");
+      } else {
+        setAccordionAiError((prev) => ({ ...prev, [index]: true }));
+      }
+    } catch (err) {
+      console.error("AI accordion generation failed:", err);
+      setAccordionAiError((prev) => ({ ...prev, [index]: true }));
+    } finally {
+      setAccordionAiLoading((prev) => ({ ...prev, [index]: false }));
+    }
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const previewUrl = URL.createObjectURL(file);
     const tempId = `temp-${Date.now()}`;
-    
+
     setFormData(prev => ({
       ...prev,
       images: [...prev.images, { url: previewUrl, publicId: tempId, isMain: prev.images.length === 0 }]
@@ -538,7 +674,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
       if (res.data.success) {
         setFormData(prev => ({
           ...prev,
-          images: prev.images.map(img => 
+          images: prev.images.map(img =>
             img.publicId === tempId ? { url: res.data.data.url, publicId: res.data.data.publicId, isMain: img.isMain } : img
           )
         }));
@@ -593,7 +729,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
 
   const generateVariants = () => {
     if (selectedSizes.length === 0 || selectedColors.length === 0) return;
-    
+
     const timestamp = Date.now();
     let counter = 0;
     const generated = selectedColors.flatMap(color =>
@@ -606,7 +742,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
         sku: generateSKU(formData.name, color.name, size),
       }))
     );
-    
+
     setFormData(prev => ({ ...prev, variants: [...prev.variants, ...generated] }));
     toast.success(`${generated.length} combinations manifested`);
   };
@@ -624,7 +760,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
       images: prev.images.filter((_, i) => i !== idx)
     }));
   }, []);
-  
+
   const uniqueColors = useMemo(() => {
     const colors = formData.variants
       ?.map((v: any) => v.color)
@@ -642,11 +778,11 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
   const handleImageColorChange = async (imageId: string, variantColor: string | null) => {
     setFormData(prev => ({
       ...prev,
-      images: prev.images.map((img: any) => 
+      images: prev.images.map((img: any) =>
         (img.id === imageId || img.publicId === imageId) ? { ...img, variantColor } : img
       )
     }));
-    
+
     if (product?.id && imageId && !imageId.startsWith('temp-')) {
       try {
         await adminApi.updateProductImage(product.id, imageId, { variantColor });
@@ -658,7 +794,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
   };
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  
+
   const validateForm = () => {
     const errors: Record<string, string> = {};
     if (!formData.name.trim()) errors.name = "Title is required for the archive";
@@ -666,7 +802,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     // brandId is optional
     if (!formData.description.trim()) errors.description = "Editorial copy cannot be blank";
     if (formData.price <= 0) errors.price = "Valuation must be positive";
-    
+
     // Ensure variants have at least basic data if present
     formData.variants.forEach((v, idx) => {
       if (v.size && !v.sku) {
@@ -680,14 +816,14 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       toast.error("Form incomplete. Review highlighted fields.");
       return;
     }
 
     setLoading(true);
-    
+
     // Sanitize Payload
     const sanitizedPayload = {
       ...formData,
@@ -719,9 +855,9 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     }
   };
 
-  const margin = useMemo(() => 
+  const margin = useMemo(() =>
     formData.price > 0 ? (((formData.price - formData.cost) / formData.price) * 100).toFixed(0) : "0",
-  [formData.price, formData.cost]);
+    [formData.price, formData.cost]);
 
   if (!mounted) return null;
 
@@ -759,7 +895,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
           <FormSkeleton />
         ) : (
           <>
-            <IdentitySection 
+            <IdentitySection
               {...formData}
               categoryOptions={flatCategoryOptions}
               brandOptions={brandOptions}
@@ -768,14 +904,14 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
               errors={formErrors}
             />
 
-            <PricingSection 
+            <PricingSection
               {...formData}
               margin={margin}
               onFieldChange={handleFieldChange}
               errors={formErrors}
             />
 
-            <MediaSection 
+            <MediaSection
               images={formData.images}
               onUpload={handleImageUpload}
               onSetMain={handleSetMain}
@@ -805,8 +941,10 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {SIZE_OPTIONS.map(size => (
-                      <button
+                      <Button
                         type="button"
+                        variant="none"
+                        size="none"
                         key={size}
                         onClick={() => toggleSize(size)}
                         className={cn(
@@ -817,7 +955,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
                         )}
                       >
                         {size}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -829,8 +967,10 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {COMMON_COLORS.map(color => (
-                      <button
+                      <Button
                         type="button"
+                        variant="none"
+                        size="none"
                         key={color.name}
                         onClick={() => toggleColor(color)}
                         className={cn(
@@ -840,15 +980,15 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
                             : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-400"
                         )}
                       >
-                        <span 
+                        <span
                           className="w-2.5 h-2.5 rounded-full border border-zinc-200"
                           style={{ backgroundColor: color.hex }}
                         />
                         {color.name}
-                      </button>
+                      </Button>
                     ))}
                   </div>
-                  
+
                   {/* Custom color input */}
                   <div className="flex gap-3 pt-2">
                     <input
@@ -898,9 +1038,9 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
                 </div>
               </div>
 
-              <ProductVariantsTable 
-                variants={formData.variants} 
-                onChange={(variants) => handleFieldChange("variants", variants)} 
+              <ProductVariantsTable
+                variants={formData.variants}
+                onChange={(variants) => handleFieldChange("variants", variants)}
                 errors={formErrors}
               />
             </section>
@@ -919,8 +1059,10 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
               <div className="space-y-6">
                 {formData.features?.map((feature, idx) => (
                   <div key={idx} className="p-6 bg-zinc-50 border border-zinc-200 rounded-xl relative group space-y-4 animate-in fade-in duration-300">
-                    <button
+                    <Button
                       type="button"
+                      variant="none"
+                      size="none"
                       onClick={() => {
                         const nextFeatures = [...formData.features];
                         nextFeatures.splice(idx, 1);
@@ -929,7 +1071,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
                       className="absolute top-4 right-4 text-zinc-400 hover:text-red-500 transition-colors"
                     >
                       <Trash2 size={16} />
-                    </button>
+                    </Button>
 
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
                       <div className="md:col-span-1 space-y-2">
@@ -945,7 +1087,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
                               handleFieldChange("features", nextFeatures);
                             }}
                             className="material-symbols-outlined text-lg bg-transparent cursor-pointer appearance-none outline-none border-none p-0 m-0 w-full h-full text-zinc-800"
-                            style={{ 
+                            style={{
                               fontVariationSettings: "'FILL' 0, 'wght' 400",
                               textAlignLast: "center",
                               textAlign: "center"
@@ -1025,10 +1167,64 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
               </div>
 
               <div className="space-y-6">
+                {/* Permanent First Accordion Item: Editorial Description */}
+                <div className="p-6 bg-zinc-50 border border-zinc-200 rounded-xl space-y-4 relative group">
+                  <div className="flex items-center gap-3">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block">
+                      EDITORIAL DESCRIPTION
+                    </label>
+                    <div className="relative group/tooltip flex flex-col items-start gap-1">
+                      <Button
+                        type="button"
+                        variant="none"
+                        size="none"
+                        disabled={!formData.name.trim() || isGeneratingDescription}
+                        onClick={handleGenerateDescription}
+                        className={cn(
+                          "px-2.5 py-1 rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 text-[11px] font-bold tracking-wide transition duration-200 flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100",
+                          isGeneratingDescription ? "text-zinc-400" : "text-zinc-700 hover:text-zinc-950"
+                        )}
+                      >
+                        {isGeneratingDescription ? (
+                          <>
+                            <div className="h-3 w-3 animate-spin rounded-full border border-zinc-300/60 border-t-zinc-700" />
+                            Generating...
+                          </>
+                        ) : (
+                          "✦ Generate with AI"
+                        )}
+                      </Button>
+                      {!formData.name.trim() && (
+                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover/tooltip:block bg-zinc-900 text-white text-[10px] px-2.5 py-1.5 rounded shadow-lg whitespace-nowrap z-50 font-bold uppercase tracking-widest pointer-events-none">
+                          Enter a product name first
+                        </div>
+                      )}
+                      {generationError && (
+                        <span className="text-[10px] text-red-500 font-bold uppercase tracking-wider leading-none">
+                          Generation failed. Try again.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest -mt-2">
+                    MAIN PRODUCT DESCRIPTION — ALWAYS VISIBLE ON PRODUCT PAGE
+                  </p>
+                  <Textarea
+                    value={formData.description}
+                    onChange={(e) => handleFieldChange("description", e.target.value)}
+                    rows={5}
+                    placeholder="Crafted from Italian wool..."
+                    error={formErrors?.description}
+                    required
+                  />
+                </div>
+
                 {formData.details?.map((detail, idx) => (
                   <div key={idx} className="p-6 bg-zinc-50 border border-zinc-200 rounded-xl relative group space-y-4 animate-in fade-in duration-300">
-                    <button
+                    <Button
                       type="button"
+                      variant="none"
+                      size="none"
                       onClick={() => {
                         const nextDetails = [...formData.details];
                         nextDetails.splice(idx, 1);
@@ -1037,23 +1233,153 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
                       className="absolute top-4 right-4 text-zinc-400 hover:text-red-500 transition-colors"
                     >
                       <Trash2 size={16} />
-                    </button>
-
-                    <Input
-                      label="Accordion Section Title"
-                      value={detail.title}
-                      onChange={(e) => {
-                        const nextDetails = [...formData.details];
-                        nextDetails[idx].title = e.target.value;
-                        handleFieldChange("details", nextDetails);
-                      }}
-                      placeholder="e.g. Care Instructions"
-                    />
+                    </Button>
 
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block">
-                        Accordion Content
+                        Accordion Section Title
                       </label>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type="text"
+                          value={detail.title}
+                          onChange={(e) => updateAccordion(idx, 'title', e.target.value)}
+                          onFocus={() => updateAccordion(idx, 'titleInputFocused', true)}
+                          onBlur={() => setTimeout(() => updateAccordion(idx, 'titleInputFocused', false), 150)}
+                          placeholder="e.g. Care Instructions"
+                          className="flex h-11 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 disabled:cursor-not-allowed disabled:opacity-50"
+                        />
+
+                        {/* Dropdown arrow icon */}
+                        <i
+                          className="ti ti-chevron-down"
+                          style={{
+                            position: 'absolute',
+                            right: '10px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            fontSize: '14px',
+                            color: '#71717a',
+                            pointerEvents: 'none',
+                          }}
+                          aria-hidden="true"
+                        />
+
+                        {/* Dropdown list — shows on focus */}
+                        {detail.titleInputFocused && (
+                          <ul
+                            style={{
+                              position: 'absolute',
+                              top: 'calc(100% + 4px)',
+                              left: 0,
+                              right: 0,
+                              background: '#ffffff',
+                              border: '0.5px solid #e4e4e7',
+                              borderRadius: '6px',
+                              zIndex: 50,
+                              margin: 0,
+                              padding: '4px 0',
+                              listStyle: 'none',
+                              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+                            }}
+                          >
+                            {ACCORDION_PRESETS
+                              .filter((preset) =>
+                                preset.toLowerCase().includes(detail.title.toLowerCase()) || detail.title === ''
+                              )
+                              .map((preset) => (
+                                <li
+                                  key={preset}
+                                  onMouseDown={() => updateAccordion(idx, 'title', preset)}
+                                  style={{
+                                    padding: '8px 12px',
+                                    fontSize: '13px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    color: '#18181b',
+                                  }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.background = '#f4f4f5')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                >
+                                  <span>{preset}</span>
+                                  <span style={{
+                                    fontSize: '11px',
+                                    color: '#71717a',
+                                    border: '0.5px solid #e4e4e7',
+                                    borderRadius: '4px',
+                                    padding: '1px 6px',
+                                  }}>
+                                    + add
+                                  </span>
+                                </li>
+                              ))}
+
+                            {/* Show "Use custom: ..." if typed value is not in presets */}
+                            {detail.title.trim() !== '' && !ACCORDION_PRESETS.includes(detail.title) && (
+                              <li
+                                onMouseDown={() => updateAccordion(idx, 'title', detail.title)}
+                                style={{
+                                  padding: '8px 12px',
+                                  fontSize: '13px',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  color: '#71717a',
+                                  borderTop: '0.5px solid #e4e4e7',
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = '#f4f4f5')}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                              >
+                                <span>Use: "{detail.title}"</span>
+                                <i className="ti ti-corner-down-left" style={{ fontSize: '13px' }} aria-hidden="true" />
+                              </li>
+                            )}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block">
+                          Accordion Content
+                        </label>
+                        <div className="relative group/tooltip flex flex-col items-start gap-1">
+                          <Button
+                            type="button"
+                            variant="none"
+                            size="none"
+                            disabled={!detail.title.trim() || accordionAiLoading[idx]}
+                            onClick={() => generateAccordionContent(idx, detail.title)}
+                            className={cn(
+                              "px-2 py-0.5 rounded border border-zinc-200 bg-white hover:bg-zinc-50 text-[10px] font-bold tracking-wide transition duration-200 flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100",
+                              accordionAiLoading[idx] ? "text-zinc-400" : "text-zinc-700 hover:text-zinc-950"
+                            )}
+                          >
+                            {accordionAiLoading[idx] ? (
+                              <>
+                                <div className="h-2.5 w-2.5 animate-spin rounded-full border border-zinc-300/60 border-t-zinc-700" />
+                                Generating...
+                              </>
+                            ) : (
+                              "✦ Generate with AI"
+                            )}
+                          </Button>
+                          {!detail.title.trim() && (
+                            <div className="absolute left-0 bottom-full mb-2 hidden group-hover/tooltip:block bg-zinc-900 text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap z-50 font-bold uppercase tracking-widest pointer-events-none">
+                              Enter a section title first
+                            </div>
+                          )}
+                          {accordionAiError[idx] && (
+                            <span className="text-[9px] text-red-500 font-bold uppercase tracking-wider leading-none">
+                              Generation failed. Try again.
+                            </span>
+                          )}
+                        </div>
+                      </div>
                       <Textarea
                         value={detail.content}
                         onChange={(e) => {
@@ -1090,7 +1416,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
                 <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Search Presence</h4>
                 <div className="h-[1px] flex-1 bg-zinc-100" />
               </div>
-              
+
               <div className="p-8 bg-zinc-50/50 rounded-xl space-y-3 border border-zinc-100 shadow-inner">
                 <p className="text-[#1a0dab] text-xl font-medium tracking-tight truncate hover:underline cursor-pointer">
                   {formData.name || "Product Archive Piece"} | Editorial curator

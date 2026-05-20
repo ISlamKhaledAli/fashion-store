@@ -101,12 +101,14 @@ const DiscountRow = React.memo(({
               )}>
                 {discount.code}
               </span>
-              <button 
+              <Button 
+                variant="none"
+                size="none"
                 onClick={(e) => { e.stopPropagation(); onCopy(discount.code); }}
-                className="opacity-0 group-hover/row:opacity-100 p-1.5 hover:bg-zinc-100 rounded-md text-zinc-400 hover:text-zinc-950 transition-all active:scale-90"
+                className="opacity-0 group-hover/row:opacity-100 p-1.5 hover:bg-zinc-100 rounded-md text-zinc-400 hover:text-zinc-950 transition-all"
               >
                 <Copy size={12} />
-              </button>
+              </Button>
             </div>
             <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
               #{discount.id.slice(-6).toUpperCase()}

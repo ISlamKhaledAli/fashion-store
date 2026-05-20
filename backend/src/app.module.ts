@@ -24,6 +24,7 @@ import adminRoutes from "./routes/admin.routes";
 import discountRoutes from "./routes/discount.routes";
 import chatRoutes from "./routes/chat.routes";
 import sizeRoutes from "./routes/size.routes";
+import adminAiRoutes from "./routes/adminAi.routes";
 
 const app: Application = express();
 
@@ -37,6 +38,7 @@ app.use(
       const allowedOrigins = [
         env.CLIENT_URL,
         "http://localhost:3000",
+        "http://127.0.0.1:3000",
       ];
       if (!origin || allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
         callback(null, true);
@@ -51,8 +53,8 @@ app.use(
 // Payment webhook needs raw body — mount BEFORE json middleware
 app.use("/api/payment", paymentRoutes);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Rate limiting
 app.use("/api", generalLimiter);
@@ -78,6 +80,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/discounts", discountRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/size", sizeRoutes);
+app.use("/api/admin/ai", adminAiRoutes);
 
 // Catch-all for unmatched routes
 app.use((req: Request, res: Response) => {

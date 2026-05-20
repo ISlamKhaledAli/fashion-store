@@ -168,13 +168,15 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
         <div className="flex justify-between items-center">
           <p className="text-xs font-label tracking-widest uppercase">Size</p>
           <div className="flex gap-4">
-            <button
+            <Button
+              variant="none"
+              size="none"
               onClick={() => useChatStore.getState().triggerSizeAdvisor(product.id, product.name)}
               className="text-xs underline text-primary font-medium hover:opacity-85 transition-opacity flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 outline-none"
             >
               <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
               Find my size
-            </button>
+            </Button>
             <a 
               href="/size-guide"
               target="_blank"

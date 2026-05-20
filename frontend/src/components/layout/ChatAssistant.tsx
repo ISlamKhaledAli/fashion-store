@@ -8,6 +8,7 @@ import { useCartStore } from "@/store/cartStore";
 import { useChatStore } from "@/store/chatStore";
 import Link from "next/link";
 import { toast } from "sonner";
+import { Button } from "../ui/Button";
 
 // High-resolution product images to match store seed
 const PRODUCT_IMAGES: Record<string, string> = {
@@ -378,7 +379,7 @@ export const ChatAssistant = () => {
             initial={{ opacity: 0, y: 15, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.9 }}
-            className="mb-3 px-4 py-2.5 bg-white border border-stone-200 shadow-xl rounded-xl text-xs max-w-xs text-on-surface-variant font-medium tracking-tight backdrop-blur-xl relative flex items-center gap-2 cursor-pointer hover:border-primary/30 transition-all duration-300"
+            className="mb-3 pl-4 pr-9 py-2.5 bg-white border border-stone-200 shadow-xl rounded-xl text-xs max-w-xs text-on-surface-variant font-medium tracking-tight backdrop-blur-xl relative flex items-center gap-2 cursor-pointer hover:border-primary/30 transition-all duration-300"
             onClick={() => {
               setIsOpen(true);
               setShowTooltip(false);
@@ -386,6 +387,18 @@ export const ChatAssistant = () => {
           >
             <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse shrink-0" />
             <span>Need outfit suggestions or styling advice? Let&apos;s chat!</span>
+            <Button
+              variant="none"
+              size="none"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowTooltip(false);
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-all"
+              aria-label="Dismiss tooltip"
+            >
+              <X className="w-3.5 h-3.5" />
+            </Button>
             <div className="absolute right-6 -bottom-1.5 w-3 h-3 bg-white border-r border-b border-stone-200 rotate-45" />
           </motion.div>
         )}
@@ -458,23 +471,27 @@ export const ChatAssistant = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button
+                <Button
+                  variant="none"
+                  size="none"
                   onClick={() => {
                     if (confirm("Are you sure you want to clear the conversation?")) {
                       clearChat();
                     }
                   }}
                   title="Clear conversation"
-                  className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all cursor-pointer border-none"
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all border-none"
                 >
                   <Trash2 className="w-4 h-4" />
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="none"
+                  size="none"
                   onClick={() => setIsOpen(false)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all cursor-pointer border-none"
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all border-none"
                 >
                   <X className="w-4 h-4" />
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -571,13 +588,15 @@ export const ChatAssistant = () => {
                   <span className="text-[10px] uppercase font-bold tracking-wider text-on-surface/40 mb-0.5">Suggested Questions</span>
                   <div className="grid grid-cols-2 gap-1.5">
                     {starterPrompts.map((p, idx) => (
-                      <button
+                      <Button
+                        variant="none"
+                        size="none"
                         key={idx}
                         onClick={() => handleSendMessage(p.text)}
-                        className="p-2 border border-stone-200 rounded-xl text-left text-[11px] text-on-surface/80 hover:border-primary hover:bg-stone-50 transition-all cursor-pointer font-sans leading-snug"
+                        className="p-2 border border-stone-200 rounded-xl text-left text-[11px] text-on-surface/80 hover:border-primary hover:bg-stone-50 transition-all font-sans leading-snug"
                       >
                         {p.label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -594,17 +613,19 @@ export const ChatAssistant = () => {
                   disabled={isLoading}
                   className="flex-1 bg-transparent border-none text-[13px] focus:outline-none focus:ring-0 text-on-surface placeholder-on-surface/40 py-2.5 outline-none font-sans font-light"
                 />
-                <button
+                <Button
+                  variant="none"
+                  size="none"
                   onClick={() => handleSendMessage()}
                   disabled={!inputVal.trim() || isLoading}
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border-none ${
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all border-none ${
                     inputVal.trim() && !isLoading
                       ? "bg-primary text-on-primary hover:opacity-90"
                       : "bg-stone-100 text-stone-400 pointer-events-none"
                   }`}
                 >
                   <Send className="w-3.5 h-3.5" />
-                </button>
+                </Button>
               </div>
             </div>
           </motion.div>

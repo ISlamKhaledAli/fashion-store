@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, Sparkles, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
+import { Button } from "../ui/Button";
 
 interface Message {
   id: string;
@@ -244,12 +245,14 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
                   </p>
                 </div>
               </div>
-              <button
+              <Button
+                variant="none"
+                size="none"
                 onClick={onClose}
-                className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all cursor-pointer border-none"
+                className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all border-none"
               >
                 <X className="w-4.5 h-4.5" />
-              </button>
+              </Button>
             </div>
 
             {/* Notification Badge */}
@@ -326,17 +329,19 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
                   disabled={isLoading}
                   className="flex-1 bg-transparent border-none text-[13px] focus:outline-none focus:ring-0 text-on-surface placeholder-on-surface/40 py-2.5 outline-none font-sans font-light"
                 />
-                <button
+                <Button
+                  variant="none"
+                  size="none"
                   onClick={() => handleSendMessage()}
                   disabled={!inputVal.trim() || isLoading}
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border-none ${
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all border-none ${
                     inputVal.trim() && !isLoading
                       ? "bg-primary text-on-primary hover:opacity-90"
                       : "bg-stone-100 text-stone-400 pointer-events-none"
                   }`}
                 >
                   <Send className="w-3.5 h-3.5" />
-                </button>
+                </Button>
               </div>
               <p className="text-[10px] text-center text-stone-400 font-sans tracking-tight">
                 Recommended sizes are estimates based on standard measurements and fit notes.

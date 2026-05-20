@@ -168,6 +168,21 @@ export const adminApi = {
     api.put<ApiResponse<Record<string, unknown>>>(`/admin/discounts/${id}`, data),
   deleteDiscount: (id: string) =>
     api.delete<ApiResponse<unknown>>(`/admin/discounts/${id}`),
+  generateDescription: (data: {
+    productName: string;
+    category?: string;
+    brand?: string;
+    price?: number;
+    colors?: string[];
+    sizes?: string[];
+    images?: string[];
+  }) => api.post<{ success: boolean; description: string }>("/admin/ai/generate-description", data, { withCredentials: true }),
+  generateAccordion: (data: {
+    title: string;
+    productName: string;
+    category?: string;
+    brand?: string;
+  }) => api.post<{ success: boolean; content: string }>("/admin/ai/generate-accordion", data, { withCredentials: true }),
 };
 
 export const sizeApi = {

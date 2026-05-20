@@ -135,14 +135,13 @@ TONE: Friendly, confident, concise. Like a helpful friend who works in fashion â
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
-    const bodyReader = streamResponse.body as unknown as AsyncIterable<any>;
     const decoder = new TextDecoder();
     
     let fullText = "";
     let sentLength = 0;
 
     try {
-      for await (const chunk of bodyReader) {
+      const processChunk = (chunk: any) => {
         const chunkString = decoder.decode(chunk, { stream: true });
         const lines = chunkString.split("\n");
 
@@ -171,13 +170,28 @@ TONE: Friendly, confident, concise. Like a helpful friend who works in fashion â
                   }
                 } else {
                   // Standard text stream streaming
-                  res.write(`data: ${line.slice(6)}\n\n`);
+                  res.write(`data: ${trimmed.slice(6)}\n\n`);
                   sentLength = fullText.length;
                 }
               }
             } catch (e) {
               // Ignore split JSON chunks
             }
+          }
+        }
+      };
+
+      if (streamResponse.body) {
+        if (typeof (streamResponse.body as any).getReader === "function") {
+          const reader = (streamResponse.body as any).getReader();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            processChunk(value);
+          }
+        } else {
+          for await (const chunk of streamResponse.body as any) {
+            processChunk(chunk);
           }
         }
       }

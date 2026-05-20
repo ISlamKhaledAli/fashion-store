@@ -280,10 +280,20 @@ export const handleChat = async (req: Request, res: Response, next: NextFunction
     res.setHeader("Connection", "keep-alive");
 
     // Process chunk stream
-    const bodyReader = streamResponse.body as unknown as AsyncIterable<any>;
     try {
-      for await (const chunk of bodyReader) {
-        res.write(chunk);
+      if (streamResponse.body) {
+        if (typeof (streamResponse.body as any).getReader === "function") {
+          const reader = (streamResponse.body as any).getReader();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            res.write(value);
+          }
+        } else {
+          for await (const chunk of streamResponse.body as any) {
+            res.write(chunk);
+          }
+        }
       }
     } catch (streamError) {
       console.error("[ERROR] Error in OpenRouter connection stream:", streamError);

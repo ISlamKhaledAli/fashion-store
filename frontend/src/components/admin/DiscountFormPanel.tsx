@@ -161,14 +161,16 @@ export const DiscountFormPanel: React.FC<DiscountFormPanelProps> = ({
                     />
                 </div>
                 <div className="pt-7">
-                    <button
+                    <Button
                         type="button"
+                        variant="none"
+                        size="none"
                         onClick={generateRandomCode}
-                        className="p-3 bg-zinc-50 border border-zinc-100 text-zinc-400 hover:text-zinc-950 hover:border-zinc-300 rounded-xl transition-all active:scale-95 shadow-sm"
+                        className="p-3 bg-zinc-50 border border-zinc-100 text-zinc-400 hover:text-zinc-950 hover:border-zinc-300 rounded-xl shadow-sm"
                         title="Generate Random Code"
                     >
                         <RotateCcw size={18} />
-                    </button>
+                    </Button>
                 </div>
              </div>
           </div>
@@ -176,8 +178,10 @@ export const DiscountFormPanel: React.FC<DiscountFormPanelProps> = ({
           <div className="space-y-3">
             <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 ml-1">Reward Classification</label>
             <div className="grid grid-cols-2 gap-1.5 p-1.5 bg-zinc-50 rounded-2xl border border-zinc-100">
-                <button
+                <Button
                 type="button"
+                variant="none"
+                size="none"
                 onClick={() => setFormData({ ...formData, type: "PERCENTAGE" })}
                 className={cn(
                     "flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
@@ -188,9 +192,11 @@ export const DiscountFormPanel: React.FC<DiscountFormPanelProps> = ({
                 >
                 <Percent size={14} />
                 <span>Percentage</span>
-                </button>
-                <button
+                </Button>
+                <Button
                 type="button"
+                variant="none"
+                size="none"
                 onClick={() => setFormData({ ...formData, type: "FIXED" })}
                 className={cn(
                     "flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
@@ -201,7 +207,7 @@ export const DiscountFormPanel: React.FC<DiscountFormPanelProps> = ({
                 >
                 <DollarSign size={14} />
                 <span>Fixed Amount</span>
-                </button>
+                </Button>
             </div>
           </div>
         </section>

@@ -16,6 +16,7 @@ const envSchema = z.object({
   PORT: z.string().default("5000"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   OPENROUTER_API_KEY: z.string().min(1, "OPENROUTER_API_KEY is required"),
+  ANTHROPIC_API_KEY: z.string().optional(),
   // Email variables
   EMAIL_HOST: z.string().optional(),
   EMAIL_PORT: z.string().optional(),
