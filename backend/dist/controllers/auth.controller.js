@@ -7,6 +7,13 @@ const jwt_1 = require("../utils/jwt");
 const apiResponse_1 = require("../utils/apiResponse");
 const auth_validator_1 = require("../validators/auth.validator");
 const AppError_1 = require("../utils/AppError");
+const isProduction = process.env.NODE_ENV === "production";
+const COOKIE_OPTIONS = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: "lax",
+    path: "/",
+};
 const register = async (req, res, next) => {
     try {
         const validatedData = auth_validator_1.registerSchema.parse(req.body);
@@ -25,17 +32,13 @@ const register = async (req, res, next) => {
         });
         const accessToken = (0, jwt_1.generateAccessToken)(user.id, user.role);
         const refreshToken = (0, jwt_1.generateRefreshToken)(user.id);
-        // Set secure cookies (SameSite=Strict, HttpOnly)
+        // Set cookies with SameSite=Lax for cross-site access in production
         res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "strict",
+            ...COOKIE_OPTIONS,
             maxAge: 60 * 60 * 1000, // 1 hour
         });
         res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "strict",
+            ...COOKIE_OPTIONS,
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
         return (0, apiResponse_1.sendResponse)({
@@ -69,17 +72,13 @@ const login = async (req, res, next) => {
         }
         const accessToken = (0, jwt_1.generateAccessToken)(user.id, user.role);
         const refreshToken = (0, jwt_1.generateRefreshToken)(user.id);
-        // Set secure cookies (SameSite=Strict, HttpOnly)
+        // Set cookies with SameSite=Lax for cross-site access in production
         res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "strict",
+            ...COOKIE_OPTIONS,
             maxAge: 60 * 60 * 1000, // 1 hour
         });
         res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "strict",
+            ...COOKIE_OPTIONS,
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
         return (0, apiResponse_1.sendResponse)({
@@ -121,9 +120,7 @@ const refresh = async (req, res, next) => {
         const accessToken = (0, jwt_1.generateAccessToken)(user.id, user.role);
         // Set new secure access token cookie
         res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "strict",
+            ...COOKIE_OPTIONS,
             maxAge: 60 * 60 * 1000, // 1 hour
         });
         return (0, apiResponse_1.sendResponse)({
@@ -139,16 +136,8 @@ const refresh = async (req, res, next) => {
 };
 exports.refresh = refresh;
 const logout = async (req, res, next) => {
-    res.clearCookie("accessToken", {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-    });
-    res.clearCookie("refreshToken", {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-    });
+    res.clearCookie("accessToken", COOKIE_OPTIONS);
+    res.clearCookie("refreshToken", COOKIE_OPTIONS);
     return (0, apiResponse_1.sendResponse)({
         res,
         status: 200,

@@ -100,6 +100,7 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           productId,
           messages: newMessages.map((m) => ({

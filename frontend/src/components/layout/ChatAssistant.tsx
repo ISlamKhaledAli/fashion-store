@@ -201,6 +201,7 @@ export const ChatAssistant = () => {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           productId: activeSizeProductId || undefined,
           messages: updatedMessages.map(m => ({ role: m.role, content: m.content })),

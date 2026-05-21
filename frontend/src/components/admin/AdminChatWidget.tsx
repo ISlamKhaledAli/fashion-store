@@ -76,9 +76,8 @@ export const AdminChatWidget = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // Since it's admin, we need the token from localStorage
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
         },
+        credentials: "include",
         body: JSON.stringify({ messages: newMessages }),
       });
 
@@ -90,25 +89,69 @@ export const AdminChatWidget = () => {
       if (!reader) throw new Error("No readable stream");
 
       const decoder = new TextDecoder("utf-8");
-      let done = false;
 
       // Add a placeholder assistant message
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
-      while (!done) {
-        const { value, done: readerDone } = await reader.read();
-        done = readerDone;
-        if (value) {
-          const chunk = decoder.decode(value, { stream: true });
-          setMessages((prev) => {
-            const updated = [...prev];
-            const last = updated[updated.length - 1];
-            if (last.role === "assistant") {
-              last.content += chunk;
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        
+        let lineEnd;
+        while ((lineEnd = buffer.indexOf("\n")) >= 0) {
+          const line = buffer.slice(0, lineEnd).trim();
+          buffer = buffer.slice(lineEnd + 1);
+
+          // Ignore keep-alive or comment lines like ": OPENROUTER PROCESSING"
+          if (line.startsWith(":")) {
+            continue;
+          }
+
+          if (line.startsWith("data: ")) {
+            const dataStr = line.slice(6).trim();
+            if (dataStr === "[DONE]") continue;
+            try {
+              const parsed = JSON.parse(dataStr);
+              const content = parsed.choices?.[0]?.delta?.content || "";
+              
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last && last.role === "assistant") {
+                  last.content += content;
+                }
+                return updated;
+              });
+            } catch (e) {
+              // Ignore split JSON chunks
             }
-            return updated;
-          });
+          } else if (line.length > 0 && !line.startsWith("data: ") && !line.startsWith("{")) {
+            // Direct plain text stream fallback
+            setMessages((prev) => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              if (last && last.role === "assistant") {
+                last.content += line + "\n";
+              }
+              return updated;
+            });
+          }
         }
+      }
+
+      // Flush remaining buffer if any
+      if (buffer.trim().length > 0 && !buffer.startsWith("data: ") && !buffer.startsWith("{") && !buffer.startsWith(":")) {
+        setMessages((prev) => {
+          const updated = [...prev];
+          const last = updated[updated.length - 1];
+          if (last && last.role === "assistant") {
+            last.content += buffer;
+          }
+          return updated;
+        });
       }
     } catch (error) {
       console.error(error);

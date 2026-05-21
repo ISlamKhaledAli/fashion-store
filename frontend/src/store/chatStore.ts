@@ -157,6 +157,7 @@ export const useChatStore = create<ChatState>()(
             headers: {
               "Content-Type": "application/json",
             },
+            credentials: "include",
             body: JSON.stringify({
               productId,
               messages: updatedMessages.map(m => ({ role: m.role, content: m.content })),
