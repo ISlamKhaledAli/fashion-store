@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Sparkles, RefreshCw, Clock, ChevronDown, Send, Globe, User } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { cn } from "@/lib/utils";
+import { cn, getApiUrl } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 
 export interface AnalyticsDataPayload {
@@ -115,7 +115,7 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
     setMessages(prev => [...prev, { id: tempId, role: "assistant", content: "" }]);
 
     try {
-      const url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/admin/ai/analyze-analytics`;
+      const url = getApiUrl("/admin/ai/analyze-analytics");
       
       const payload = {
         ...analyticsData,

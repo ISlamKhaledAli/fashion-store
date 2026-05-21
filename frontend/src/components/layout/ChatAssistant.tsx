@@ -10,7 +10,7 @@ import ReactMarkdown from "react-markdown";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "../ui/Button";
-import { cn } from "@/lib/utils";
+import { cn, getApiUrl } from "@/lib/utils";
 
 // High-resolution product images to match store seed
 const PRODUCT_IMAGES: Record<string, string> = {
@@ -193,8 +193,8 @@ export const ChatAssistant = () => {
 
     try {
       const url = activeSizeProductId
-        ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/size/recommend?productId=${activeSizeProductId}`
-        : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/chat`;
+        ? getApiUrl(`/size/recommend?productId=${activeSizeProductId}`)
+        : getApiUrl("/chat");
 
       const response = await fetch(url, {
         method: "POST",

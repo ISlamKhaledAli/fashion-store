@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, X, Send, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { cn } from "@/lib/utils";
+import { cn, getApiUrl } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 
 type Message = {
@@ -72,7 +72,7 @@ export const AdminChatWidget = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/admin/ai/chat`, {
+      const response = await fetch(getApiUrl("/admin/ai/chat"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

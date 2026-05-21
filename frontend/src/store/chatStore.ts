@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { getApiUrl } from "@/lib/utils";
 
 export interface Message {
   id: string;
@@ -151,7 +152,7 @@ export const useChatStore = create<ChatState>()(
         try {
           const updatedMessages = get().messages.slice(0, -1);
           
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/size/recommend`, {
+          const response = await fetch(getApiUrl("/size/recommend"), {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

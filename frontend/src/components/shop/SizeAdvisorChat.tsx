@@ -6,6 +6,7 @@ import { X, Send, Sparkles, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "../ui/Button";
+import { getApiUrl } from "@/lib/utils";
 
 interface Message {
   id: string;
@@ -94,7 +95,7 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
     ]);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/size/recommend`, {
+      const response = await fetch(getApiUrl("/size/recommend"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

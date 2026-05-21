@@ -1,8 +1,11 @@
 import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
 
+const isServer = typeof window === "undefined";
+const defaultBaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
+  baseURL: isServer ? defaultBaseURL : "/api",
   headers: {
     "Content-Type": "application/json",
   },
@@ -11,7 +14,7 @@ const api = axios.create({
 
 // Dedicated instance for token refresh to avoid catching interceptors
 const refreshAxios = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
+  baseURL: isServer ? defaultBaseURL : "/api",
   headers: {
     "Content-Type": "application/json",
   },

@@ -6,6 +6,15 @@ import { sendResponse } from "../utils/apiResponse";
 import { registerSchema, loginSchema, refreshSchema } from "../validators/auth.validator";
 import { AuthError, ConflictError, NotFoundError } from "../utils/AppError";
 
+const isProduction = process.env.NODE_ENV === "production";
+
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: "lax" as const,
+  path: "/",
+};
+
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validatedData = registerSchema.parse(req.body);
@@ -30,18 +39,14 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const accessToken = generateAccessToken(user.id, user.role);
     const refreshToken = generateRefreshToken(user.id);
 
-    // Set secure cookies (SameSite=Strict, HttpOnly)
+    // Set cookies with SameSite=Lax for cross-site access in production
     res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
+      ...COOKIE_OPTIONS,
       maxAge: 60 * 60 * 1000, // 1 hour
     });
 
     res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
+      ...COOKIE_OPTIONS,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -79,18 +84,14 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const accessToken = generateAccessToken(user.id, user.role);
     const refreshToken = generateRefreshToken(user.id);
 
-    // Set secure cookies (SameSite=Strict, HttpOnly)
+    // Set cookies with SameSite=Lax for cross-site access in production
     res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
+      ...COOKIE_OPTIONS,
       maxAge: 60 * 60 * 1000, // 1 hour
     });
 
     res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
+      ...COOKIE_OPTIONS,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -118,7 +119,7 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
     const { refreshToken } = refreshSchema.parse({
       refreshToken: req.cookies?.refreshToken,
     });
-    
+
     let decoded;
     try {
       decoded = verifyRefreshToken(refreshToken);
@@ -135,9 +136,7 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
 
     // Set new secure access token cookie
     res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
+      ...COOKIE_OPTIONS,
       maxAge: 60 * 60 * 1000, // 1 hour
     });
 
@@ -153,16 +152,8 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
 };
 
 export const logout = async (req: Request, res: Response, next: NextFunction) => {
-  res.clearCookie("accessToken", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "strict",
-  });
-  res.clearCookie("refreshToken", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "strict",
-  });
+  res.clearCookie("accessToken", COOKIE_OPTIONS);
+  res.clearCookie("refreshToken", COOKIE_OPTIONS);
 
   return sendResponse({
     res,
