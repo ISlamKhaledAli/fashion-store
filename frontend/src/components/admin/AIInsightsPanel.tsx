@@ -190,8 +190,9 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
           ));
       }
 
-    } catch (error: any) {
-      if (error.name === "AbortError") return;
+    } catch (error: unknown) {
+      const errorName = error instanceof Error ? error.name : "";
+      if (errorName === "AbortError") return;
       console.error("Analysis failed:", error);
       
       setMessages(prev => prev.map(m => 

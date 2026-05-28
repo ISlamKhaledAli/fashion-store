@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { NavigationObserver } from "@/components/layout/NavigationObserver";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -9,13 +10,23 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "THE CURATOR | Premium Fashion",
-  description: "Experience modern utility and timeless aesthetics with The Curator.",
+  title: {
+    default: "THE CURATOR | Premium Fashion Commerce",
+    template: "%s | THE CURATOR",
+  },
+  applicationName: "THE CURATOR",
+  description:
+    "A cinematic premium fashion storefront with AI-assisted shopping, resilient checkout, and a retail-grade admin command center.",
+  keywords: [
+    "premium fashion",
+    "ecommerce",
+    "luxury storefront",
+    "AI shopping assistant",
+    "fashion admin dashboard",
+  ],
 };
 
 export const revalidate = 0;
-
-import { NavigationObserver } from "@/components/layout/NavigationObserver";
 
 export default function RootLayout({
   children,

@@ -168,6 +168,19 @@ export interface Review {
   createdAt: string;
 }
 
+export interface UserMeasurements {
+  id?: string;
+  userId?: string;
+  heightCm?: number | string | null;
+  weightKg?: number | string | null;
+  chestCm?: number | string | null;
+  waistCm?: number | string | null;
+  hipsCm?: number | string | null;
+  shoeEU?: number | string | null;
+  fitPreference?: string | null;
+  updatedAt?: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message?: string;

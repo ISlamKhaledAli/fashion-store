@@ -3,7 +3,7 @@
 import React, { useState, useEffect, memo, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Upload, Check, Trash2, ArrowRight } from "lucide-react";
-import { Product, Category, Brand, Variant } from "@/types";
+import { Product, Category, Brand, Variant, ProductImage } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { AdminDrawer } from "./AdminDrawer";
 import { Input } from "../ui/Input";
@@ -23,6 +23,39 @@ export type AccordionItem = {
   titleInputFocused?: boolean;
 };
 
+type ProductFormImage = Omit<ProductImage, "id"> & {
+  id?: string;
+  file?: File;
+  base64?: string;
+};
+
+type ProductFeature = {
+  icon: string;
+  title: string;
+  description: string;
+};
+
+type ProductFormData = {
+  description: string;
+  name: string;
+  slug: string;
+  price: number;
+  comparePrice: number;
+  cost: number;
+  categoryId: string;
+  brandId: string;
+  status: "ACTIVE" | "DRAFT" | "ARCHIVED";
+  images: ProductFormImage[];
+  variants: Partial<Variant>[];
+  features: ProductFeature[];
+  details: AccordionItem[];
+};
+
+type HandleProductFieldChange = <K extends keyof ProductFormData>(
+  field: K,
+  value: ProductFormData[K]
+) => void;
+
 export const ACCORDION_PRESETS = [
   'Materials',
   'Care',
@@ -34,11 +67,11 @@ interface IdentitySectionProps {
   slug: string;
   categoryId: string;
   brandId: string;
-  status: string;
+  status: ProductFormData["status"];
   categoryOptions: { label: string; value: string }[];
   brandOptions: { label: string; value: string }[];
   onNameChange: (val: string) => void;
-  onFieldChange: (field: string, val: string) => void;
+  onFieldChange: HandleProductFieldChange;
   errors: Record<string, string>;
 }
 
@@ -155,7 +188,7 @@ const PricingSection = memo(({ price, comparePrice, cost, margin, onFieldChange,
   comparePrice?: number;
   cost?: number;
   margin: string;
-  onFieldChange: (field: string, val: number | string) => void;
+  onFieldChange: HandleProductFieldChange;
   errors: Record<string, string>;
 }) => (
   <section className="space-y-8">
@@ -208,7 +241,7 @@ const MediaSection = memo(({
   onColorChange,
   getColorHex
 }: {
-  images: { id?: string; url: string; publicId: string; isMain: boolean; variantColor?: string | null }[];
+  images: ProductFormImage[];
   onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSetMain: (idx: number) => void;
   onRemove: (idx: number) => void;
@@ -391,7 +424,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     { name: 'Camel', hex: '#C19A6B' },
   ];
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProductFormData>({
     description: product?.description ?? "",
     name: product?.name ?? "",
     slug: product?.slug ?? "",
@@ -401,9 +434,9 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     categoryId: product?.categoryId ?? "",
     brandId: product?.brandId ?? "",
     status: (product?.status as "ACTIVE" | "DRAFT" | "ARCHIVED") || "ACTIVE",
-    images: (product?.images ?? []) as { id?: string; url: string; publicId: string; isMain: boolean; variantColor?: string | null }[],
+    images: (product?.images ?? []) as ProductFormImage[],
     variants: (product?.variants ?? []) as Partial<Variant>[],
-    features: (product?.features ?? []) as { icon: string; title: string; description: string }[],
+    features: (product?.features ?? []) as ProductFeature[],
     details: (product?.details ?? []) as AccordionItem[],
   });
 
@@ -524,7 +557,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
     setFormData(prev => ({ ...prev, name, slug }));
   }, []);
 
-  const handleFieldChange = React.useCallback((field: string, value: any) => {
+  const handleFieldChange = React.useCallback(<K extends keyof ProductFormData,>(field: K, value: ProductFormData[K]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
@@ -560,7 +593,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
 
       // Convert images to base64
       const imageBase64List: string[] = [];
-      for (const img of (formData.images ?? []) as any[]) {
+      for (const img of formData.images ?? []) {
         if (img.base64) {
           imageBase64List.push(img.base64);
         } else if (img.file) {
@@ -599,7 +632,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
         images: imageBase64List,
       });
 
-      const returnedDesc = res.data.description || (res.data as any).data?.description;
+      const returnedDesc = res.data.description ?? res.data.data?.description;
       if (res.data.success && returnedDesc) {
         setFormData((prev) => ({
           ...prev,
@@ -877,14 +910,14 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
 
   const uniqueColors = useMemo(() => {
     const colors = formData.variants
-      ?.map((v: any) => v.color)
+      ?.map((v) => v.color)
       ?.filter(Boolean) || [];
     return [...new Set(colors)] as string[];
   }, [formData.variants]);
 
   const getColorHex = (colorName: string): string => {
     const variant = formData.variants?.find(
-      (v: any) => v.color?.toLowerCase() === colorName?.toLowerCase()
+      (v) => v.color?.toLowerCase() === colorName?.toLowerCase()
     );
     return variant?.colorHex || '#ccc';
   };
@@ -892,7 +925,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
   const handleImageColorChange = async (imageId: string, variantColor: string | null) => {
     setFormData(prev => ({
       ...prev,
-      images: prev.images.map((img: any) =>
+      images: prev.images.map((img) =>
         (img.id === imageId || img.publicId === imageId) ? { ...img, variantColor } : img
       )
     }));
@@ -1539,7 +1572,7 @@ export const ProductFormPanel = ({ product, isOpen, onClose, onSuccess }: Produc
                                 onMouseEnter={(e) => (e.currentTarget.style.background = '#f4f4f5')}
                                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                               >
-                                <span>Use: "{detail.title}"</span>
+                                <span>Use: &quot;{detail.title}&quot;</span>
                                 <i className="ti ti-corner-down-left" style={{ fontSize: '13px' }} aria-hidden="true" />
                               </li>
                             )}

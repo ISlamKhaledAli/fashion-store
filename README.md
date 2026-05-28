@@ -1,184 +1,272 @@
-# Fashion eCommerce Store
+# The Curator - Premium Fashion Commerce
 
-A full-stack, production-ready fashion eCommerce platform designed with a modern, cinematic aesthetic. This project features a scroll-driven frontend, a comprehensive admin dashboard, and a robust backend integrated with Stripe for secure payments.
+A full-stack fashion eCommerce platform with a cinematic storefront, AI-assisted shopping, a retail-grade admin dashboard, and a hardened Express/Prisma API. The project is built as two deployable apps: a Next.js frontend and a Node.js backend.
 
-## Project Overview
-- **Visual Excellence**: Modern scroll-driven frontend with cinematic animations using Framer Motion.
-- **Full-Stack Core**: Seamless integration between a Next.js frontend and an Express/Prisma backend.
-- **Production Ready**: Zero TypeScript errors, high test coverage, and complete feature parity.
-- **Admin Command Center**: A powerful, sleek dashboard for managing the entire store.
+Last updated: May 28, 2026
+
+## What Is New
+
+- Refined homepage hero with real navigation CTAs and first-viewport section preview.
+- Working mobile navigation menu for the storefront.
+- AI shopping assistant that can search catalog tools and respond in the customer's language.
+- AI size advisor with saved customer measurements.
+- AI product recommendations with cache and Prisma fallback.
+- Admin AI tools for product copy, details accordions, storyboard features, analytics insights, and store-management chat.
+- Expanded admin surface for customers, inventory, discounts, categories, brands, products, orders, analytics, and settings.
+- Updated documentation to match the current codebase, scripts, environment variables, and feature surface.
+
+## Product Surface
+
+### Storefront
+
+- Cinematic homepage with editorial sections, category discovery, featured products, brand story, and conversion CTAs.
+- Product listing with filters, search state, category/brand/color/price support, grid/list presentations, and URL-aware discovery flows.
+- Product detail pages with image gallery, lightbox, color-linked imagery, accordions, reviews, recommendations, wishlist actions, and size guidance.
+- Cart drawer and cart page with guest cart support, authenticated cart sync, promo validation, shipping methods, tax, and centralized pricing.
+- Multi-step checkout with shipping, review, Stripe payment, success flow, and order lifecycle support.
+- Account area for profile, orders, wishlist, addresses, and settings.
+- Static customer trust pages: about, editorial, archives, FAQ, shipping, returns, privacy, terms, and contact.
+- Responsive navigation, search overlay, chat assistant, and mobile menu.
+
+### Admin
+
+- Overview dashboard with analytics cards, revenue chart, top products, order breakdown, and AI insights.
+- Product management with variants, color swatches, image upload, Cloudinary media, AI-generated product copy, generated features, and detail accordions.
+- Order management with detail panels, timeline, fulfillment status, bulk updates, and customer context.
+- Inventory management with variant-level stock updates.
+- Category tree management with drag/reorder support and nested categories.
+- Brand management with logos, status, and product counts.
+- Discount/coupon management with minimum order, usage limits, active windows, and validation.
+- Customer management with spend/order history and account status controls.
+- Admin AI chat that can query live store data through backend tools.
+
+### Backend
+
+- Express 5 API with TypeScript, Prisma 7, PostgreSQL, JWT auth, cookies, CORS, Helmet, request logging, rate limiting, and centralized errors.
+- Stripe payments with webhook route mounted before JSON body parsing and webhook idempotency storage.
+- Cloudinary image upload service.
+- Nodemailer email service.
+- OpenRouter-powered AI services for customer chat, size advice, recommendations, copy generation, analytics, and admin chat.
+- Node-cron cleanup for abandoned/pending order maintenance.
+- Test suite for auth, cart, orders, pricing, and products.
 
 ## Tech Stack
 
-### Frontend
-- **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS 4
-- **Animations**: Framer Motion
-- **State Management**: Zustand
-- **API Client**: Axios
-- **Payments**: Stripe Elements
+| Area | Stack |
+| --- | --- |
+| Frontend | Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4 |
+| UI Motion | Framer Motion, lucide-react |
+| State | Zustand |
+| Data Client | Axios |
+| Payments | Stripe Elements and Stripe.js |
+| Admin Charts | Recharts |
+| 3D-ready deps | Three.js, React Three Fiber, Drei |
+| Backend | Node.js, Express 5, TypeScript |
+| Database | PostgreSQL with Prisma 7 |
+| Auth | JWT access and refresh tokens |
+| Media | Cloudinary |
+| Email | Nodemailer |
+| AI | OpenRouter-compatible chat completions |
+| Tests | Jest, Supertest, ts-jest |
 
-### Backend
-- **Environment**: Node.js, Express
-- **Language**: TypeScript
-- **ORM**: Prisma 7
-- **Database**: PostgreSQL (Supabase)
-- **Authentication**: JWT (Access + Refresh Tokens)
-- **Integrations**: Stripe, Cloudinary (Media), Nodemailer (Emails)
-- **Scheduler**: node-cron (Automated cleanup jobs)
+## Repository Layout
 
-## Features
-
-### Shop
-- **Cinematic Homepage**: Immersive scroll animations and editorial layouts.
-- **Product Discovery**: Dynamic listing with advanced category, brand, color, and price filters.
-- **Sticky Showcase**: Product detail pages with optimized sticky information panels.
-- **Cart System**: High-performance cart supporting both guest and authenticated users.
-- **Checkout**: Secure multi-step checkout powered by Stripe.
-- **Search**: Real-time product search with URL-synced filtering.
-- **Reviews & Wishlist**: User engagement features for social proof and saving favorites.
-
-### Account
-- **Personal Dashboard**: Overview of recent activity and order status.
-- **Order History**: Detailed tracking and historical record of all purchases.
-- **Address Book**: Manage multiple shipping addresses.
-- **Wishlist Management**: Personalized collection of saved items.
-
-### Admin Dashboard
-- **Analytics**: Revenue charts, top products, and customer geographic data.
-- **Product Management**: Full CRUD with Cloudinary image uploads and variant tracking.
-- **Order Fulfillment**: Bulk status updates and order tracking.
-- **Inventory & Discounts**: Real-time stock management and sophisticated coupon rules.
-- **Categories & Brands**: Structural management for store organization.
-
-## Project Structure
-
-### Frontend (`frontend/src`)
 ```text
-src/
-├── app/            # Next.js routes (shop, auth, admin)
-├── components/     # Atomic UI and feature-specific components
-├── hooks/          # Custom React hooks (hydration, product lists, etc.)
-├── lib/            # Axios instance, API wrappers, and utilities
-├── store/          # Zustand state management (cart, auth, search)
-└── types/          # Global TypeScript interfaces
+fashion-store/
+|-- README.md
+|-- vercel.json
+|-- backend/
+|   |-- prisma/
+|   |   |-- schema.prisma
+|   |   |-- seed.ts
+|   |   `-- migrations/
+|   |-- src/
+|   |   |-- controllers/
+|   |   |-- jobs/
+|   |   |-- lib/
+|   |   |-- middleware/
+|   |   |-- routes/
+|   |   |-- services/
+|   |   |-- utils/
+|   |   |-- validators/
+|   |   |-- app.module.ts
+|   |   `-- server.ts
+|   |-- tests/
+|   `-- package.json
+`-- frontend/
+    |-- src/
+    |   |-- app/
+    |   |-- components/
+    |   |-- hooks/
+    |   |-- lib/
+    |   |-- store/
+    |   `-- types/
+    |-- next.config.ts
+    `-- package.json
 ```
 
-### Backend (`backend/src`)
-```text
-src/
-├── controllers/    # Request handlers and business logic
-├── jobs/           # Automated background tasks (node-cron)
-├── lib/            # Database (Prisma) and library initializations
-├── middleware/     # Auth, Admin, Error handling, and Rate limiting
-├── routes/         # Express API route definitions
-├── services/       # Third-party integrations (Stripe, Cloudinary, Email)
-├── utils/          # Pricing logic, JWT, and common helpers
-└── validators/     # Zod schema definitions for input validation
-```
+## Requirements
 
-## Setup & Installation
+- Node.js 20.19+ recommended for the current Next.js dependency tree.
+- npm 10+
+- PostgreSQL database, Supabase works well.
+- Stripe account and webhook secret.
+- Cloudinary account for product media.
+- OpenRouter API key for AI features.
+- SMTP credentials if transactional email is enabled.
 
-### Prerequisites
-- Node.js (v18+)
-- PostgreSQL (via Supabase or local)
-- Stripe Account
-- Cloudinary Account
+## Installation
 
-### 1. Clone & Install
+Install each app separately from the repository root.
+
 ```bash
-git clone https://github.com/your-repo/fashion-store.git
-cd fashion-store
+cd backend
+npm install
 
-# Install Backend dependencies
-cd backend && npm install
-
-# Install Frontend dependencies
-cd ../frontend && npm install
+cd ../frontend
+npm install
 ```
 
-## Environment Variables
+## Environment
 
-### Backend (`backend/.env`)
-| Variable | Description |
-| :--- | :--- |
-| `DATABASE_URL` | PostgreSQL connection string |
-| `DIRECT_URL` | Direct connection string for Prisma migrations |
-| `JWT_SECRET` | Secret for Access Token generation |
-| `JWT_REFRESH_SECRET` | Secret for Refresh Token generation |
-| `STRIPE_SECRET_KEY` | Stripe private API key |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook secret for local/production events |
-| `CLOUDINARY_CLOUD_NAME` | Cloudinary account cloud name |
-| `CLOUDINARY_API_KEY` | Cloudinary API Key |
-| `CLOUDINARY_API_SECRET` | Cloudinary API Secret |
-| `CLIENT_URL` | Frontend URL (e.g., http://localhost:3000) |
-| `EMAIL_USER` | SMTP User for Nodemailer |
-| `EMAIL_PASS` | SMTP Password for Nodemailer |
+### Backend: `backend/.env`
 
-### Frontend (`frontend/.env.local`)
-| Variable | Description |
-| :--- | :--- |
-| `NEXT_PUBLIC_API_URL` | Backend API URL (e.g., http://localhost:5000/api) |
-| `NEXT_PUBLIC_STRIPE_KEY` | Stripe Publishable Key |
+| Variable | Required | Description |
+| --- | --- | --- |
+| `DATABASE_URL` | Yes | PostgreSQL pooled connection string |
+| `DIRECT_URL` | Optional | Direct database URL for migrations |
+| `DATABASE_URL_TEST` | Optional | Test database URL |
+| `DIRECT_URL_TEST` | Optional | Direct test database URL |
+| `JWT_SECRET` | Yes | Access token signing secret |
+| `JWT_REFRESH_SECRET` | Yes | Refresh token signing secret |
+| `STRIPE_SECRET_KEY` | Yes | Stripe secret key, starts with `sk_` |
+| `STRIPE_WEBHOOK_SECRET` | Yes | Stripe webhook secret, starts with `whsec_` |
+| `CLOUDINARY_CLOUD_NAME` | Yes | Cloudinary cloud name |
+| `CLOUDINARY_API_KEY` | Yes | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Yes | Cloudinary API secret |
+| `CLIENT_URL` | Yes | Frontend URL, for example `http://localhost:3000` |
+| `PORT` | Optional | Defaults to `5000` |
+| `NODE_ENV` | Optional | `development`, `production`, or `test` |
+| `OPENROUTER_API_KEY` | Yes | AI provider key |
+| `ANTHROPIC_API_KEY` | Optional | Reserved optional provider key |
+| `EMAIL_HOST` | Optional | SMTP host |
+| `EMAIL_PORT` | Optional | SMTP port |
+| `EMAIL_SECURE` | Optional | SMTP secure flag |
+| `EMAIL_USER` | Optional | SMTP username |
+| `EMAIL_PASS` | Optional | SMTP password |
 
-## Running Locally
+### Frontend: `frontend/.env.local`
 
-### Backend
+| Variable | Required | Description |
+| --- | --- | --- |
+| `NEXT_PUBLIC_API_URL` | Yes | Backend API base URL, for example `http://localhost:5000/api` |
+| `NEXT_PUBLIC_STRIPE_KEY` | Yes | Stripe publishable key |
+
+## Local Development
+
+Run the backend:
+
 ```bash
 cd backend
 npm run dev
-# Server runs on http://localhost:5000
 ```
 
-### Frontend
+Run the frontend in another terminal:
+
 ```bash
 cd frontend
 npm run dev
-# App runs on http://localhost:3000
 ```
 
-## Database
-We use **PostgreSQL via Supabase** with the **Prisma 7 ORM**.
+Default local URLs:
 
-- **Migrate**: `npx prisma migrate dev`
-- **Seed**: `npx ts-node prisma/seed.ts`
-- **Studio**: `npx prisma studio` (UI for database management)
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:5000/api`
+- Backend health check: `http://localhost:5000/health`
+
+## Database
+
+```bash
+cd backend
+npm run prisma:generate
+npm run prisma:migrate
+npm run seed
+```
+
+Useful Prisma commands:
+
+```bash
+npm run prisma:studio
+npm run prisma:generate
+```
+
+## Quality Gates
+
+Frontend:
+
+```bash
+cd frontend
+npm run lint
+npm run build
+```
+
+Backend:
+
+```bash
+cd backend
+npm run build
+npm test
+```
+
+The backend test command prepares the test database before running Jest.
 
 ## API Overview
 
-| Module | Base URL | Auth Required |
-| :--- | :--- | :--- |
-| Auth | `/api/auth` | No |
-| Products | `/api/products` | No |
-| Cart | `/api/cart` | Optional (Guest supported) |
-| Orders | `/api/orders` | Yes |
-| Payment | `/api/payment` | Yes |
-| Reviews | `/api/reviews` | Optional |
-| Wishlist | `/api/wishlist` | Yes |
-| Admin | `/api/admin` | Yes (Admin Only) |
+| Module | Base URL | Auth |
+| --- | --- | --- |
+| Auth | `/api/auth` | Public and user |
+| Products | `/api/products` | Public and admin mutation routes |
+| Recommendations | `/api/products/:id/recommendations` | Optional user context |
+| Categories | `/api/categories` | Public and admin mutation routes |
+| Brands | `/api/brands` | Public and admin mutation routes |
+| Cart | `/api/cart` | Guest and user |
+| Orders | `/api/orders` | User |
+| Payment | `/api/payment` | User plus Stripe webhook |
+| Reviews | `/api/reviews` | Optional read, authenticated write |
+| Wishlist | `/api/wishlist` | User |
+| Addresses | `/api/addresses` | User |
+| Upload | `/api/upload` | Admin |
+| Discounts | `/api/discounts` | Cart validation and admin |
+| Chat | `/api/chat` | Guest and user context |
+| Size | `/api/size` | Product sizing and saved measurements |
+| Admin | `/api/admin` | Admin |
+| Admin AI | `/api/admin/ai` | Admin |
 
-## Stripe Setup
-1. Obtain test keys from [Stripe Dashboard](https://dashboard.stripe.com).
-2. **Test Card**: Use `4242 4242 4242 4242` for all simulations.
-3. **Webhooks**: For local development, use the Stripe CLI:
-   `stripe listen --forward-to localhost:5000/api/payment/webhook`
+## Stripe Webhooks
 
-## Cloudinary Setup
-1. Create a free account at [Cloudinary](https://cloudinary.com).
-2. Navigate to the dashboard to find your **Cloud Name**, **API Key**, and **API Secret**.
-3. Add these to your backend `.env` file to enable image uploads.
+For local Stripe webhook testing:
+
+```bash
+stripe listen --forward-to localhost:5000/api/payment/webhook
+```
+
+Use Stripe test card `4242 4242 4242 4242` for successful payment simulations.
 
 ## Deployment
-- **Frontend**: Deploy to **Vercel** for optimal Next.js performance.
-- **Backend**: Deploy to **Railway** or **Render** (Node.js environment).
-- **Environment Variables**: Ensure all `.env` variables listed above are configured in your deployment platform.
 
-## Current Status
-- **✓ Feature Complete**: All core eCommerce and Admin features implemented.
-- **✓ Type Safe**: 0 TypeScript errors across the entire monorepo.
-- **✓ Lint Clean**: 0 ESLint errors in frontend and backend.
-- **✓ Mathematical Integrity**: Centralized pricing logic in `pricing.ts` for parity.
-- **✓ Resilient Checkout**: Guest cart support and Stripe payment lifecycle integration.
-- **✓ Automated Maintenance**: node-cron cleanup jobs connected and operational.
-- **✓ Communication**: Email confirmation service fully integrated into the order flow.
+- Frontend: Vercel is the natural target for the Next.js app.
+- Backend: Railway, Render, Fly.io, or another Node.js host.
+- Database: Supabase or managed PostgreSQL.
+- Media: Cloudinary.
+- Payments: Stripe Dashboard webhook endpoint pointed at the production backend.
+
+Configure environment variables separately for frontend and backend. The root `vercel.json` and `backend/vercel.json` exist, but verify deployment routing before production launch because the backend is an Express API and often deploys more cleanly on a dedicated Node runtime.
+
+## Operational Notes
+
+- The frontend rewrites `/api/:path*` to `NEXT_PUBLIC_API_URL`.
+- The payment router is mounted before JSON parsing so Stripe can validate the raw webhook body.
+- Pricing math is centralized in `backend/src/utils/pricing.ts`.
+- AI services require `OPENROUTER_API_KEY`; customer-facing flows should degrade gracefully when the provider is unavailable.
+- Guest carts are supported in the UI and can be included in AI shopping assistant context.
+- Recommendation results are cached in memory for 10 minutes and fall back to Prisma queries when AI is slow or unavailable.

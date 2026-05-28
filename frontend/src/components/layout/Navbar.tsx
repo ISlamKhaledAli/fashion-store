@@ -3,12 +3,11 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
-import { ShoppingBag, User, Menu } from "lucide-react";
+import { ShoppingBag, User, Menu, X, Search } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
-import { Search } from "lucide-react";
 import { useSearchStore } from "@/store/searchStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { SearchOverlay } from "./SearchOverlay";
@@ -21,6 +20,7 @@ export const Navbar = () => {
   const { isAuthenticated } = useAuthStore();
   const { onOpen: onSearchOpen } = useSearchStore();
   const { fetchWishlist } = useWishlistStore();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const height = useTransform(scrollY, [0, 80], ["70px", "56px"]);
   const backgroundColor = useTransform(
@@ -54,6 +54,13 @@ export const Navbar = () => {
     { name: "Editorial", href: "/editorial" },
     { name: "About", href: "/about" },
   ];
+
+  const accountHref = isMounted && isAuthenticated ? "/account" : "/login";
+
+  const handleSearchOpen = () => {
+    setIsMobileMenuOpen(false);
+    onSearchOpen();
+  };
 
   return (
     <motion.nav
@@ -94,8 +101,9 @@ export const Navbar = () => {
         <Button
           variant="icon"
           size="icon"
-          onClick={onSearchOpen}
+          onClick={handleSearchOpen}
           className="text-on-surface"
+          aria-label="Open search"
         >
           <Search size={20} strokeWidth={1.5} />
         </Button>
@@ -106,6 +114,7 @@ export const Navbar = () => {
           size="icon"
           onClick={() => toggleDrawer(true)}
           className="relative text-on-surface"
+          aria-label="Open cart"
         >
           <ShoppingBag size={20} strokeWidth={1.5} />
           <AnimatePresence>
@@ -123,19 +132,69 @@ export const Navbar = () => {
         </Button>
 
         <Link
-          href={isMounted && isAuthenticated ? "/account" : "/login"}
-          className="text-on-surface hover:scale-95 transition-all duration-500 ease-out flex items-center justify-center cursor-pointer"
+          href={accountHref}
+          className="flex h-10 w-10 items-center justify-center rounded-full text-on-surface transition-all duration-300 hover:scale-95 hover:bg-surface-container-lowest"
+          aria-label={isMounted && isAuthenticated ? "Open account" : "Sign in"}
         >
-          <Button variant="icon" size="icon">
-            <User size={20} strokeWidth={1.5} />
-          </Button>
+          <User size={20} strokeWidth={1.5} />
         </Link>
         
-        {/* Mobile Menu Toggle */}
-        <Button variant="icon" size="icon" className="md:hidden text-on-surface">
-          <Menu size={20} strokeWidth={1.5} />
+        <Button
+          variant="icon"
+          size="icon"
+          className="md:hidden text-on-surface"
+          onClick={() => setIsMobileMenuOpen((value) => !value)}
+          aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={isMobileMenuOpen}
+        >
+          {isMobileMenuOpen ? <X size={20} strokeWidth={1.5} /> : <Menu size={20} strokeWidth={1.5} />}
         </Button>
       </div>
+
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className={cn(
+              "fixed left-0 right-0 z-40 border-b border-outline-variant/20 bg-surface/95 px-6 py-6 shadow-xl shadow-black/5 backdrop-blur-xl md:hidden",
+              isScrolled ? "top-[56px]" : "top-[70px]"
+            )}
+          >
+            <div className="flex flex-col gap-1">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex min-h-12 items-center justify-between border-b border-outline-variant/10 text-lg font-medium text-on-surface"
+                >
+                  {link.name}
+                </Link>
+              ))}
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={handleSearchOpen}
+                className="min-h-12 border border-outline-variant text-sm font-bold uppercase text-on-surface transition-colors hover:bg-surface-container-low"
+              >
+                Search
+              </button>
+              <Link
+                href={accountHref}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex min-h-12 items-center justify-center bg-primary text-sm font-bold uppercase text-on-primary"
+              >
+                {isMounted && isAuthenticated ? "Account" : "Sign in"}
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <SearchOverlay />
     </motion.nav>
   );

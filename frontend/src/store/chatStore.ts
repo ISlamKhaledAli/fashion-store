@@ -7,7 +7,7 @@ export interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: number;
-  products?: any[];
+  products?: Record<string, unknown>[];
   isTrigger?: boolean;
   productId?: string;
 }

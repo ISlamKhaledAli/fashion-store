@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { AccountSidebar } from "@/components/account/AccountSidebar";
 import { orderApi, wishlistApi, sizeApi } from "@/lib/api";
-import { Order, WishlistItem } from "@/types";
+import { Order, UserMeasurements, WishlistItem } from "@/types";
 import { formatCurrency, cn } from "@/lib/utils";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -20,9 +20,9 @@ export default function AccountPage() {
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [measurements, setMeasurements] = useState<any>(null);
+  const [measurements, setMeasurements] = useState<UserMeasurements | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState<UserMeasurements>({});
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -376,7 +376,10 @@ export default function AccountPage() {
                 <MeasurementDisplay label="Chest" value={measurements.chestCm ? `${measurements.chestCm} cm` : "—"} />
                 <MeasurementDisplay label="Waist" value={measurements.waistCm ? `${measurements.waistCm} cm` : "—"} />
                 <MeasurementDisplay label="Hips" value={measurements.hipsCm ? `${measurements.hipsCm} cm` : "—"} />
-                <MeasurementDisplay label="Last Updated" value={new Date(measurements.updatedAt).toLocaleDateString()} />
+                <MeasurementDisplay
+                  label="Last Updated"
+                  value={measurements.updatedAt ? new Date(measurements.updatedAt).toLocaleDateString() : "—"}
+                />
               </div>
 
               <div className="flex gap-4 mt-8 pt-6 border-t border-outline-variant/10">

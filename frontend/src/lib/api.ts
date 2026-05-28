@@ -1,7 +1,7 @@
 import api from "./axios";
 import { 
   User, Category, Brand, Product, Order, 
-  WishlistItem, Review, ApiResponse, OrderStatus, AdminCustomer
+  WishlistItem, Review, ApiResponse, OrderStatus, AdminCustomer, UserMeasurements
 } from "@/types";
 
 export const authApi = {
@@ -176,7 +176,7 @@ export const adminApi = {
     colors?: string[];
     sizes?: string[];
     images?: string[];
-  }) => api.post<{ success: boolean; description: string }>("/admin/ai/generate-description", data, { withCredentials: true }),
+  }) => api.post<{ success: boolean; description?: string; data?: { description?: string } }>("/admin/ai/generate-description", data, { withCredentials: true }),
   generateAccordion: (data: {
     title: string;
     productName: string;
@@ -198,7 +198,7 @@ export const adminApi = {
 };
 
 export const sizeApi = {
-  getMeasurements: () => api.get<ApiResponse<any>>("/size/measurements"),
-  updateMeasurements: (data: Record<string, unknown>) => api.put<ApiResponse<any>>("/size/measurements", data),
-  clearMeasurements: () => api.delete<ApiResponse<any>>("/size/measurements"),
+  getMeasurements: () => api.get<ApiResponse<UserMeasurements | null>>("/size/measurements"),
+  updateMeasurements: (data: UserMeasurements) => api.put<ApiResponse<UserMeasurements>>("/size/measurements", data),
+  clearMeasurements: () => api.delete<ApiResponse<null>>("/size/measurements"),
 };

@@ -2,7 +2,8 @@
 
 import React, { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { Button } from "@/components/ui/Button";
+import Link from "next/link";
+import { ArrowRight, BookOpen } from "lucide-react";
 
 export const CTABanner = () => {
   const ref = useRef(null);
@@ -15,7 +16,7 @@ export const CTABanner = () => {
           initial={{ opacity: 0, y: 80 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="text-5xl md:text-8xl font-bold tracking-tighter text-on-surface mb-12"
+          className="text-5xl md:text-8xl font-bold text-on-surface mb-12"
         >
           Evolve your space.
         </motion.h2>
@@ -26,12 +27,20 @@ export const CTABanner = () => {
           transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           className="flex flex-col md:flex-row items-center justify-center gap-6"
         >
-          <Button size="lg" className="w-full md:w-auto px-12 py-5">
+          <Link
+            href="/products"
+            className="inline-flex min-h-14 w-full items-center justify-center gap-3 bg-primary px-12 py-5 text-[13px] font-bold uppercase text-on-primary shadow-lg shadow-primary/10 transition-transform duration-300 hover:scale-[0.98] md:w-auto"
+          >
             Start Exploring
-          </Button>
-          <Button variant="outline" size="lg" className="w-full md:w-auto px-12 py-5">
+            <ArrowRight size={18} strokeWidth={1.5} />
+          </Link>
+          <Link
+            href="/editorial"
+            className="inline-flex min-h-14 w-full items-center justify-center gap-3 border border-outline-variant px-12 py-5 text-[13px] font-bold uppercase text-on-surface transition-colors duration-300 hover:border-primary hover:bg-surface-container-low md:w-auto"
+          >
+            <BookOpen size={18} strokeWidth={1.5} />
             Read Journal
-          </Button>
+          </Link>
         </motion.div>
       </div>
     </section>
