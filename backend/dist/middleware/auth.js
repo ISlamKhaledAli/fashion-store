@@ -20,7 +20,7 @@ const authMiddleware = (req, res, next) => {
 exports.authMiddleware = authMiddleware;
 const adminMiddleware = (req, res, next) => {
     if (req.user?.role !== "ADMIN") {
-        throw new AppError_1.AuthError("Admin resource. Access denied");
+        throw new AppError_1.ForbiddenError("Access denied. Admin privileges required.");
     }
     next();
 };

@@ -1,7 +1,7 @@
 import request from "supertest";
 import app from "../src/app.module";
 import { prisma } from "../src/lib/prisma";
-import { createUser } from "./helpers/test-utils";
+import { cookieHeader, createUser } from "./helpers/test-utils";
 
 describe("Auth API", () => {
   it("registers a new user", async () => {
@@ -20,8 +20,12 @@ describe("Auth API", () => {
       email: "jane.doe@example.com",
       role: "CUSTOMER",
     });
-    expect(response.body.data.accessToken).toEqual(expect.any(String));
-    expect(response.body.data.refreshToken).toEqual(expect.any(String));
+    const cookies = response.headers["set-cookie"] || [];
+    const cookiesArray = Array.isArray(cookies) ? cookies : [cookies];
+    const hasAccessToken = cookiesArray.some((c: string) => c.startsWith("accessToken="));
+    const hasRefreshToken = cookiesArray.some((c: string) => c.startsWith("refreshToken="));
+    expect(hasAccessToken).toBe(true);
+    expect(hasRefreshToken).toBe(true);
 
     const createdUser = await prisma.user.findUnique({
       where: { email: "jane.doe@example.com" },
@@ -50,8 +54,12 @@ describe("Auth API", () => {
       email: user.email,
       role: user.role,
     });
-    expect(response.body.data.accessToken).toEqual(expect.any(String));
-    expect(response.body.data.refreshToken).toEqual(expect.any(String));
+    const cookies = response.headers["set-cookie"] || [];
+    const cookiesArray = Array.isArray(cookies) ? cookies : [cookies];
+    const hasAccessToken = cookiesArray.some((c: string) => c.startsWith("accessToken="));
+    const hasRefreshToken = cookiesArray.some((c: string) => c.startsWith("refreshToken="));
+    expect(hasAccessToken).toBe(true);
+    expect(hasRefreshToken).toBe(true);
   });
 
   it("refreshes an access token with a valid refresh token", async () => {
@@ -61,13 +69,19 @@ describe("Auth API", () => {
       password: "Password123!",
     });
 
-    const response = await request(app).post("/api/auth/refresh").send({
-      refreshToken: registerResponse.body.data.refreshToken,
-    });
+    const registerCookies = registerResponse.headers["set-cookie"] || [];
+    const registerCookiesArray = Array.isArray(registerCookies) ? registerCookies : [registerCookies];
+
+    const response = await request(app)
+      .post("/api/auth/refresh")
+      .set("Cookie", registerCookiesArray);
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
-    expect(response.body.data.accessToken).toEqual(expect.any(String));
+    const cookies = response.headers["set-cookie"] || [];
+    const cookiesArray = Array.isArray(cookies) ? cookies : [cookies];
+    const hasAccessToken = cookiesArray.some((c: string) => c.startsWith("accessToken="));
+    expect(hasAccessToken).toBe(true);
   });
 
   it("returns the authenticated user for /me", async () => {
@@ -78,7 +92,7 @@ describe("Auth API", () => {
 
     const response = await request(app)
       .get("/api/auth/me")
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("Cookie", cookieHeader(accessToken));
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);

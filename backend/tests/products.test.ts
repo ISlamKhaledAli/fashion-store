@@ -1,7 +1,7 @@
 import request from "supertest";
 import app from "../src/app.module";
 import {
-  bearerToken,
+  cookieHeader,
   createAdminUser,
   createCategory,
   createProductFixture,
@@ -41,7 +41,7 @@ describe("Products API", () => {
 
     const response = await request(app)
       .post("/api/products")
-      .set("Authorization", bearerToken(accessToken))
+      .set("Cookie", cookieHeader(accessToken))
       .send({
         name: "Blocked Product",
         description: "Customers should not create products",
@@ -71,7 +71,7 @@ describe("Products API", () => {
 
     const response = await request(app)
       .post("/api/products")
-      .set("Authorization", bearerToken(accessToken))
+      .set("Cookie", cookieHeader(accessToken))
       .send({
         name: "Admin Product",
         description: "Created from an integration test",

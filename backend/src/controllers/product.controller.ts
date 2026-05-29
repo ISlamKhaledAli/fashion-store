@@ -9,6 +9,8 @@ import { Prisma } from "@prisma/client";
 
 export const getProducts = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const currentSchemaRes = await prisma.$queryRawUnsafe('SELECT current_schema()').catch(() => []);
+    console.log("[CONTROLLER DB] current_schema =", JSON.stringify(currentSchemaRes));
     console.log("[DEBUG] Incoming Products Query:", req.query);
     const { 
       category, brand, minPrice, maxPrice, search, sort, page, limit, featured, color,

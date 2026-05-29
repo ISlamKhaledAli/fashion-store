@@ -1,3 +1,4 @@
+console.log("[SETUP TESTS] Executing setup-tests.ts script!");
 import { disconnectPrisma, prisma } from "../src/lib/prisma";
 
 jest.mock("../src/services/stripe", () => ({
@@ -44,26 +45,38 @@ jest.mock("../src/services/email", () => ({
 }));
 
 const resetDatabase = async () => {
-  await prisma.$executeRawUnsafe(`
-    TRUNCATE TABLE
-      "product_tags",
-      "order_items",
-      "orders",
-      "cart_items",
-      "carts",
-      "reviews",
-      "wishlists",
-      "product_images",
-      "variants",
-      "products",
-      "brands",
-      "categories",
-      "addresses",
-      "discounts",
-      "tags",
-      "users"
-    RESTART IDENTITY CASCADE;
-  `);
+  console.log("[RESET DB] Starting truncate...");
+  try {
+    const searchPathRes = await prisma.$queryRawUnsafe('SHOW search_path');
+    const currentSchemaRes = await prisma.$queryRawUnsafe('SELECT current_schema()');
+    console.log("[RESET DB] SHOW search_path =", JSON.stringify(searchPathRes));
+    console.log("[RESET DB] SELECT current_schema() =", JSON.stringify(currentSchemaRes));
+
+    await prisma.$executeRawUnsafe(`
+      TRUNCATE TABLE
+        "fashion_store_test"."product_tags",
+        "fashion_store_test"."order_items",
+        "fashion_store_test"."orders",
+        "fashion_store_test"."cart_items",
+        "fashion_store_test"."carts",
+        "fashion_store_test"."reviews",
+        "fashion_store_test"."wishlists",
+        "fashion_store_test"."product_images",
+        "fashion_store_test"."variants",
+        "fashion_store_test"."products",
+        "fashion_store_test"."brands",
+        "fashion_store_test"."categories",
+        "fashion_store_test"."addresses",
+        "fashion_store_test"."discounts",
+        "fashion_store_test"."tags",
+        "fashion_store_test"."users"
+      RESTART IDENTITY CASCADE;
+    `);
+    console.log("[RESET DB] Truncate successful!");
+  } catch (err) {
+    console.error("[RESET DB] Truncate failed!", err);
+    throw err;
+  }
 };
 
 beforeAll(async () => {

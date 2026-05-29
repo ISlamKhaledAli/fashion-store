@@ -1,7 +1,7 @@
 import request from "supertest";
 import app from "../src/app.module";
 import { prisma } from "../src/lib/prisma";
-import { bearerToken, createProductFixture, createUser } from "./helpers/test-utils";
+import { cookieHeader, createProductFixture, createUser } from "./helpers/test-utils";
 
 describe("Cart API", () => {
   it("adds an item to the authenticated user's cart", async () => {
@@ -10,7 +10,7 @@ describe("Cart API", () => {
 
     const response = await request(app)
       .post("/api/cart/add")
-      .set("Authorization", bearerToken(accessToken))
+      .set("Cookie", cookieHeader(accessToken))
       .send({
         variantId: variant.id,
         quantity: 2,
@@ -36,7 +36,7 @@ describe("Cart API", () => {
 
     const addResponse = await request(app)
       .post("/api/cart/add")
-      .set("Authorization", bearerToken(accessToken))
+      .set("Cookie", cookieHeader(accessToken))
       .send({
         variantId: variant.id,
         quantity: 1,
@@ -44,7 +44,7 @@ describe("Cart API", () => {
 
     const response = await request(app)
       .put("/api/cart/update")
-      .set("Authorization", bearerToken(accessToken))
+      .set("Cookie", cookieHeader(accessToken))
       .send({
         cartItemId: addResponse.body.data.id,
         quantity: 4,
@@ -61,7 +61,7 @@ describe("Cart API", () => {
 
     const addResponse = await request(app)
       .post("/api/cart/add")
-      .set("Authorization", bearerToken(accessToken))
+      .set("Cookie", cookieHeader(accessToken))
       .send({
         variantId: variant.id,
         quantity: 1,
@@ -69,7 +69,7 @@ describe("Cart API", () => {
 
     const response = await request(app)
       .delete(`/api/cart/remove/${addResponse.body.data.id}`)
-      .set("Authorization", bearerToken(accessToken));
+      .set("Cookie", cookieHeader(accessToken));
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);

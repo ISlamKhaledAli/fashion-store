@@ -45,7 +45,8 @@ export const FilterSidebar = ({ state, dispatch, isOpen, onClose, isMobile }: Fi
         // Fetch Categories
         const catRes = await categoryApi.getAll();
         if (catRes.data.success) {
-          setCategories(catRes.data.data.map((c: Category) => c.name));
+          const uniqueNames = Array.from(new Set(catRes.data.data.map((c: Category) => c.name.trim())));
+          setCategories(uniqueNames);
         }
 
         // Fetch Brands

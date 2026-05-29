@@ -1,7 +1,7 @@
 import request from "supertest";
 import app from "../src/app.module";
 import { prisma } from "../src/lib/prisma";
-import { bearerToken, createAddress, createProductFixture, createUser } from "./helpers/test-utils";
+import { cookieHeader, createAddress, createProductFixture, createUser } from "./helpers/test-utils";
 
 describe("Orders API", () => {
   it("creates an order from the current cart", async () => {
@@ -28,7 +28,7 @@ describe("Orders API", () => {
 
     const response = await request(app)
       .post("/api/orders")
-      .set("Authorization", bearerToken(accessToken))
+      .set("Cookie", cookieHeader(accessToken))
       .send({
         addressId: address.id,
         notes: "Please leave the parcel with reception",
@@ -108,7 +108,7 @@ describe("Orders API", () => {
 
     const response = await request(app)
       .put(`/api/orders/${order.id}/cancel`)
-      .set("Authorization", bearerToken(accessToken));
+      .set("Cookie", cookieHeader(accessToken));
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
@@ -145,7 +145,7 @@ describe("Orders API", () => {
 
     const response = await request(app)
       .post("/api/orders")
-      .set("Authorization", bearerToken(accessToken))
+      .set("Cookie", cookieHeader(accessToken))
       .send({
         addressId: address.id,
         stripePaymentId: "pi_bad_amount",
@@ -175,7 +175,7 @@ describe("Orders API", () => {
 
     const response = await request(app)
       .post("/api/orders")
-      .set("Authorization", bearerToken(accessToken))
+      .set("Cookie", cookieHeader(accessToken))
       .send({
         addressId: address.id,
         stripePaymentId: "pi_stolen",
@@ -193,7 +193,7 @@ describe("Orders API", () => {
 
       const response = await request(app)
         .post("/api/orders")
-        .set("Authorization", bearerToken(accessToken))
+        .set("Cookie", cookieHeader(accessToken))
         .send({
           addressId: address.id,
           items: [{ variantId: variant.id, productId: variant.productId, quantity: 0, price: 50 }]
@@ -210,7 +210,7 @@ describe("Orders API", () => {
 
       const response = await request(app)
         .post("/api/orders")
-        .set("Authorization", bearerToken(accessToken))
+        .set("Cookie", cookieHeader(accessToken))
         .send({
           addressId: address.id,
           items: [{ variantId: variant.id, productId: variant.productId, quantity: -1, price: 50 }]
@@ -226,7 +226,7 @@ describe("Orders API", () => {
 
       const response = await request(app)
         .post("/api/orders")
-        .set("Authorization", bearerToken(accessToken))
+        .set("Cookie", cookieHeader(accessToken))
         .send({
           addressId: address.id,
           items: [{ variantId: variant.id, productId: variant.productId, quantity: 1.5, price: 50 }]
@@ -243,7 +243,7 @@ describe("Orders API", () => {
       // Valid order for 2 items
       await request(app)
         .post("/api/orders")
-        .set("Authorization", bearerToken(accessToken))
+        .set("Cookie", cookieHeader(accessToken))
         .send({
           addressId: address.id,
           // Use DB cart instead of items body to reach the decrement logic safely
@@ -257,7 +257,7 @@ describe("Orders API", () => {
 
       const response = await request(app)
         .post("/api/orders")
-        .set("Authorization", bearerToken(accessToken))
+        .set("Cookie", cookieHeader(accessToken))
         .send({ addressId: address.id });
 
       expect(response.status).toBe(201);

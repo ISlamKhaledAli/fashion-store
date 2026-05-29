@@ -9,6 +9,9 @@ const nextValue = (prefix: string) => `${prefix}-${Date.now()}-${uniqueSequence+
 
 export const bearerToken = (token: string) => `Bearer ${token}`;
 
+export const cookieHeader = (token: string) => [`accessToken=${token}`];
+
+
 export const createUser = async ({
   role = "CUSTOMER",
   password = "Password123!",

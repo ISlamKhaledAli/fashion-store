@@ -13,6 +13,7 @@ const deriveSchemaScopedUrl = (connectionString, schema = DEFAULT_TEST_SCHEMA) =
 
   const url = new URL(connectionString);
   url.searchParams.set("schema", schema);
+  url.searchParams.set("options", `-c search_path=${schema}`);
   return url.toString();
 };
 
@@ -37,13 +38,11 @@ const ensureSchemaExists = async (connectionString) => {
 const main = async () => {
   dotenv.config({ path: path.join(rootDir, ".env") });
 
-  const databaseUrlTest =
-    process.env.DATABASE_URL_TEST ??
-    deriveSchemaScopedUrl(process.env.DATABASE_URL, DEFAULT_TEST_SCHEMA);
+  const rawDatabaseUrlTest = process.env.DATABASE_URL_TEST ?? process.env.DATABASE_URL;
+  const databaseUrlTest = deriveSchemaScopedUrl(rawDatabaseUrlTest, DEFAULT_TEST_SCHEMA);
 
-  const directUrlTest =
-    process.env.DIRECT_URL_TEST ??
-    deriveSchemaScopedUrl(process.env.DIRECT_URL ?? process.env.DATABASE_URL, DEFAULT_TEST_SCHEMA);
+  const rawDirectUrlTest = process.env.DIRECT_URL_TEST ?? process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+  const directUrlTest = deriveSchemaScopedUrl(rawDirectUrlTest, DEFAULT_TEST_SCHEMA);
 
   if (!databaseUrlTest) {
     throw new Error(
@@ -54,9 +53,9 @@ const main = async () => {
   const prismaEnv = {
     ...process.env,
     NODE_ENV: "test",
-    DATABASE_URL_TEST: databaseUrlTest,
+    DATABASE_URL_TEST: directUrlTest ?? databaseUrlTest,
     DIRECT_URL_TEST: directUrlTest ?? databaseUrlTest,
-    DATABASE_URL: databaseUrlTest,
+    DATABASE_URL: directUrlTest ?? databaseUrlTest,
     DIRECT_URL: directUrlTest ?? databaseUrlTest,
     JWT_SECRET: process.env.JWT_SECRET || "test-jwt-secret",
     JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || "test-refresh-secret",
@@ -70,7 +69,7 @@ const main = async () => {
 
   await ensureSchemaExists(prismaEnv.DIRECT_URL);
 
-  execSync("npx prisma migrate deploy", {
+  execSync("npx prisma db push --accept-data-loss", {
     cwd: rootDir,
     stdio: "inherit",
     env: prismaEnv,

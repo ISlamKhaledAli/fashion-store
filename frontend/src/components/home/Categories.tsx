@@ -138,28 +138,42 @@ export const Categories = () => {
             onScroll={checkScroll}
             className="flex gap-6 overflow-x-auto no-scrollbar snap-x snap-mandatory py-4 relative z-0 scroll-smooth"
           >
-            {categories.map((category, index) => (
-              <motion.div
-                key={category.id}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-15% 0px" }}
-                transition={{ duration: 0.8, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] as const }}
-                className="flex-shrink-0 w-[280px] sm:w-[350px] md:w-[400px] snap-start"
-              >
-                <Link
-                  href={`/products?category=${category.slug}`}
-                  className="group/card relative block aspect-3/4 overflow-hidden bg-surface-container-high transition-opacity duration-700 opacity-90 hover:opacity-100"
+            {categories.map((category, index) => {
+              const fallbackImage = FALLBACK_CATEGORIES.find((c) => c.slug === category.slug)?.image;
+              const imageSrc = category.image && typeof category.image === "string" && category.image.trim() !== ""
+                ? category.image
+                : fallbackImage;
+
+              return (
+                <motion.div
+                  key={category.id}
+                  initial={{ opacity: 0, y: 40 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-15% 0px" }}
+                  transition={{ duration: 0.8, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] as const }}
+                  className="flex-shrink-0 w-[280px] sm:w-[350px] md:w-[400px] snap-start"
                 >
-                  <Image
-                    src={category.image || ""}
-                    alt={category.name}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                    priority={index === 0}
-                    className="object-cover transition-transform duration-[0.6s] cinematic-ease group-hover/card:scale-105"
-                  />
-                  {/* Card Overlay from HTML Design */}
+                  <Link
+                    href={`/products?category=${category.slug}`}
+                    className="group/card relative block aspect-3/4 overflow-hidden bg-surface-container-high transition-opacity duration-700 opacity-90 hover:opacity-100"
+                  >
+                    {imageSrc ? (
+                      <Image
+                        src={imageSrc}
+                        alt={category.name}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        priority={index === 0}
+                        className="object-cover transition-transform duration-[0.6s] cinematic-ease group-hover/card:scale-105"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-tr from-surface-container-high to-surface-container flex items-center justify-center">
+                        <span className="text-on-surface-variant font-medium text-lg tracking-wider uppercase">
+                          {category.name}
+                        </span>
+                      </div>
+                    )}
+                    {/* Card Overlay from HTML Design */}
                   <div className="absolute inset-0 bg-black/5 opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 border-[1px] border-white/20" />
                   
                   <div className="absolute bottom-8 left-8 z-10 transition-transform duration-500 group-hover/card:-translate-y-2">
@@ -172,7 +186,8 @@ export const Categories = () => {
                   </div>
                 </Link>
               </motion.div>
-            ))}
+            );
+          })}
           </div>
         </div>
       </div>

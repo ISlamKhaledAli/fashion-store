@@ -9,6 +9,8 @@ const product_validator_1 = require("../validators/product.validator");
 const AppError_1 = require("../utils/AppError");
 const getProducts = async (req, res, next) => {
     try {
+        const currentSchemaRes = await prisma_1.prisma.$queryRawUnsafe('SELECT current_schema()').catch(() => []);
+        console.log("[CONTROLLER DB] current_schema =", JSON.stringify(currentSchemaRes));
         console.log("[DEBUG] Incoming Products Query:", req.query);
         const { category, brand, minPrice, maxPrice, search, sort, page, limit, featured, color, status } = req.query;
         const { skip, limit: take, page: currentPage } = (0, pagination_1.getPagination)({

@@ -10,18 +10,17 @@ const deriveSchemaScopedUrl = (connectionString?: string, schema = DEFAULT_TEST_
 
   const url = new URL(connectionString);
   url.searchParams.set("schema", schema);
+  url.searchParams.set("options", `-c search_path=${schema}`);
   return url.toString();
 };
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-const databaseUrlTest =
-  process.env.DATABASE_URL_TEST ??
-  deriveSchemaScopedUrl(process.env.DATABASE_URL, DEFAULT_TEST_SCHEMA);
+const rawDatabaseUrlTest = process.env.DATABASE_URL_TEST ?? process.env.DATABASE_URL;
+const databaseUrlTest = deriveSchemaScopedUrl(rawDatabaseUrlTest, DEFAULT_TEST_SCHEMA);
 
-const directUrlTest =
-  process.env.DIRECT_URL_TEST ??
-  deriveSchemaScopedUrl(process.env.DIRECT_URL ?? process.env.DATABASE_URL, DEFAULT_TEST_SCHEMA);
+const rawDirectUrlTest = process.env.DIRECT_URL_TEST ?? process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+const directUrlTest = deriveSchemaScopedUrl(rawDirectUrlTest, DEFAULT_TEST_SCHEMA);
 
 if (!databaseUrlTest) {
   throw new Error(
@@ -30,9 +29,9 @@ if (!databaseUrlTest) {
 }
 
 process.env.NODE_ENV = "test";
-process.env.DATABASE_URL_TEST = databaseUrlTest;
+process.env.DATABASE_URL_TEST = directUrlTest ?? databaseUrlTest;
 process.env.DIRECT_URL_TEST = directUrlTest ?? databaseUrlTest;
-process.env.DATABASE_URL = databaseUrlTest;
+process.env.DATABASE_URL = directUrlTest ?? databaseUrlTest;
 process.env.DIRECT_URL = directUrlTest ?? databaseUrlTest;
 process.env.JWT_SECRET ||= "test-jwt-secret";
 process.env.JWT_REFRESH_SECRET ||= "test-refresh-secret";

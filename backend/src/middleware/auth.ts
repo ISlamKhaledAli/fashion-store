@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../utils/jwt";
-import { AuthError } from "../utils/AppError";
+import { AuthError, ForbiddenError } from "../utils/AppError";
+
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const token = req.cookies?.accessToken;
@@ -20,7 +21,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
 
 export const adminMiddleware = (req: Request, res: Response, next: NextFunction) => {
   if (req.user?.role !== "ADMIN") {
-    throw new AuthError("Admin resource. Access denied");
+    throw new ForbiddenError("Access denied. Admin privileges required.");
   }
   next();
 };
