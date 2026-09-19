@@ -265,4 +265,8 @@ cd backend && npm run prisma:studio    # Visual DB browser
 7. **Frontend API calls** go through `lib/api.ts`, not direct axios/fetch.
 8. **Cart pricing** is server-authoritative via `/api/cart/calculate`. Frontend NEVER computes totals.
 9. **Auth flows** use HttpOnly cookies, not Authorization headers or localStorage tokens.
-10. **Test before committing**: `npm run build` in both apps, `npm test` in backend.
+10. **Test before committing**: `npm run build` in both apps, `npm test` in backend, and `npm run lint` in frontend.
+11. **No setState in useEffect body**: Never call `setState` synchronously inside an unconditional `useEffect` body (`react-hooks/set-state-in-effect`). Initialize state using a lazy function `useState(() => ...)` or derive values during render.
+12. **Escape JSX quotes and apostrophes**: Never leave raw `'` or `"` in JSX text (`react/no-unescaped-entities`). Always use `&apos;`, `&ldquo;`, `&rdquo;` or string literals `{"'"}`.
+13. **Strictly avoid `any` in frontend**: Do NOT use `: any` or `as any` (`@typescript-eslint/no-explicit-any`). Use TypeScript generics `<K extends keyof T>`, `unknown`, or concrete interfaces.
+14. **Always verify pre-commit lint**: Run `npx eslint --quiet src` before running `git commit` to ensure husky and lint-staged pass without friction.
