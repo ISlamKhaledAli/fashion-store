@@ -1,13 +1,23 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
-import { env } from "../utils/validateEnv";
+import { callOpenRouter, AI_MODELS } from "../services/ai.service";
+import logger from "../utils/logger";
 
-export const handleSizeRecommend = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const handleSizeRecommend = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { productId, messages } = req.body;
 
     if (!productId || !messages || !Array.isArray(messages)) {
-      res.status(400).json({ success: false, message: "productId and messages array are required" });
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: "productId and messages array are required",
+        });
       return;
     }
 
@@ -26,12 +36,14 @@ export const handleSizeRecommend = async (req: Request, res: Response, next: Nex
       return;
     }
 
-    const availableSizes = Array.from(new Set(product.variants.map((v) => v.size)));
+    const availableSizes = Array.from(
+      new Set(product.variants.map((v) => v.size))
+    );
     const brandSizingNote = product.brand?.name?.toLowerCase().includes("nike")
       ? "runs small, recommend sizing up"
       : product.brand?.name?.toLowerCase().includes("adidas")
-      ? "runs slightly large, recommend true to size or half size down"
-      : "true to size";
+        ? "runs slightly large, recommend true to size or half size down"
+        : "true to size";
 
     // 2. Fetch Saved User Measurements if authenticated
     let savedMeasurementsText = "No saved measurements yet";
@@ -88,15 +100,7 @@ Only include fields you actually collected. Never guess fields the user didn't p
 
 TONE: Friendly, confident, concise. Like a helpful friend who works in fashion â€” not a robot.`;
 
-    // 4. Dispatch query to OpenRouter Claude-3.5-sonnet/Claude-3.7-sonnet
-    const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
-    const requestHeaders: Record<string, string> = {
-      "Authorization": `Bearer ${env.OPENROUTER_API_KEY}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": env.CLIENT_URL || "http://localhost:3000",
-      "X-Title": "The Curator Size Advisor",
-    };
-
+    // 4. Dispatch query to OpenRouter
     const apiMessages = [
       { role: "system", content: systemPrompt },
       ...messages.map((m: any) => ({
@@ -105,28 +109,40 @@ TONE: Friendly, confident, concise. Like a helpful friend who works in fashion â
       })),
     ];
 
-    console.log(`[DEBUG] Dispatching Sizing query to OpenRouter...`);
-    const streamResponse = await fetch(openRouterUrl, {
-      method: "POST",
-      headers: requestHeaders,
-      body: JSON.stringify({
-        model: "anthropic/claude-3-haiku",
+    logger.debug("Dispatching Sizing query to OpenRouter...");
+    const streamResponse = await callOpenRouter(
+      {
+        model: AI_MODELS.HAIKU_3,
         messages: apiMessages,
         stream: true,
         max_tokens: 600,
         temperature: 0.7,
-      }),
-    });
+      },
+      { title: "The Curator Size Advisor" }
+    );
 
     if (!streamResponse.ok) {
       const errorText = await streamResponse.text();
-      console.error("[ERROR] OpenRouter sizing recommendation failed:", { status: streamResponse.status, errorText });
-      res.status(500).json({ success: false, message: "Failed to connect to AI recommendation service" });
+      logger.error("OpenRouter sizing recommendation failed", {
+        status: streamResponse.status,
+        errorText,
+      });
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to connect to AI recommendation service",
+        });
       return;
     }
 
     if (!streamResponse.body) {
-      res.status(500).json({ success: false, message: "Empty response body from AI stream" });
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Empty response body from AI stream",
+        });
       return;
     }
 
@@ -136,7 +152,7 @@ TONE: Friendly, confident, concise. Like a helpful friend who works in fashion â
     res.setHeader("Connection", "keep-alive");
 
     const decoder = new TextDecoder();
-    
+
     let fullText = "";
     let sentLength = 0;
 
@@ -155,7 +171,7 @@ TONE: Friendly, confident, concise. Like a helpful friend who works in fashion â
             try {
               const parsed = JSON.parse(dataStr);
               const content = parsed.choices?.[0]?.delta?.content || "";
-              
+
               if (content) {
                 fullText += content;
 
@@ -165,7 +181,9 @@ TONE: Friendly, confident, concise. Like a helpful friend who works in fashion â
                   // We hit a JSON segment! Emit only the text characters prior to the brace
                   const toSend = fullText.slice(sentLength, jsonStartIndex);
                   if (toSend) {
-                    res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: toSend } }] })}\n\n`);
+                    res.write(
+                      `data: ${JSON.stringify({ choices: [{ delta: { content: toSend } }] })}\n\n`
+                    );
                     sentLength = jsonStartIndex;
                   }
                 } else {
@@ -202,17 +220,33 @@ TONE: Friendly, confident, concise. Like a helpful friend who works in fashion â
         const jsonStr = fullText.slice(jsonStartIndex).trim();
         try {
           const parsedMeasurements = JSON.parse(jsonStr);
-          console.log("[DEBUG] Parsed user measurements from AI response:", parsedMeasurements);
+          logger.debug("Parsed user measurements from AI response", {
+            parsedMeasurements,
+          });
 
           if (userId) {
             // Upsert measurements into DB
-            const heightCm = parsedMeasurements.heightCm ? Math.round(Number(parsedMeasurements.heightCm)) : undefined;
-            const weightKg = parsedMeasurements.weightKg ? Number(parsedMeasurements.weightKg) : undefined;
-            const chestCm = parsedMeasurements.chestCm ? Math.round(Number(parsedMeasurements.chestCm)) : undefined;
-            const waistCm = parsedMeasurements.waistCm ? Math.round(Number(parsedMeasurements.waistCm)) : undefined;
-            const hipsCm = parsedMeasurements.hipsCm ? Math.round(Number(parsedMeasurements.hipsCm)) : undefined;
-            const shoeEU = parsedMeasurements.shoeEU ? Number(parsedMeasurements.shoeEU) : undefined;
-            const fitPreference = parsedMeasurements.fitPreference ? String(parsedMeasurements.fitPreference) : undefined;
+            const heightCm = parsedMeasurements.heightCm
+              ? Math.round(Number(parsedMeasurements.heightCm))
+              : undefined;
+            const weightKg = parsedMeasurements.weightKg
+              ? Number(parsedMeasurements.weightKg)
+              : undefined;
+            const chestCm = parsedMeasurements.chestCm
+              ? Math.round(Number(parsedMeasurements.chestCm))
+              : undefined;
+            const waistCm = parsedMeasurements.waistCm
+              ? Math.round(Number(parsedMeasurements.waistCm))
+              : undefined;
+            const hipsCm = parsedMeasurements.hipsCm
+              ? Math.round(Number(parsedMeasurements.hipsCm))
+              : undefined;
+            const shoeEU = parsedMeasurements.shoeEU
+              ? Number(parsedMeasurements.shoeEU)
+              : undefined;
+            const fitPreference = parsedMeasurements.fitPreference
+              ? String(parsedMeasurements.fitPreference)
+              : undefined;
 
             const updateObj: any = {};
             if (heightCm !== undefined) updateObj.heightCm = heightCm;
@@ -221,7 +255,8 @@ TONE: Friendly, confident, concise. Like a helpful friend who works in fashion â
             if (waistCm !== undefined) updateObj.waistCm = waistCm;
             if (hipsCm !== undefined) updateObj.hipsCm = hipsCm;
             if (shoeEU !== undefined) updateObj.shoeEU = shoeEU;
-            if (fitPreference !== undefined) updateObj.fitPreference = fitPreference;
+            if (fitPreference !== undefined)
+              updateObj.fitPreference = fitPreference;
 
             await prisma.userMeasurements.upsert({
               where: { userId },
@@ -233,29 +268,39 @@ TONE: Friendly, confident, concise. Like a helpful friend who works in fashion â
             });
 
             // Emit special SSE event triggering the green success toast on the client!
-            res.write(`data: ${JSON.stringify({ measurementsSaved: true, measurements: parsedMeasurements })}\n\n`);
+            res.write(
+              `data: ${JSON.stringify({ measurementsSaved: true, measurements: parsedMeasurements })}\n\n`
+            );
           }
         } catch (err) {
-          console.error("[ERROR] Failed to parse or record UserMeasurements JSON:", err);
+          logger.error("Failed to parse or record UserMeasurements JSON", {
+            error: err,
+          });
         }
       }
     } catch (streamError) {
-      console.error("[ERROR] Sizing stream failed:", streamError);
+      logger.error("Sizing stream failed", { error: streamError });
     } finally {
       res.write("data: [DONE]\n\n");
       res.end();
     }
   } catch (error) {
-    console.error("[ERROR] Sizing Recommendation failed:", error);
+    logger.error("Sizing Recommendation failed", { error });
     next(error);
   }
 };
 
-export const getMeasurements = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getMeasurements = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Authentication required" });
+      res
+        .status(401)
+        .json({ success: false, message: "Authentication required" });
       return;
     }
 
@@ -269,15 +314,29 @@ export const getMeasurements = async (req: Request, res: Response, next: NextFun
   }
 };
 
-export const updateMeasurements = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const updateMeasurements = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Authentication required" });
+      res
+        .status(401)
+        .json({ success: false, message: "Authentication required" });
       return;
     }
 
-    const { heightCm, weightKg, chestCm, waistCm, hipsCm, shoeEU, fitPreference } = req.body;
+    const {
+      heightCm,
+      weightKg,
+      chestCm,
+      waistCm,
+      hipsCm,
+      shoeEU,
+      fitPreference,
+    } = req.body;
 
     const data: any = {
       heightCm: heightCm ? Math.round(Number(heightCm)) : null,
@@ -304,11 +363,17 @@ export const updateMeasurements = async (req: Request, res: Response, next: Next
   }
 };
 
-export const clearMeasurements = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const clearMeasurements = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Authentication required" });
+      res
+        .status(401)
+        .json({ success: false, message: "Authentication required" });
       return;
     }
 
@@ -316,7 +381,9 @@ export const clearMeasurements = async (req: Request, res: Response, next: NextF
       where: { userId },
     });
 
-    res.status(200).json({ success: true, message: "Measurements deleted successfully" });
+    res
+      .status(200)
+      .json({ success: true, message: "Measurements deleted successfully" });
   } catch (error) {
     next(error);
   }

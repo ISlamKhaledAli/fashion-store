@@ -9,11 +9,16 @@ interface RatingDisplayProps {
   size?: number;
 }
 
-export const RatingDisplay = ({ rating, count = 0, className, size = 10 }: RatingDisplayProps) => {
+export const RatingDisplay = ({
+  rating,
+  count = 0,
+  className,
+  size = 10,
+}: RatingDisplayProps) => {
   if (rating === null || rating === undefined || count === 0) {
     return (
       <div className={cn("flex items-center", className)}>
-        <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">
+        <span className="text-[10px] font-bold tracking-widest text-on-surface-variant uppercase">
           No reviews yet
         </span>
       </div>
@@ -26,18 +31,20 @@ export const RatingDisplay = ({ rating, count = 0, className, size = 10 }: Ratin
     <div className={cn("flex items-center gap-1", className)}>
       <div className="flex">
         {[...Array(5)].map((_, i) => (
-          <Star 
-            key={i} 
-            size={size} 
+          <Star
+            key={i}
+            size={size}
             className={cn(
               "transition-all duration-300",
-              i < fullStars ? "fill-primary text-primary" : "text-outline-variant"
+              i < fullStars
+                ? "fill-primary text-primary"
+                : "text-outline-variant"
             )}
             strokeWidth={1.5}
           />
         ))}
       </div>
-      <span className="text-[10px] text-on-surface-variant ml-1 font-medium">
+      <span className="ml-1 text-[10px] font-medium text-on-surface-variant">
         ({count})
       </span>
     </div>

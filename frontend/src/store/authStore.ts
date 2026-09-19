@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { User } from "@/types";
+import type { User } from "@/types";
 
 interface AuthState {
   user: User | null;
@@ -23,9 +23,11 @@ export const useAuthStore = create<AuthState>()(
 
         // Merge guest cart with server cart
         try {
-          const { items, syncFromServer } = (await import("./cartStore")).useCartStore.getState();
+          const { items, syncFromServer } = (
+            await import("./cartStore")
+          ).useCartStore.getState();
           const { cartApi } = await import("@/lib/api");
-          
+
           if (items.length > 0) {
             // Push each local item to server
             for (const item of items) {
@@ -35,7 +37,7 @@ export const useAuthStore = create<AuthState>()(
                 // Silently ignore sync errors (likely duplicates on server)
               }
             }
-            
+
             // Fetch the final merged cart from server
             const serverCart = await cartApi.get();
             if (serverCart.data.success) {
@@ -53,7 +55,9 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
         });
         try {
-          import("./chatStore").then((m) => m.useChatStore.getState().clearChat());
+          import("./chatStore").then((m) =>
+            m.useChatStore.getState().clearChat()
+          );
         } catch (err) {
           console.error("Failed to clear chat on logout:", err);
         }

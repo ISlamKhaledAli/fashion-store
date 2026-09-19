@@ -1,7 +1,13 @@
 import React, { useState } from "react";
-import { Category } from "@/types";
+import type { Category } from "@/types";
 import { cn } from "@/lib/utils";
-import { GripVertical, ChevronDown, ChevronRight, Edit2, AlertCircle } from "lucide-react";
+import {
+  GripVertical,
+  ChevronDown,
+  ChevronRight,
+  Edit2,
+  AlertCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { TableImage } from "./TableImage";
 
@@ -22,7 +28,7 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
   isLoading,
   onAdd,
   page = 1,
-  itemsPerPage = 10
+  itemsPerPage = 10,
 }) => {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
@@ -37,11 +43,11 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
     setExpandedIds(newSet);
   };
 
-  const getSubcategories = (parentId: string) => 
-    categories.filter(c => c.parentId === parentId);
+  const getSubcategories = (parentId: string) =>
+    categories.filter((c) => c.parentId === parentId);
 
-  const rootCategories = categories.filter(c => !c.parentId);
-  
+  const rootCategories = categories.filter((c) => !c.parentId);
+
   const paginatedRootCategories = rootCategories.slice(
     (page - 1) * itemsPerPage,
     page * itemsPerPage
@@ -49,21 +55,21 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
 
   const renderSkeleton = () => (
     <div className="space-y-4">
-      {[1, 2, 3].map(i => (
+      {[1, 2, 3].map((i) => (
         <div key={i} className="flex flex-col gap-2">
-          <div className="flex items-center gap-4 p-4 rounded-lg bg-zinc-50 border border-zinc-100 animate-pulse">
-            <div className="w-4 h-4 bg-zinc-200 rounded shrink-0" />
-            <div className="w-10 h-10 bg-zinc-200 rounded border shrink-0" />
+          <div className="flex animate-pulse items-center gap-4 rounded-lg border border-zinc-100 bg-zinc-50 p-4">
+            <div className="h-4 w-4 shrink-0 rounded bg-zinc-200" />
+            <div className="h-10 w-10 shrink-0 rounded border bg-zinc-200" />
             <div className="flex-1 space-y-2">
-              <div className="h-4 bg-zinc-200 rounded w-1/3" />
-              <div className="h-2 bg-zinc-200 rounded w-1/4" />
+              <div className="h-4 w-1/3 rounded bg-zinc-200" />
+              <div className="h-2 w-1/4 rounded bg-zinc-200" />
             </div>
-            <div className="w-16 h-6 bg-zinc-200 rounded" />
+            <div className="h-6 w-16 rounded bg-zinc-200" />
           </div>
           {i === 1 && (
-            <div className="ml-16 border-l border-zinc-100 pl-6 space-y-2">
-              <div className="h-10 bg-zinc-50 rounded-lg max-w-[200px]" />
-              <div className="h-10 bg-zinc-50 rounded-lg max-w-[200px]" />
+            <div className="ml-16 space-y-2 border-l border-zinc-100 pl-6">
+              <div className="h-10 max-w-[200px] rounded-lg bg-zinc-50" />
+              <div className="h-10 max-w-[200px] rounded-lg bg-zinc-50" />
             </div>
           )}
         </div>
@@ -76,26 +82,32 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
     if (subs.length === 0) return null;
 
     return (
-      <div className="ml-16 mt-2 space-y-2 border-l border-zinc-100 pl-6">
-        {subs.map(sub => (
-          <div 
-            key={sub.id} 
+      <div className="mt-2 ml-16 space-y-2 border-l border-zinc-100 pl-6">
+        {subs.map((sub) => (
+          <div
+            key={sub.id}
             onClick={() => onEdit(sub)}
             className={cn(
-              "flex items-center gap-4 p-3 rounded-lg transition-colors cursor-pointer group/sub",
-              activeCategoryId === sub.id ? "bg-zinc-100 text-zinc-900 border border-zinc-200/50" : "hover:bg-zinc-50 text-zinc-600"
+              "group/sub flex cursor-pointer items-center gap-4 rounded-lg p-3 transition-colors",
+              activeCategoryId === sub.id
+                ? "border border-zinc-200/50 bg-zinc-100 text-zinc-900"
+                : "text-zinc-600 hover:bg-zinc-50"
             )}
           >
-            <GripVertical className="w-4 h-4 text-zinc-300" />
-            <p className={cn(
-              "text-sm flex-1",
-              activeCategoryId === sub.id ? "font-bold" : ""
-            )}>{sub.name}</p>
+            <GripVertical className="h-4 w-4 text-zinc-300" />
+            <p
+              className={cn(
+                "flex-1 text-sm",
+                activeCategoryId === sub.id ? "font-bold" : ""
+              )}
+            >
+              {sub.name}
+            </p>
             {/* Using a static mock count since Category type usually doesn't have _count */}
-            <span className="text-xs text-zinc-400 opacity-0 group-hover/sub:opacity-100 transition-opacity flex items-center pr-2">
+            <span className="flex items-center pr-2 text-xs text-zinc-400 opacity-0 transition-opacity group-hover/sub:opacity-100">
               Select
             </span>
-            <Edit2 className="w-3.5 h-3.5 text-zinc-400 group-hover/sub:text-zinc-700 transition-colors" />
+            <Edit2 className="h-3.5 w-3.5 text-zinc-400 transition-colors group-hover/sub:text-zinc-700" />
           </div>
         ))}
       </div>
@@ -109,47 +121,66 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
 
     return (
       <div className="group" key={cat.id}>
-        <div 
+        <div
           onClick={() => onEdit(cat)}
           className={cn(
-            "flex items-center gap-4 p-4 rounded-lg transition-colors cursor-pointer border",
-            isActive ? "bg-zinc-100 border-zinc-200" : "bg-white hover:bg-zinc-50 border-transparent shadow-[0_2px_10px_rgba(0,0,0,0.01)] hover:shadow-sm"
+            "flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors",
+            isActive
+              ? "border-zinc-200 bg-zinc-100"
+              : "border-transparent bg-white shadow-[0_2px_10px_rgba(0,0,0,0.01)] hover:bg-zinc-50 hover:shadow-sm"
           )}
         >
-          <GripVertical className="text-zinc-300 shrink-0 w-4 h-4" />
-          
-          <Button 
+          <GripVertical className="h-4 w-4 shrink-0 text-zinc-300" />
+
+          <Button
             variant="none"
             size="none"
             type="button"
-            onClick={(e: React.MouseEvent) => hasChildren ? toggleExpand(cat.id, e) : undefined}
+            onClick={(e: React.MouseEvent) =>
+              hasChildren ? toggleExpand(cat.id, e) : undefined
+            }
             className={cn(
-              "p-1 -ml-1 rounded transition-colors",
-              hasChildren ? "hover:bg-zinc-200 text-zinc-500 cursor-pointer" : "text-zinc-300 cursor-default opacity-50"
+              "-ml-1 rounded p-1 transition-colors",
+              hasChildren
+                ? "cursor-pointer text-zinc-500 hover:bg-zinc-200"
+                : "cursor-default text-zinc-300 opacity-50"
             )}
           >
-            {isExpanded && hasChildren ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            {isExpanded && hasChildren ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
           </Button>
 
-          <TableImage 
+          <TableImage
             src={cat.image}
             alt={cat.name}
             active={isActive}
             containerClassName="w-10 h-10 rounded-md border border-zinc-200/50 shadow-sm"
           />
 
-          <div className="flex-1 min-w-0">
-            <p className={cn("text-sm truncate", isActive ? "font-bold text-zinc-950" : "font-semibold text-zinc-900")}>
+          <div className="min-w-0 flex-1">
+            <p
+              className={cn(
+                "truncate text-sm",
+                isActive
+                  ? "font-bold text-zinc-950"
+                  : "font-semibold text-zinc-900"
+              )}
+            >
               {cat.name}
             </p>
-            <p className="text-[10px] text-zinc-400 uppercase tracking-widest truncate">/collections/{cat.slug || cat.name.toLowerCase()}</p>
+            <p className="truncate text-[10px] tracking-widest text-zinc-400 uppercase">
+              /collections/{cat.slug || cat.name.toLowerCase()}
+            </p>
           </div>
 
-          <div className="text-right flex items-center gap-3">
-             <span className="text-xs font-medium text-zinc-500 bg-zinc-100 px-2 py-1 rounded hidden sm:inline-block">
-               {hasChildren ? "Parent Node" : "Leaf Node"}
-             </span>
-             <Edit2 className="w-4 h-4 text-zinc-300 group-hover:text-zinc-600 transition-colors" />
+          <div className="flex items-center gap-3 text-right">
+            <span className="hidden rounded bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-500 sm:inline-block">
+              {hasChildren ? "Parent Node" : "Leaf Node"}
+            </span>
+            <Edit2 className="h-4 w-4 text-zinc-300 transition-colors group-hover:text-zinc-600" />
           </div>
         </div>
 
@@ -159,11 +190,17 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
   };
 
   return (
-    <div className="bg-white p-8 rounded-xl transition-all duration-600 shadow-[0_2px_40px_rgba(0,0,0,0.02)] border border-zinc-100">
-      <div className="flex items-center justify-between mb-8">
-        <h3 className="text-lg font-medium text-zinc-900">Category Hierarchy</h3>
+    <div className="rounded-xl border border-zinc-100 bg-white p-8 shadow-[0_2px_40px_rgba(0,0,0,0.02)] transition-all duration-600">
+      <div className="mb-8 flex items-center justify-between">
+        <h3 className="text-lg font-medium text-zinc-900">
+          Category Hierarchy
+        </h3>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setExpandedIds(new Set())}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setExpandedIds(new Set())}
+          >
             Collapse All
           </Button>
         </div>
@@ -172,16 +209,21 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
       {isLoading ? (
         renderSkeleton()
       ) : rootCategories.length === 0 ? (
-         <div className="py-20 flex flex-col items-center justify-center text-center">
-            <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mb-4">
-              <AlertCircle className="w-8 h-8 text-zinc-300 mb-1" />
-            </div>
-            <h4 className="text-sm font-bold text-zinc-900">No collections found</h4>
-            <p className="text-xs text-zinc-500 mt-1 max-w-[250px] mb-6">Initialize the catalog hierarchy by adding your first parent category.</p>
-            <Button variant="primary" onClick={onAdd}>
-              Initialize Collection
-            </Button>
-         </div>
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-50">
+            <AlertCircle className="mb-1 h-8 w-8 text-zinc-300" />
+          </div>
+          <h4 className="text-sm font-bold text-zinc-900">
+            No collections found
+          </h4>
+          <p className="mt-1 mb-6 max-w-[250px] text-xs text-zinc-500">
+            Initialize the catalog hierarchy by adding your first parent
+            category.
+          </p>
+          <Button variant="primary" onClick={onAdd}>
+            Initialize Collection
+          </Button>
+        </div>
       ) : (
         <div className="space-y-3">
           {paginatedRootCategories.map(renderCategory)}

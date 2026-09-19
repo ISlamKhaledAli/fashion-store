@@ -9,23 +9,25 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 export const Footer = () => {
-  const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !email.includes('@')) return;
-    
-    setStatus('loading');
+    if (!email || !email.includes("@")) return;
+
+    setStatus("loading");
     try {
       // For now: just simulate success (no backend endpoint yet)
-      await new Promise(r => setTimeout(r, 800));
-      setStatus('success');
-      setEmail('');
-      setTimeout(() => setStatus('idle'), 3000);
+      await new Promise((r) => setTimeout(r, 800));
+      setStatus("success");
+      setEmail("");
+      setTimeout(() => setStatus("idle"), 3000);
     } catch {
-      setStatus('error');
-      setTimeout(() => setStatus('idle'), 3000);
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 3000);
     }
   };
 
@@ -53,62 +55,72 @@ export const Footer = () => {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] as const }}
-      className="bg-surface-container-low w-full py-24 px-8 mt-24 border-t border-outline-variant/10"
+      className="mt-24 w-full border-t border-outline-variant/10 bg-surface-container-low px-8 py-24"
     >
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start gap-16 mb-24">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-24 flex flex-col items-start justify-between gap-16 md:flex-row">
           <div className="max-w-sm space-y-8">
             <div className="text-2xl font-bold tracking-tighter text-on-surface">
               CURATOR
             </div>
-            <p className="text-on-surface-variant text-sm tracking-wide leading-relaxed">
-              A multi-disciplinary studio focusing on the intersection of modern utility and timeless aesthetics.
+            <p className="text-sm leading-relaxed tracking-wide text-on-surface-variant">
+              A multi-disciplinary studio focusing on the intersection of modern
+              utility and timeless aesthetics.
             </p>
-            <form onSubmit={handleSubscribe} className="w-full max-w-[320px] space-y-3">
-              <div className="relative group">
-                <Input 
+            <form
+              onSubmit={handleSubscribe}
+              className="w-full max-w-[320px] space-y-3"
+            >
+              <div className="group relative">
+                <Input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Subscribe to Editorial" 
-                  className="bg-white/50 focus:bg-white transition-colors duration-300 pr-12"
-                  disabled={status === 'loading' || status === 'success'}
+                  placeholder="Subscribe to Editorial"
+                  className="bg-white/50 pr-12 transition-colors duration-300 focus:bg-white"
+                  disabled={status === "loading" || status === "success"}
                 />
                 <Button
                   type="submit"
                   variant="none"
-                  disabled={status !== 'idle' || !email.includes('@')}
+                  disabled={status !== "idle" || !email.includes("@")}
                   className={cn(
-                    "absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 p-0",
-                    status === 'idle' ? "bg-zinc-950 text-white hover:scale-110" : "bg-zinc-100 text-zinc-400"
+                    "absolute top-1/2 right-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full p-0 transition-all duration-300",
+                    status === "idle"
+                      ? "bg-zinc-950 text-white hover:scale-110"
+                      : "bg-zinc-100 text-zinc-400"
                   )}
                 >
-                  {status === 'loading' ? (
-                    <div className="w-4 h-4 border-2 border-zinc-400/30 border-t-zinc-400 rounded-full animate-spin" />
-                  ) : status === 'success' ? (
-                    <span className="material-symbols-outlined text-sm text-green-600">check</span>
+                  {status === "loading" ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-400/30 border-t-zinc-400" />
+                  ) : status === "success" ? (
+                    <span className="material-symbols-outlined text-sm text-green-600">
+                      check
+                    </span>
                   ) : (
-                    <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                    <span className="material-symbols-outlined text-sm">
+                      arrow_forward
+                    </span>
                   )}
                 </Button>
               </div>
               <AnimatePresence>
-                {status === 'success' && (
-                  <motion.p 
+                {status === "success" && (
+                  <motion.p
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    className="text-[10px] font-bold text-green-600 uppercase tracking-widest pl-1"
+                    className="pl-1 text-[10px] font-bold tracking-widest text-green-600 uppercase"
                   >
                     ✓ Subscribed!
                   </motion.p>
                 )}
-                {status === 'error' && (
-                  <motion.p 
+                {status === "error" && (
+                  <motion.p
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
-                    className="text-[10px] font-bold text-red-600 uppercase tracking-widest pl-1"
+                    className="pl-1 text-[10px] font-bold tracking-widest text-red-600 uppercase"
                   >
                     Try again
                   </motion.p>
@@ -117,10 +129,10 @@ export const Footer = () => {
             </form>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-16 md:gap-24">
+          <div className="grid grid-cols-2 gap-16 md:gap-24 lg:grid-cols-3">
             {Object.entries(footerLinks).map(([title, links]) => (
               <div key={title} className="space-y-6">
-                <h5 className="text-on-surface font-bold text-xs uppercase tracking-widest">
+                <h5 className="text-xs font-bold tracking-widest text-on-surface uppercase">
                   {title}
                 </h5>
                 <nav className="flex flex-col gap-4">
@@ -128,7 +140,7 @@ export const Footer = () => {
                     <Link
                       key={link.name}
                       href={link.href}
-                      className="text-on-surface-variant hover:text-primary hover:underline underline-offset-4 decoration-1 transition-all text-sm"
+                      className="text-sm text-on-surface-variant decoration-1 underline-offset-4 transition-all hover:text-primary hover:underline"
                     >
                       {link.name}
                     </Link>
@@ -139,13 +151,21 @@ export const Footer = () => {
           </div>
         </div>
 
-        <div className="pt-12 border-t border-outline-variant/10 flex flex-col md:flex-row justify-between items-center gap-8">
-          <p className="text-on-surface-variant text-[11px] uppercase tracking-widest font-medium">
+        <div className="flex flex-col items-center justify-between gap-8 border-t border-outline-variant/10 pt-12 md:flex-row">
+          <p className="text-[11px] font-medium tracking-widest text-on-surface-variant uppercase">
             © {new Date().getFullYear()} Curator Editorial. All Rights Reserved.
           </p>
           <div className="flex gap-8">
-            <Globe className="text-on-surface-variant/40 cursor-pointer hover:text-primary transition-colors" size={20} strokeWidth={1.5} />
-            <Share2 className="text-on-surface-variant/40 cursor-pointer hover:text-primary transition-colors" size={20} strokeWidth={1.5} />
+            <Globe
+              className="cursor-pointer text-on-surface-variant/40 transition-colors hover:text-primary"
+              size={20}
+              strokeWidth={1.5}
+            />
+            <Share2
+              className="cursor-pointer text-on-surface-variant/40 transition-colors hover:text-primary"
+              size={20}
+              strokeWidth={1.5}
+            />
           </div>
         </div>
       </div>

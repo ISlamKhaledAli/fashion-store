@@ -28,21 +28,34 @@ const containerVariants = {
   },
 };
 
-export const ProductGrid = ({ children, className, isLoading, viewMode = "grid" }: ProductGridProps) => {
+export const ProductGrid = ({
+  children,
+  className,
+  isLoading,
+  viewMode = "grid",
+}: ProductGridProps) => {
   return (
     <div className={cn("relative min-h-[400px]", className)}>
       <AnimatePresence mode="wait">
         <motion.div
-          key={viewMode === "grid" ? (isLoading ? "grid-loading" : "grid-results") : (isLoading ? "list-loading" : "list-results")}
+          key={
+            viewMode === "grid"
+              ? isLoading
+                ? "grid-loading"
+                : "grid-results"
+              : isLoading
+                ? "list-loading"
+                : "list-results"
+          }
           variants={containerVariants}
           initial="hidden"
           animate="visible"
           exit="exit"
           className={cn(
             "transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
-            viewMode === "grid" 
-              ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-y-16 gap-x-8" 
-              : "flex flex-col gap-16 max-w-5xl mx-auto"
+            viewMode === "grid"
+              ? "grid grid-cols-1 gap-x-8 gap-y-16 md:grid-cols-2 xl:grid-cols-3"
+              : "mx-auto flex max-w-5xl flex-col gap-16"
           )}
         >
           {children}

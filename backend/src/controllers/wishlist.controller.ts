@@ -2,25 +2,36 @@ import { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
 import { sendResponse } from "../utils/apiResponse";
 import { NotFoundError } from "../utils/AppError";
+import { isNotFoundError } from "../utils/prismaErrors";
 
-export const getWishlist = async (req: Request, res: Response, next: NextFunction) => {
+export const getWishlist = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const userId = req.user?.id;
     const wishlist = await prisma.wishlist.findMany({
       where: { userId },
-      include: { 
-        product: { 
-          include: { 
+      include: {
+        product: {
+          include: {
             category: { select: { name: true, slug: true } },
             brand: { select: { name: true, slug: true } },
             images: { where: { isMain: true }, take: 1 },
-            variants: { 
-              select: { id: true, size: true, color: true, colorHex: true, stock: true },
-              take: 1
+            variants: {
+              select: {
+                id: true,
+                size: true,
+                color: true,
+                colorHex: true,
+                stock: true,
+              },
+              take: 1,
             },
-            _count: { select: { reviews: true } }
-          } 
-        } 
+            _count: { select: { reviews: true } },
+          },
+        },
       },
     });
     return sendResponse({ res, status: 200, success: true, data: wishlist });
@@ -29,7 +40,11 @@ export const getWishlist = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const addToWishlist = async (req: Request, res: Response, next: NextFunction) => {
+export const addToWishlist = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const userId = req.user?.id as string;
     const { productId } = req.body;
@@ -48,13 +63,22 @@ export const addToWishlist = async (req: Request, res: Response, next: NextFunct
       },
     });
 
-    return sendResponse({ res, status: 201, success: true, data: wishlistItem });
+    return sendResponse({
+      res,
+      status: 201,
+      success: true,
+      data: wishlistItem,
+    });
   } catch (error) {
     next(error);
   }
 };
 
-export const removeFromWishlist = async (req: Request, res: Response, next: NextFunction) => {
+export const removeFromWishlist = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const userId = req.user?.id as string;
     const { productId } = req.params;
@@ -68,10 +92,15 @@ export const removeFromWishlist = async (req: Request, res: Response, next: Next
       },
     });
 
-    return sendResponse({ res, status: 200, success: true, message: "Removed from wishlist" });
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Removed from wishlist",
+    });
   } catch (error) {
-    if (error instanceof Error && (error as any).code === "P2025") {
-      throw new NotFoundError("Item not found in wishlist");
+    if (isNotFoundError(error)) {
+      return next(new NotFoundError("Item not found in wishlist"));
     }
     next(error);
   }

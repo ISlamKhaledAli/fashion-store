@@ -2,9 +2,9 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'CUSTOMER' | 'ADMIN';
+  role: "CUSTOMER" | "ADMIN";
   avatar?: string;
-  status: 'ACTIVE' | 'BANNED';
+  status: "ACTIVE" | "BANNED";
 }
 
 export interface Category {
@@ -15,7 +15,7 @@ export interface Category {
   description?: string;
   parentId?: string | null;
   position?: number;
-  status?: 'ACTIVE' | 'HIDDEN';
+  status?: "ACTIVE" | "HIDDEN";
   children?: Category[];
   _count?: {
     products: number;
@@ -28,7 +28,7 @@ export interface Brand {
   slug: string;
   logo?: string;
   description?: string;
-  status?: 'ACTIVE' | 'INACTIVE';
+  status?: "ACTIVE" | "INACTIVE";
   _count?: {
     products: number;
   };
@@ -124,8 +124,9 @@ export interface Address {
   phone?: string;
 }
 
-export type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
-export type PaymentStatus = 'UNPAID' | 'PAID' | 'FAILED' | 'REFUNDED';
+export type OrderStatus =
+  "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "REFUNDED";
+export type PaymentStatus = "UNPAID" | "PAID" | "FAILED" | "REFUNDED";
 
 export interface Order {
   id: string;
@@ -205,6 +206,6 @@ export interface AdminCustomer {
   totalOrders: number;
   totalSpent: number;
   joinDate: string;
-  status: 'ACTIVE' | 'BANNED';
+  status: "ACTIVE" | "BANNED";
   orders?: CustomerOrder[];
 }

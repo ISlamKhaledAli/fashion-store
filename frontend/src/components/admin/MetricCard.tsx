@@ -14,14 +14,22 @@ interface MetricCardProps {
   trend?: number;
   trendDirection?: "up" | "down";
   sparkline?: React.ReactNode;
-  avatars?: { name: string; avatar?: string; }[];
+  avatars?: { name: string; avatar?: string }[];
   progressBar?: number;
   href?: string;
   icon?: React.ReactNode;
   color?: string;
 }
 
-const AnimatedNumber = ({ value, prefix = "", suffix = "" }: { value: number; prefix?: string; suffix?: string }) => {
+const AnimatedNumber = ({
+  value,
+  prefix = "",
+  suffix = "",
+}: {
+  value: number;
+  prefix?: string;
+  suffix?: string;
+}) => {
   const motionValue = useMotionValue(0);
   const springValue = useSpring(motionValue, {
     damping: 30,
@@ -30,7 +38,10 @@ const AnimatedNumber = ({ value, prefix = "", suffix = "" }: { value: number; pr
   const [displayValue, setDisplayValue] = useState("0");
 
   useEffect(() => {
-    const controls = animate(motionValue, value, { duration: 2, ease: [0.16, 1, 0.3, 1] as const });
+    const controls = animate(motionValue, value, {
+      duration: 2,
+      ease: [0.16, 1, 0.3, 1] as const,
+    });
     return controls.stop;
   }, [value, motionValue]);
 
@@ -38,108 +49,142 @@ const AnimatedNumber = ({ value, prefix = "", suffix = "" }: { value: number; pr
     return springValue.on("change", (latest) => {
       // Force 2 decimals for currency ($)
       const isCurrency = prefix === "$";
-      setDisplayValue(latest.toLocaleString(undefined, { 
-        minimumFractionDigits: isCurrency ? 2 : (value % 1 === 0 ? 0 : 2),
-        maximumFractionDigits: isCurrency ? 2 : (value % 1 === 0 ? 0 : 2) 
-      }));
+      setDisplayValue(
+        latest.toLocaleString(undefined, {
+          minimumFractionDigits: isCurrency ? 2 : value % 1 === 0 ? 0 : 2,
+          maximumFractionDigits: isCurrency ? 2 : value % 1 === 0 ? 0 : 2,
+        })
+      );
     });
   }, [springValue, value, prefix]);
 
-  const [whole, decimal] = displayValue.split('.');
+  const [whole, decimal] = displayValue.split(".");
 
   if (prefix === "$") {
     return (
       <span className="inline-flex items-baseline tabular-nums">
-        <span className="text-zinc-500 mr-[1px] select-none text-[0.6em] font-medium leading-none align-baseline">{prefix}</span>
+        <span className="mr-[1px] align-baseline text-[0.6em] leading-none font-medium text-zinc-500 select-none">
+          {prefix}
+        </span>
         <span className="text-zinc-950">{whole}</span>
-        {decimal && <span className="text-zinc-400 font-medium tracking-tight text-[0.8em]">.{decimal}</span>}
+        {decimal && (
+          <span className="text-[0.8em] font-medium tracking-tight text-zinc-400">
+            .{decimal}
+          </span>
+        )}
         {suffix && <span className="ml-1 text-zinc-400">{suffix}</span>}
       </span>
     );
   }
 
-  return <span className="tabular-nums">{prefix}{displayValue}{suffix}</span>;
+  return (
+    <span className="tabular-nums">
+      {prefix}
+      {displayValue}
+      {suffix}
+    </span>
+  );
 };
 
-export const MetricCard = ({ 
-  title, 
-  value, 
-  prefix, 
-  suffix, 
-  trend, 
-  trendDirection = "up", 
-  sparkline, 
+export const MetricCard = ({
+  title,
+  value,
+  prefix,
+  suffix,
+  trend,
+  trendDirection = "up",
+  sparkline,
   avatars,
   progressBar,
   href,
   icon,
-  color
+  color,
 }: MetricCardProps) => {
   const CardContent = (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-zinc-100 flex flex-col gap-2 relative overflow-hidden group/card min-h-[170px] transition-all duration-500 hover:shadow-xl hover:shadow-zinc-200/50 hover:-translate-y-1.5 active:scale-[0.98]">
+    <div className="group/card relative flex min-h-[170px] flex-col gap-2 overflow-hidden rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm transition-all duration-500 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-zinc-200/50 active:scale-[0.98]">
       {/* Decorative gradient glow */}
-      <div className="absolute -right-4 -top-4 w-24 h-24 bg-zinc-50 rounded-full blur-3xl group-hover/card:bg-zinc-100 transition-colors duration-500" />
-      
-      <div className="flex justify-between items-start relative z-10">
+      <div className="absolute -top-4 -right-4 h-24 w-24 rounded-full bg-zinc-50 blur-3xl transition-colors duration-500 group-hover/card:bg-zinc-100" />
+
+      <div className="relative z-10 flex items-start justify-between">
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 opacity-60 leading-none group-hover/card:text-zinc-500 transition-colors uppercase">{title}</span>
+          <span className="text-[10px] leading-none font-black tracking-[0.2em] text-zinc-400 uppercase opacity-60 transition-colors group-hover/card:text-zinc-500">
+            {title}
+          </span>
           {icon && (
-            <div className={cn("inline-flex items-center", color || "text-zinc-400")}>
+            <div
+              className={cn(
+                "inline-flex items-center",
+                color || "text-zinc-400"
+              )}
+            >
               {icon}
             </div>
           )}
         </div>
         {trend !== undefined && (
-          <span className={cn(
-            "text-[10px] font-black flex items-center px-2 py-1 rounded-full border",
-            trendDirection === "up" 
-              ? "text-green-600 bg-green-50 border-green-100/50" 
-              : "text-red-600 bg-red-50 border-red-100/50"
-          )}>
-            {trendDirection === "up" ? "+" : "-"}{trend}% 
+          <span
+            className={cn(
+              "flex items-center rounded-full border px-2 py-1 text-[10px] font-black",
+              trendDirection === "up"
+                ? "border-green-100/50 bg-green-50 text-green-600"
+                : "border-red-100/50 bg-red-50 text-red-600"
+            )}
+          >
+            {trendDirection === "up" ? "+" : "-"}
+            {trend}%
             <span className="ml-1 shrink-0">
-              {trendDirection === "up" ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+              {trendDirection === "up" ? (
+                <TrendingUp size={12} />
+              ) : (
+                <TrendingDown size={12} />
+              )}
             </span>
           </span>
         )}
       </div>
-      
-      <div className="text-3xl font-black tracking-tighter text-zinc-950 mt-1 relative z-10">
+
+      <div className="relative z-10 mt-1 text-3xl font-black tracking-tighter text-zinc-950">
         <AnimatedNumber value={value} prefix={prefix} suffix={suffix} />
       </div>
 
       {sparkline && (
-        <div className="mt-4 h-10 w-full relative z-10 overflow-hidden">
+        <div className="relative z-10 mt-4 h-10 w-full overflow-hidden">
           {sparkline}
         </div>
       )}
 
       {avatars && avatars.length > 0 && (
-        <div className="mt-auto pt-4 flex items-center justify-between relative z-10">
+        <div className="relative z-10 mt-auto flex items-center justify-between pt-4">
           <div className="flex -space-x-2">
             {avatars.slice(0, 3).map((item, i) => (
-              <div key={i} className="w-7 h-7 rounded-full border-2 border-white overflow-hidden shadow-sm relative ring-2 ring-transparent group-hover/card:ring-zinc-50 transition-all">
+              <div
+                key={i}
+                className="relative h-7 w-7 overflow-hidden rounded-full border-2 border-white shadow-sm ring-2 ring-transparent transition-all group-hover/card:ring-zinc-50"
+              >
                 {item.avatar ? (
-                  <img 
-                    src={item.avatar} 
-                    alt={item.name} 
-                    className="w-full h-full object-cover" 
+                  <img
+                    src={item.avatar}
+                    alt={item.name}
+                    className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-[8px] font-black text-zinc-500">
-                    {item.name.split(' ').map(n => n[0]).join('') || 'U'}
+                  <div className="flex h-full w-full items-center justify-center bg-zinc-100 text-[8px] font-black text-zinc-500">
+                    {item.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("") || "U"}
                   </div>
                 )}
               </div>
             ))}
             {avatars.length > 3 && (
-              <div className="w-7 h-7 rounded-full border-2 border-white bg-zinc-50 flex items-center justify-center text-[8px] font-black text-zinc-400 shadow-sm relative z-10">
+              <div className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-zinc-50 text-[8px] font-black text-zinc-400 shadow-sm">
                 +{avatars.length - 3}
               </div>
             )}
           </div>
           {href && (
-            <div className="text-zinc-300 group-hover/card:text-zinc-950 group-hover/card:translate-x-1 transition-all duration-300">
+            <div className="text-zinc-300 transition-all duration-300 group-hover/card:translate-x-1 group-hover/card:text-zinc-950">
               <ArrowRight size={16} />
             </div>
           )}
@@ -147,21 +192,25 @@ export const MetricCard = ({
       )}
 
       {!avatars && href && (
-        <div className="mt-auto pt-4 flex items-center justify-end relative z-10">
-          <div className="text-zinc-300 group-hover/card:text-zinc-950 group-hover/card:translate-x-1 transition-all duration-300">
+        <div className="relative z-10 mt-auto flex items-center justify-end pt-4">
+          <div className="text-zinc-300 transition-all duration-300 group-hover/card:translate-x-1 group-hover/card:text-zinc-950">
             <ArrowRight size={16} />
           </div>
         </div>
       )}
 
       {progressBar !== undefined && (
-        <div className="mt-auto pt-6 w-full relative z-10">
-          <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
-            <motion.div 
+        <div className="relative z-10 mt-auto w-full pt-6">
+          <div className="h-1.5 overflow-hidden rounded-full bg-zinc-100">
+            <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progressBar}%` }}
-              transition={{ duration: 1.5, delay: 0.2, ease: [0.16, 1, 0.3, 1] as const }}
-              className="h-full bg-zinc-950 rounded-full"
+              transition={{
+                duration: 1.5,
+                delay: 0.2,
+                ease: [0.16, 1, 0.3, 1] as const,
+              }}
+              className="h-full rounded-full bg-zinc-950"
             />
           </div>
         </div>
@@ -171,14 +220,14 @@ export const MetricCard = ({
 
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
       transition: {
         duration: 0.8,
-        ease: [0.16, 1, 0.3, 1] as const
-      }
-    }
+        ease: [0.16, 1, 0.3, 1] as const,
+      },
+    },
   };
 
   if (href) {
@@ -191,9 +240,5 @@ export const MetricCard = ({
     );
   }
 
-  return (
-    <motion.div variants={containerVariants}>
-      {CardContent}
-    </motion.div>
-  );
+  return <motion.div variants={containerVariants}>{CardContent}</motion.div>;
 };

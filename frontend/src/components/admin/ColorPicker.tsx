@@ -20,7 +20,7 @@ const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newColor = e.target.value;
     setLocalColor(newColor);
-    
+
     // Debounce the parent update to prevent heavy re-renders while dragging
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
@@ -33,11 +33,13 @@ const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
       <input
         type="color"
         value={localColor}
-        onInput={handleInput as unknown as React.FormEventHandler<HTMLInputElement>} // onInput is better for continuous updates in some browsers
+        onInput={
+          handleInput as unknown as React.FormEventHandler<HTMLInputElement>
+        } // onInput is better for continuous updates in some browsers
         onChange={handleInput} // fallback
-        className="w-8 h-8 rounded-md border shadow-sm p-0 cursor-pointer hover:scale-110 transition-transform"
+        className="h-8 w-8 cursor-pointer rounded-md border p-0 shadow-sm transition-transform hover:scale-110"
       />
-      <span className="text-[10px] font-mono text-zinc-400 font-bold uppercase">
+      <span className="font-mono text-[10px] font-bold text-zinc-400 uppercase">
         {localColor}
       </span>
     </div>

@@ -67,44 +67,52 @@ export function ConfirmDialog({
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
       aria-describedby="confirm-dialog-description"
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      className="animate-in fade-in fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/40 p-4 backdrop-blur-sm duration-200"
       onClick={handleOverlayClick}
     >
-      <div 
-        className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-zinc-100 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 duration-300 pointer-events-auto"
-      >
+      <div className="animate-in zoom-in-95 slide-in-from-bottom-2 pointer-events-auto w-full max-w-md overflow-hidden rounded-2xl border border-zinc-100 bg-white shadow-xl duration-300">
         <div className="p-6">
           <div className="flex items-start gap-4">
-            <div className={cn(
-              "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center",
-              confirmBrand === "danger" ? "bg-red-50 text-red-600" : "bg-zinc-100 text-zinc-900"
-            )}>
+            <div
+              className={cn(
+                "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full",
+                confirmBrand === "danger"
+                  ? "bg-red-50 text-red-600"
+                  : "bg-zinc-100 text-zinc-900"
+              )}
+            >
               <AlertTriangle strokeWidth={2} size={20} />
             </div>
-            
-            <div className="flex-1 w-full pt-1">
-              <h3 id="confirm-dialog-title" className="text-lg font-bold text-zinc-950 tracking-tight">
+
+            <div className="w-full flex-1 pt-1">
+              <h3
+                id="confirm-dialog-title"
+                className="text-lg font-bold tracking-tight text-zinc-950"
+              >
                 {title}
               </h3>
-              <p id="confirm-dialog-description" className="mt-2 text-sm text-zinc-500 leading-relaxed">
+              <p
+                id="confirm-dialog-description"
+                className="mt-2 text-sm leading-relaxed text-zinc-500"
+              >
                 {description}
               </p>
             </div>
             <CloseButton
               onClick={onClose}
               disabled={isLoading}
-              className="p-1.5 hover:bg-zinc-100 cursor-pointer"
+              className="cursor-pointer p-1.5 hover:bg-zinc-100"
               size={18}
             />
           </div>
         </div>
 
-        <div className="px-6 py-4 bg-zinc-50/50 border-t border-zinc-100 flex flex-col-reverse sm:flex-row justify-end gap-3">
+        <div className="flex flex-col-reverse justify-end gap-3 border-t border-zinc-100 bg-zinc-50/50 px-6 py-4 sm:flex-row">
           <Button
             variant="outline"
             onClick={onClose}
             disabled={isLoading}
-            className="w-full sm:w-auto hover:bg-zinc-100 rounded-lg shadow-sm border-zinc-200 font-medium"
+            className="w-full rounded-lg border-zinc-200 font-medium shadow-sm hover:bg-zinc-100 sm:w-auto"
           >
             {cancelText}
           </Button>
@@ -114,9 +122,9 @@ export function ConfirmDialog({
             onClick={onConfirm}
             disabled={isLoading}
             className={cn(
-              "w-full sm:w-auto rounded-lg shadow-md font-medium text-white transition-all",
-              confirmBrand === "danger" 
-                ? "bg-red-600 hover:bg-red-700 hover:shadow-lg hover:-translate-y-px border-red-600" 
+              "w-full rounded-lg font-medium text-white shadow-md transition-all sm:w-auto",
+              confirmBrand === "danger"
+                ? "border-red-600 bg-red-600 hover:-translate-y-px hover:bg-red-700 hover:shadow-lg"
                 : "bg-zinc-900"
             )}
           >

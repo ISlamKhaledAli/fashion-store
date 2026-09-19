@@ -1,19 +1,40 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
 import { sendResponse } from "../utils/apiResponse";
-import { addToCartSchema, updateCartItemSchema } from "../validators/common.validator";
+import {
+  addToCartSchema,
+  updateCartItemSchema,
+} from "../validators/common.validator";
 import { NotFoundError, ValidationError } from "../utils/AppError";
-import { calculateOrderTotals, calculateDiscount, SHIPPING_METHODS } from "../utils/pricing";
+import { isNotFoundError } from "../utils/prismaErrors";
+import {
+  calculateOrderTotals,
+  calculateDiscount,
+  SHIPPING_METHODS,
+} from "../utils/pricing";
 
-export const getShippingMethods = async (req: Request, res: Response, next: NextFunction) => {
+export const getShippingMethods = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    return sendResponse({ res, status: 200, success: true, data: SHIPPING_METHODS });
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      data: SHIPPING_METHODS,
+    });
   } catch (error) {
     next(error);
   }
 };
 
-export const getCart = async (req: Request, res: Response, next: NextFunction) => {
+export const getCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const userId = req.user?.id;
 
@@ -35,10 +56,10 @@ export const getCart = async (req: Request, res: Response, next: NextFunction) =
     });
 
     if (!cart) {
-      cart = await prisma.cart.create({
+      cart = (await prisma.cart.create({
         data: { userId: userId as string },
         include: { items: true },
-      }) as any;
+      })) as any;
     }
 
     return sendResponse({ res, status: 200, success: true, data: cart });
@@ -47,7 +68,11 @@ export const getCart = async (req: Request, res: Response, next: NextFunction) =
   }
 };
 
-export const addToCart = async (req: Request, res: Response, next: NextFunction) => {
+export const addToCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const userId = req.user?.id;
     const { variantId, quantity } = addToCartSchema.parse(req.body);
@@ -80,7 +105,11 @@ export const addToCart = async (req: Request, res: Response, next: NextFunction)
   }
 };
 
-export const updateCartItem = async (req: Request, res: Response, next: NextFunction) => {
+export const updateCartItem = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { cartItemId, quantity } = updateCartItemSchema.parse(req.body);
 
@@ -91,14 +120,18 @@ export const updateCartItem = async (req: Request, res: Response, next: NextFunc
 
     return sendResponse({ res, status: 200, success: true, data: cartItem });
   } catch (error) {
-    if (error instanceof Error && (error as any).code === "P2025") {
-      throw new NotFoundError("Cart item not found");
+    if (isNotFoundError(error)) {
+      return next(new NotFoundError("Cart item not found"));
     }
     next(error);
   }
 };
 
-export const removeFromCart = async (req: Request, res: Response, next: NextFunction) => {
+export const removeFromCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { cartItemId } = req.params;
 
@@ -106,16 +139,25 @@ export const removeFromCart = async (req: Request, res: Response, next: NextFunc
       where: { id: String(cartItemId) },
     });
 
-    return sendResponse({ res, status: 200, success: true, message: "Item removed from cart" });
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Item removed from cart",
+    });
   } catch (error) {
-    if (error instanceof Error && (error as any).code === "P2025") {
-      throw new NotFoundError("Cart item not found");
+    if (isNotFoundError(error)) {
+      return next(new NotFoundError("Cart item not found"));
     }
     next(error);
   }
 };
 
-export const clearCart = async (req: Request, res: Response, next: NextFunction) => {
+export const clearCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const userId = req.user?.id;
     const cart = await prisma.cart.findUnique({ where: { userId } });
@@ -124,7 +166,12 @@ export const clearCart = async (req: Request, res: Response, next: NextFunction)
       await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
     }
 
-    return sendResponse({ res, status: 200, success: true, message: "Cart cleared" });
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Cart cleared",
+    });
   } catch (error) {
     next(error);
   }
@@ -132,10 +179,10 @@ export const clearCart = async (req: Request, res: Response, next: NextFunction)
 
 /**
  * POST /api/cart/calculate
- * 
+ *
  * Server-authoritative pricing calculation endpoint.
  * The frontend must NEVER compute totals locally — this is the single source of truth.
- * 
+ *
  * @route POST /api/cart/calculate
  * @group Cart - Operations about the shopping cart
  * @param {object} req.body - Calculation inputs
@@ -149,7 +196,11 @@ export const clearCart = async (req: Request, res: Response, next: NextFunction)
  * @returns {number} return.tax - 10% tax on discountedSubtotal
  * @returns {number} return.total - Final amount (discountedSubtotal + tax + shipping), rounded to 2 decimals
  */
-export const calculateTotals = async (req: Request, res: Response, next: NextFunction) => {
+export const calculateTotals = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const userId = req.user?.id as string;
     const { shippingMethod = "standard", promoCode } = req.body || {};
@@ -178,7 +229,9 @@ export const calculateTotals = async (req: Request, res: Response, next: NextFun
     // 2. Validate promo code against DB if provided
     let rawDiscountAmount = 0;
     if (promoCode) {
-      const discountRecord = await prisma.discount.findUnique({ where: { code: promoCode } });
+      const discountRecord = await prisma.discount.findUnique({
+        where: { code: promoCode },
+      });
       if (discountRecord) {
         const result = calculateDiscount(subtotal, discountRecord);
         if (result.isValid) {
@@ -186,7 +239,6 @@ export const calculateTotals = async (req: Request, res: Response, next: NextFun
         }
       }
     }
-
 
     // 3. Single canonical calculation
     const totals = calculateOrderTotals({

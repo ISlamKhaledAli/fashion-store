@@ -43,24 +43,28 @@ export default function RegisterPage() {
         router.push("/");
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? (err as { response?: { data?: { message?: string } } }).response?.data?.message : "Registration failed. Please try again.";
+      const errorMessage =
+        err instanceof Error
+          ? (err as { response?: { data?: { message?: string } } }).response
+              ?.data?.message
+          : "Registration failed. Please try again.";
       setError(errorMessage || "Registration failed. Please try again.");
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-8 bg-surface">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-surface px-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] as const }}
         className="w-full max-w-md space-y-12"
       >
-        <div className="text-center space-y-4">
+        <div className="space-y-4 text-center">
           <h1 className="text-4xl font-medium tracking-tighter text-on-surface">
             Join the Registry
           </h1>
-          <p className="text-on-surface-variant text-sm uppercase tracking-[0.2em] font-bold">
+          <p className="text-sm font-bold tracking-[0.2em] text-on-surface-variant uppercase">
             Curate your aesthetic journey
           </p>
         </div>
@@ -90,23 +94,19 @@ export default function RegisterPage() {
           </div>
 
           {error && (
-            <p className="text-[10px] text-error font-extrabold uppercase tracking-widest text-center">
+            <p className="text-center text-[10px] font-extrabold tracking-widest text-error uppercase">
               {error}
             </p>
           )}
 
           <div className="space-y-6">
-            <Button 
-                type="submit" 
-                className="w-full" 
-                isLoading={isSubmitting}
-            >
+            <Button type="submit" className="w-full" isLoading={isSubmitting}>
               Initialize Account
             </Button>
             <div className="text-center">
-              <Link 
-                href="/login" 
-                className="text-xs text-on-surface-variant hover:text-primary transition-colors underline underline-offset-4"
+              <Link
+                href="/login"
+                className="text-xs text-on-surface-variant underline underline-offset-4 transition-colors hover:text-primary"
               >
                 Already registered? Sign in
               </Link>

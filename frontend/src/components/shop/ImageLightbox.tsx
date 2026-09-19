@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { ProductImage } from "@/types";
+import type { ProductImage } from "@/types";
 import { Button } from "@/components/ui/Button";
 
 interface ImageLightboxProps {
@@ -21,7 +21,6 @@ export const ImageLightbox = ({
   onClose,
   onNavigate,
 }: ImageLightboxProps) => {
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
@@ -68,9 +67,13 @@ export const ImageLightbox = ({
             e.stopPropagation();
             onNavigate((currentIndex - 1 + images.length) % images.length);
           }}
-          className="absolute left-4 lg:left-12 text-white p-4 hover:opacity-70 transition-opacity z-10 scale-100"
+          className="absolute left-4 z-10 scale-100 p-4 text-white transition-opacity hover:opacity-70 lg:left-12"
           aria-label="Previous image"
-          icon={<span className="material-symbols-outlined text-4xl">chevron_left</span>}
+          icon={
+            <span className="material-symbols-outlined text-4xl">
+              chevron_left
+            </span>
+          }
         />
 
         <motion.div
@@ -78,16 +81,18 @@ export const ImageLightbox = ({
           animate={{ scale: 1 }}
           exit={{ scale: 0.9 }}
           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} // cinematic ease
-          className="relative w-full max-w-3xl h-full max-h-[85vh]"
+          className="relative h-full max-h-[85vh] w-full max-w-3xl"
           onClick={(e) => e.stopPropagation()}
         >
-          <Image
-            src={images[currentIndex].url}
-            alt="Fullscreen view"
-            fill
-            className="object-contain"
-            priority
-          />
+          {images[currentIndex]?.url ? (
+            <Image
+              src={images[currentIndex].url}
+              alt="Fullscreen view"
+              fill
+              className="object-contain"
+              priority
+            />
+          ) : null}
         </motion.div>
 
         <Button
@@ -97,18 +102,24 @@ export const ImageLightbox = ({
             e.stopPropagation();
             onNavigate((currentIndex + 1) % images.length);
           }}
-          className="absolute right-4 lg:right-12 text-white p-4 hover:opacity-70 transition-opacity z-10 scale-100"
+          className="absolute right-4 z-10 scale-100 p-4 text-white transition-opacity hover:opacity-70 lg:right-12"
           aria-label="Next image"
-          icon={<span className="material-symbols-outlined text-4xl">chevron_right</span>}
+          icon={
+            <span className="material-symbols-outlined text-4xl">
+              chevron_right
+            </span>
+          }
         />
 
         <Button
           variant="none"
           size="none"
           onClick={onClose}
-          className="absolute top-4 right-4 lg:top-8 lg:right-8 text-white p-4 hover:opacity-70 transition-opacity z-10 scale-100"
+          className="absolute top-4 right-4 z-10 scale-100 p-4 text-white transition-opacity hover:opacity-70 lg:top-8 lg:right-8"
           aria-label="Close fullscreen"
-          icon={<span className="material-symbols-outlined text-3xl">close</span>}
+          icon={
+            <span className="material-symbols-outlined text-3xl">close</span>
+          }
         />
       </motion.div>
     </AnimatePresence>

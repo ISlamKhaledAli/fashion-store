@@ -10,6 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.CLIENT_URL || "https://thecurator.fashion"),
   title: {
     default: "THE CURATOR | Premium Fashion Commerce",
     template: "%s | THE CURATOR",
@@ -24,6 +25,21 @@ export const metadata: Metadata = {
     "AI shopping assistant",
     "fashion admin dashboard",
   ],
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    siteName: "THE CURATOR",
+    title: "THE CURATOR | Premium Fashion Commerce",
+    description:
+      "A cinematic premium fashion storefront with AI-assisted shopping and an archival luxury collection.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "THE CURATOR | Premium Fashion Commerce",
+    description:
+      "A cinematic premium fashion storefront with AI-assisted shopping and an archival luxury collection.",
+  },
 };
 
 export const revalidate = 0;
@@ -34,11 +50,29 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} light font-sans`} style={{ colorScheme: 'only light', backgroundColor: '#f9f9fb', color: '#1a1c1d' }} data-theme="light" suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${inter.variable} light font-sans`}
+      style={{
+        colorScheme: "only light",
+        backgroundColor: "#f9f9fb",
+        color: "#1a1c1d",
+      }}
+      data-theme="light"
+      suppressHydrationWarning
+    >
       <head>
         <meta name="color-scheme" content="only light" />
-        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f9f9fb" />
-        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#f9f9fb" />
+        <meta
+          name="theme-color"
+          media="(prefers-color-scheme: light)"
+          content="#f9f9fb"
+        />
+        <meta
+          name="theme-color"
+          media="(prefers-color-scheme: dark)"
+          content="#f9f9fb"
+        />
         <meta name="darkreader-lock" />
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link

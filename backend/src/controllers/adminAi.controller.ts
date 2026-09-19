@@ -1,33 +1,52 @@
 import { Request, Response, NextFunction } from "express";
-import { env } from "../utils/validateEnv";
 import { adminTools, executeAdminTool } from "../lib/adminTools";
+import {
+  callOpenRouter,
+  pipeSseStream,
+  AI_MODELS,
+} from "../services/ai.service";
+import logger from "../utils/logger";
 
-export const generateDescription = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  console.log("[DEBUG] generateDescription: req.user =", req.user);
-
+export const generateDescription = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    const { productName, category, brand, price, colors, sizes, images } = req.body;
+    const { productName, category, brand, price, colors, sizes, images } =
+      req.body;
 
-    if (!productName || typeof productName !== "string" || !productName.trim()) {
-      res.status(400).json({ success: false, error: "Product name is required" });
+    if (
+      !productName ||
+      typeof productName !== "string" ||
+      !productName.trim()
+    ) {
+      res
+        .status(400)
+        .json({ success: false, error: "Product name is required" });
       return;
     }
 
-    const systemPrompt = "You are a luxury fashion copywriter. Write elegant, evocative product descriptions for high-end fashion items. Be concise: 2-3 sentences max. Focus on visual details from the images if provided, material feel, occasion, and style identity. Never use generic phrases like 'high quality' or 'perfect for any occasion'.";
+    const systemPrompt =
+      "You are a luxury fashion copywriter. Write elegant, evocative product descriptions for high-end fashion items. Be concise: 2-3 sentences max. Focus on visual details from the images if provided, material feel, occasion, and style identity. Never use generic phrases like 'high quality' or 'perfect for any occasion'.";
 
     const categoryText = category ? ` Category: ${category}.` : "";
     const brandText = brand ? ` Brand: ${brand}.` : "";
     const priceText = price && price > 0 ? ` Price: $${price}.` : "";
-    const colorsText = colors && Array.isArray(colors) && colors.length > 0 ? ` Available in colors: ${colors.join(", ")}.` : "";
-    const sizesText = sizes && Array.isArray(sizes) && sizes.length > 0 ? ` Sizes: ${sizes.join(", ")}.` : "";
+    const colorsText =
+      colors && Array.isArray(colors) && colors.length > 0
+        ? ` Available in colors: ${colors.join(", ")}.`
+        : "";
+    const sizesText =
+      sizes && Array.isArray(sizes) && sizes.length > 0
+        ? ` Sizes: ${sizes.join(", ")}.`
+        : "";
 
-    // Build content array — images first (up to 4), then text prompt
     const imageList: string[] = Array.isArray(images) ? images.slice(0, 4) : [];
     const hasImages = imageList.length > 0;
 
     const userContent: any[] = [];
 
-    // Add images as vision blocks (OpenAI-compatible format for OpenRouter)
     for (const b64 of imageList) {
       userContent.push({
         type: "image_url",
@@ -37,41 +56,42 @@ export const generateDescription = async (req: Request, res: Response, next: Nex
       });
     }
 
-    // Add text prompt
     userContent.push({
       type: "text",
       text: `Write a product description for: ${productName}.${categoryText}${brandText}${priceText}${colorsText}${sizesText}${hasImages ? " Use the product images above to describe the visual details, silhouette, texture, and styling." : ""} Return ONLY the description text, no quotes, no extra formatting.`,
     });
 
-    const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
-    const requestHeaders: Record<string, string> = {
-      "Authorization": `Bearer ${env.OPENROUTER_API_KEY}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": env.CLIENT_URL || "http://localhost:3000",
-      "X-Title": "The Curator Admin AI Assistant",
-    };
-
     let description = "";
 
     try {
-      const aiResponse = await fetch(openRouterUrl, {
-        method: "POST",
-        headers: requestHeaders,
-        body: JSON.stringify({
-          model: "anthropic/claude-haiku-4.5",
+      const aiResponse = await callOpenRouter(
+        {
+          model: AI_MODELS.HAIKU_4_5,
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: hasImages ? userContent : userContent[0].text }
+            {
+              role: "user",
+              content: hasImages ? userContent : userContent[0].text,
+            },
           ],
           temperature: 0.7,
           max_tokens: 300,
-        }),
-      });
+        },
+        { title: "The Curator Admin AI Assistant" }
+      );
 
       if (!aiResponse.ok) {
         const errorText = await aiResponse.text();
-        console.error("[ERROR] OpenRouter description generation failed:", { status: aiResponse.status, errorText });
-        res.status(500).json({ success: false, error: `OpenRouter error: ${aiResponse.status} - ${errorText}` });
+        logger.error("OpenRouter description generation failed", {
+          status: aiResponse.status,
+          errorText,
+        });
+        res
+          .status(500)
+          .json({
+            success: false,
+            error: `OpenRouter error: ${aiResponse.status} - ${errorText}`,
+          });
         return;
       }
 
@@ -79,79 +99,138 @@ export const generateDescription = async (req: Request, res: Response, next: Nex
       description = resJson.choices?.[0]?.message?.content?.trim();
 
       if (!description) {
-        res.status(500).json({ success: false, error: "Empty description generated from AI service" });
+        res
+          .status(500)
+          .json({
+            success: false,
+            error: "Empty description generated from AI service",
+          });
         return;
       }
     } catch (apiError: any) {
-      console.error("[ERROR] OpenRouter API call threw an error:", apiError);
-      res.status(500).json({ success: false, error: apiError instanceof Error ? apiError.message : String(apiError) });
+      logger.error(
+        "OpenRouter API call threw an error in generateDescription",
+        { error: apiError }
+      );
+      res
+        .status(500)
+        .json({
+          success: false,
+          error:
+            apiError instanceof Error ? apiError.message : String(apiError),
+        });
       return;
     }
 
     res.status(200).json({
       success: true,
-      description
+      description,
     });
   } catch (error: any) {
-    console.error("[ERROR] AI Description Generation failed:", error);
-    res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
+    logger.error("AI Description Generation failed", { error });
+    res
+      .status(500)
+      .json({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
   }
 };
 
-export const generateAccordionContent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const generateAccordionContent = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    const { title, productName, category, brand } = req.body;
+    const { productName, sectionTitle, existingContent, category, brand } =
+      req.body;
 
-    if (!title || typeof title !== "string" || !title.trim()) {
-      res.status(400).json({ success: false, error: 'Title is required' });
+    if (
+      !productName ||
+      typeof productName !== "string" ||
+      !productName.trim() ||
+      !sectionTitle ||
+      typeof sectionTitle !== "string" ||
+      !sectionTitle.trim()
+    ) {
+      res
+        .status(400)
+        .json({
+          success: false,
+          error: "Product name and section title are required",
+        });
       return;
     }
 
-    const systemPrompt = "You are a luxury fashion copywriter for a high-end fashion brand. Write concise, elegant accordion content for product detail pages. Be specific and informative. No generic filler. Use short paragraphs or clean bullet points depending on the section type.";
+    const systemPrompt =
+      "You are a luxury fashion copywriter. Write concise, accurate, and evocative accordion section content for a high-end fashion product page. Return ONLY the content text, formatted as either a clear paragraph or clean bullet points (use - for bullets). Do not include section title or extra quotes.";
 
-    const userPrompt = `Write the accordion content for a section titled: "${title}".
-Product: ${productName ?? 'N/A'}.
-Category: ${category ?? 'N/A'}.
-Brand: ${brand ?? 'N/A'}.
+    let sectionGuidance = "";
+    const lowerTitle = sectionTitle.toLowerCase();
+    if (
+      lowerTitle.includes("material") ||
+      lowerTitle.includes("fabric") ||
+      lowerTitle.includes("composition")
+    ) {
+      sectionGuidance =
+        "Focus on premium fabric blend, weave, lining, tactile feel, and garment construction details. Mention care hints if appropriate.";
+    } else if (
+      lowerTitle.includes("care") ||
+      lowerTitle.includes("wash") ||
+      lowerTitle.includes("maintenance")
+    ) {
+      sectionGuidance =
+        "Provide professional luxury care instructions: dry clean vs hand wash, ironing temperatures, storage recommendations.";
+    } else if (
+      lowerTitle.includes("shipping") ||
+      lowerTitle.includes("delivery") ||
+      lowerTitle.includes("return")
+    ) {
+      sectionGuidance =
+        "Provide standard luxury shipping details: complimentary carbon-neutral delivery, signature required, 30-day effortless returns.";
+    } else if (lowerTitle.includes("size") || lowerTitle.includes("fit")) {
+      sectionGuidance =
+        "Provide fit advice: true to size, model measurements, cut style (tailored, oversized, relaxed).";
+    }
 
-Guidelines by section type:
-- Materials / Fabric: describe fabric composition, texture, weight, and feel
-- Care Instructions: clear washing, drying, ironing instructions
-- Shipping: delivery timeframes, packaging, returns policy summary
-- Sizing / Fit: fit type, model size reference, measurement tips
-- Other: write relevant, specific content matching the title
+    const userPrompt = `Product: ${productName}
+Category: ${category || "N/A"}
+Brand: ${brand || "N/A"}
+Section: ${sectionTitle}
+Guidance: ${sectionGuidance}
+${existingContent ? `Existing Content to Improve/Expand: ${existingContent}` : ""}
 
-Return ONLY the content text, no section title, no quotes, no markdown headers.`;
-
-    const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
-    const requestHeaders: Record<string, string> = {
-      "Authorization": `Bearer ${env.OPENROUTER_API_KEY}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": env.CLIENT_URL || "http://localhost:3000",
-      "X-Title": "The Curator Admin AI Assistant",
-    };
+Generate the content for this section.`;
 
     let content = "";
 
     try {
-      const aiResponse = await fetch(openRouterUrl, {
-        method: "POST",
-        headers: requestHeaders,
-        body: JSON.stringify({
-          model: "anthropic/claude-haiku-4.5",
+      const aiResponse = await callOpenRouter(
+        {
+          model: AI_MODELS.HAIKU_4_5,
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
+            { role: "user", content: userPrompt },
           ],
           temperature: 0.7,
           max_tokens: 300,
-        }),
-      });
+        },
+        { title: "The Curator Admin AI Assistant" }
+      );
 
       if (!aiResponse.ok) {
         const errorText = await aiResponse.text();
-        console.error("[ERROR] OpenRouter accordion generation failed:", { status: aiResponse.status, errorText });
-        res.status(500).json({ success: false, error: `OpenRouter error: ${aiResponse.status} - ${errorText}` });
+        logger.error("OpenRouter accordion generation failed", {
+          status: aiResponse.status,
+          errorText,
+        });
+        res
+          .status(500)
+          .json({
+            success: false,
+            error: `OpenRouter error: ${aiResponse.status} - ${errorText}`,
+          });
         return;
       }
 
@@ -159,31 +238,60 @@ Return ONLY the content text, no section title, no quotes, no markdown headers.`
       content = resJson.choices?.[0]?.message?.content?.trim();
 
       if (!content) {
-        res.status(500).json({ success: false, error: "Empty content generated from AI service" });
+        res
+          .status(500)
+          .json({
+            success: false,
+            error: "Empty content generated from AI service",
+          });
         return;
       }
     } catch (apiError: any) {
-      console.error("[ERROR] OpenRouter API call threw an error:", apiError);
-      res.status(500).json({ success: false, error: apiError instanceof Error ? apiError.message : String(apiError) });
+      logger.error(
+        "OpenRouter API call threw an error in generateAccordionContent",
+        { error: apiError }
+      );
+      res
+        .status(500)
+        .json({
+          success: false,
+          error:
+            apiError instanceof Error ? apiError.message : String(apiError),
+        });
       return;
     }
 
     res.status(200).json({
       success: true,
-      content
+      content,
     });
   } catch (error: any) {
-    console.error("[ERROR] AI Accordion Content Generation failed:", error);
-    res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
+    logger.error("AI Accordion Content Generation failed", { error });
+    res
+      .status(500)
+      .json({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
   }
 };
 
-export const generateFeatures = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const generateFeatures = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { productName, description, category, brand } = req.body;
 
-    if (!productName || typeof productName !== "string" || !productName.trim()) {
-      res.status(400).json({ success: false, error: 'Product name is required' });
+    if (
+      !productName ||
+      typeof productName !== "string" ||
+      !productName.trim()
+    ) {
+      res
+        .status(400)
+        .json({ success: false, error: "Product name is required" });
       return;
     }
 
@@ -195,80 +303,100 @@ Each object must have:
 - "description": A concise, engaging description (1-2 sentences).`;
 
     const userPrompt = `Product Name: ${productName}
-Description: ${description || 'N/A'}
-Category: ${category || 'N/A'}
-Brand: ${brand || 'N/A'}`;
-
-    const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
-    const requestHeaders: Record<string, string> = {
-      "Authorization": `Bearer ${env.OPENROUTER_API_KEY}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": env.CLIENT_URL || "http://localhost:3000",
-      "X-Title": "The Curator Admin AI Assistant",
-    };
+Description: ${description || "N/A"}
+Category: ${category || "N/A"}
+Brand: ${brand || "N/A"}`;
 
     let features = [];
 
     try {
-      const aiResponse = await fetch(openRouterUrl, {
-        method: "POST",
-        headers: requestHeaders,
-        body: JSON.stringify({
-          model: "anthropic/claude-haiku-4.5",
+      const aiResponse = await callOpenRouter(
+        {
+          model: AI_MODELS.HAIKU_4_5,
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
+            { role: "user", content: userPrompt },
           ],
           temperature: 0.7,
           max_tokens: 500,
-          response_format: { type: "json_object" }
-        }),
-      });
+        },
+        { title: "The Curator Admin AI Assistant" }
+      );
 
       if (!aiResponse.ok) {
         const errorText = await aiResponse.text();
-        console.error("[ERROR] OpenRouter features generation failed:", { status: aiResponse.status, errorText });
-        res.status(500).json({ success: false, error: `OpenRouter error: ${aiResponse.status} - ${errorText}` });
+        logger.error("OpenRouter features generation failed", {
+          status: aiResponse.status,
+          errorText,
+        });
+        res
+          .status(500)
+          .json({
+            success: false,
+            error: `OpenRouter error: ${aiResponse.status} - ${errorText}`,
+          });
         return;
       }
 
       const resJson = (await aiResponse.json()) as any;
       const contentStr = resJson.choices?.[0]?.message?.content?.trim() || "[]";
-      
+
       try {
         features = JSON.parse(contentStr);
         if (features.features && Array.isArray(features.features)) {
           features = features.features;
         } else if (!Array.isArray(features)) {
-           features = [];
+          features = [];
         }
       } catch (parseErr) {
-        console.error("Failed to parse JSON features response:", contentStr);
+        logger.error("Failed to parse JSON features response", { contentStr });
         features = [];
       }
-
     } catch (apiError: any) {
-      console.error("[ERROR] OpenRouter API call threw an error:", apiError);
-      res.status(500).json({ success: false, error: apiError instanceof Error ? apiError.message : String(apiError) });
+      logger.error("OpenRouter API call threw an error in generateFeatures", {
+        error: apiError,
+      });
+      res
+        .status(500)
+        .json({
+          success: false,
+          error:
+            apiError instanceof Error ? apiError.message : String(apiError),
+        });
       return;
     }
 
     res.status(200).json({
       success: true,
-      features
+      features,
     });
   } catch (error: any) {
-    console.error("[ERROR] AI Features Generation failed:", error);
-    res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
+    logger.error("AI Features Generation failed", { error });
+    res
+      .status(500)
+      .json({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
   }
 };
 
-export const generateAllAccordions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const generateAllAccordions = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { productName, description, category, brand } = req.body;
 
-    if (!productName || typeof productName !== "string" || !productName.trim()) {
-      res.status(400).json({ success: false, error: 'Product name is required' });
+    if (
+      !productName ||
+      typeof productName !== "string" ||
+      !productName.trim()
+    ) {
+      res
+        .status(400)
+        .json({ success: false, error: "Product name is required" });
       return;
     }
 
@@ -279,46 +407,44 @@ Each object must have:
 - "content": A concise, elegant paragraph or bullet points providing the necessary information.`;
 
     const userPrompt = `Product Name: ${productName}
-Description: ${description || 'N/A'}
-Category: ${category || 'N/A'}
-Brand: ${brand || 'N/A'}`;
-
-    const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
-    const requestHeaders: Record<string, string> = {
-      "Authorization": `Bearer ${env.OPENROUTER_API_KEY}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": env.CLIENT_URL || "http://localhost:3000",
-      "X-Title": "The Curator Admin AI Assistant",
-    };
+Description: ${description || "N/A"}
+Category: ${category || "N/A"}
+Brand: ${brand || "N/A"}`;
 
     let details = [];
 
     try {
-      const aiResponse = await fetch(openRouterUrl, {
-        method: "POST",
-        headers: requestHeaders,
-        body: JSON.stringify({
-          model: "anthropic/claude-haiku-4.5",
+      const aiResponse = await callOpenRouter(
+        {
+          model: AI_MODELS.HAIKU_4_5,
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
+            { role: "user", content: userPrompt },
           ],
           temperature: 0.7,
           max_tokens: 600,
-          response_format: { type: "json_object" }
-        }),
-      });
+        },
+        { title: "The Curator Admin AI Assistant" }
+      );
 
       if (!aiResponse.ok) {
         const errorText = await aiResponse.text();
-        console.error("[ERROR] OpenRouter accordions generation failed:", { status: aiResponse.status, errorText });
-        res.status(500).json({ success: false, error: `OpenRouter error: ${aiResponse.status} - ${errorText}` });
+        logger.error("OpenRouter accordions generation failed", {
+          status: aiResponse.status,
+          errorText,
+        });
+        res
+          .status(500)
+          .json({
+            success: false,
+            error: `OpenRouter error: ${aiResponse.status} - ${errorText}`,
+          });
         return;
       }
 
       const resJson = (await aiResponse.json()) as any;
       const contentStr = resJson.choices?.[0]?.message?.content?.trim() || "[]";
-      
+
       try {
         details = JSON.parse(contentStr);
         if (details.details && Array.isArray(details.details)) {
@@ -329,156 +455,161 @@ Brand: ${brand || 'N/A'}`;
           details = [];
         }
       } catch (parseErr) {
-        console.error("Failed to parse JSON accordions response:", contentStr);
+        logger.error("Failed to parse JSON accordions response", {
+          contentStr,
+        });
         details = [];
       }
-
     } catch (apiError: any) {
-      console.error("[ERROR] OpenRouter API call threw an error:", apiError);
-      res.status(500).json({ success: false, error: apiError instanceof Error ? apiError.message : String(apiError) });
+      logger.error(
+        "OpenRouter API call threw an error in generateAllAccordions",
+        { error: apiError }
+      );
+      res
+        .status(500)
+        .json({
+          success: false,
+          error:
+            apiError instanceof Error ? apiError.message : String(apiError),
+        });
       return;
     }
 
     res.status(200).json({
       success: true,
-      details
+      details,
     });
   } catch (error: any) {
-    console.error("[ERROR] AI Accordions Generation failed:", error);
-    res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
+    logger.error("AI Accordions Generation failed", { error });
+    res
+      .status(500)
+      .json({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
   }
 };
 
-export const analyzeAnalytics = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const analyzeAnalytics = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    const { 
-      period, 
-      totalRevenue, 
-      revenueChange, 
-      totalOrders, 
-      ordersChange, 
-      topProducts, 
-      categoryBreakdown, 
-      newVsReturning, 
-      revenueTimeline,
-      messages,
-      language
-    } = req.body;
+    const { metrics, dateRange, messages } = req.body;
 
-    const isArabic = language === 'ar';
-    const baseSystemPrompt = "You are an expert e-commerce business analyst for a luxury fashion store. Analyze the provided sales data and give the store owner 3-5 specific, actionable insights. Focus on: trends, anomalies, opportunities, and risks. Be direct and specific — use the actual numbers. Format your response as clear paragraphs, not bullet points. Speak like a trusted business advisor, not a report generator.";
-    const systemPrompt = isArabic 
-      ? baseSystemPrompt + " IMPORTANT: You MUST respond entirely in Arabic."
-      : baseSystemPrompt;
+    const systemPrompt = `You are a senior luxury e-commerce merchandise and revenue analyst for The Curator.
+Your job is to analyze real-time store analytics, identify anomalies, explain sales velocity patterns, and provide highly actionable growth and merchandising recommendations.
+Analyze the provided metrics carefully:
+- Date Range: ${dateRange?.preset || "Last 30 Days"}
+- Revenue: $${metrics?.totalRevenue || 0} (${metrics?.revenueGrowth || 0}% vs previous period)
+- Orders: ${metrics?.totalOrders || 0} (${metrics?.orderGrowth || 0}%)
+- AOV: $${metrics?.avgOrderValue || 0} (${metrics?.aovGrowth || 0}%)
+- Conversion Rate: ${metrics?.conversionRate || 0}% (${metrics?.cvrGrowth || 0}%)
+- Repeat Customer Rate: ${metrics?.repeatCustomerRate || 0}%
+- Top Category: ${metrics?.topCategory || "N/A"}
+- Stockout Risk Items: ${metrics?.stockoutRiskCount || 0}
 
-    const dataContext = `Analyze this data for the last ${period || 'period'}:
-Total Revenue: $${totalRevenue || 0} (${revenueChange || 0}% vs previous period)
-Total Orders: ${totalOrders || 0} (${ordersChange || 0}% change)
-Top Products: ${JSON.stringify(topProducts || [])}
-Category Breakdown: ${JSON.stringify(categoryBreakdown || [])}
-Customer Mix: ${newVsReturning?.newCustomers || 0} new, ${newVsReturning?.returning || 0} returning
-Daily Revenue: ${JSON.stringify(revenueTimeline || [])}`;
+Output Structure:
+1. Executive Summary: 2 concise sentences on overall business health.
+2. Key Wins: 2-3 bullet points highlighting positive trends.
+3. Critical Risks: Inventory bottlenecks, falling conversion, or margin threats.
+4. Strategic Actions: 3 prioritized, concrete recommendations for merchandising, discounting, or catalog management.
 
-    let apiMessages: any[] = [{ role: "system", content: systemPrompt }];
+Style: Direct, insightful, executive-level tone. No fluffy intros or platitudes. Format with clean Markdown headers and bullet points.`;
 
-    if (messages && messages.length > 0) {
-      apiMessages.push({ role: "system", content: "Data Context:\n" + dataContext });
-      apiMessages.push(...messages.map((m: any) => ({ role: m.role, content: m.content })));
-    } else {
-      apiMessages.push({ 
-        role: "user", 
-        content: `${dataContext}\n\nGive me 3-5 specific insights and what I should do about them.` 
+    const apiMessages: any[] = [
+      { role: "system", content: systemPrompt },
+      ...(messages || []).map((m: any) => ({
+        role: m.role,
+        content: m.content,
+      })),
+    ];
+
+    if (!messages || messages.length === 0) {
+      apiMessages.push({
+        role: "user",
+        content:
+          "Analyze the current store performance metrics and provide executive strategic insights.",
       });
     }
 
-    const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
-    const requestHeaders: Record<string, string> = {
-      "Authorization": `Bearer ${env.OPENROUTER_API_KEY}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": env.CLIENT_URL || "http://localhost:3000",
-      "X-Title": "The Curator Admin AI Assistant",
-    };
-
-    const streamResponse = await fetch(openRouterUrl, {
-      method: "POST",
-      headers: requestHeaders,
-      body: JSON.stringify({
-        model: "anthropic/claude-3.5-haiku",
+    const streamResponse = await callOpenRouter(
+      {
+        model: AI_MODELS.HAIKU_3_5,
         messages: apiMessages,
         stream: true,
         temperature: 0.7,
         max_tokens: 800,
-      }),
-    });
+      },
+      { title: "The Curator Admin Analytics" }
+    );
 
     if (!streamResponse.ok) {
       const errorText = await streamResponse.text();
-      console.error("[ERROR] OpenRouter analyze-analytics generation failed:", { status: streamResponse.status, errorText });
-      res.status(500).json({ success: false, error: `OpenRouter error: ${streamResponse.status} - ${errorText}` });
+      logger.error("OpenRouter analyze-analytics generation failed", {
+        status: streamResponse.status,
+        errorText,
+      });
+      res
+        .status(500)
+        .json({
+          success: false,
+          error: `OpenRouter error: ${streamResponse.status} - ${errorText}`,
+        });
       return;
     }
 
     if (!streamResponse.body) {
-      res.status(500).json({ success: false, message: "Empty response body from AI stream" });
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Empty response body from AI stream",
+        });
       return;
     }
 
-    // Set streaming headers
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-
-    try {
-      if (typeof (streamResponse.body as any).getReader === "function") {
-        const reader = (streamResponse.body as any).getReader();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          res.write(value);
-        }
-      } else {
-        for await (const chunk of streamResponse.body as any) {
-          res.write(chunk);
-        }
-      }
-    } catch (streamError) {
-      console.error("[ERROR] Error in OpenRouter connection stream:", streamError);
-    } finally {
-      res.end();
-    }
+    await pipeSseStream(streamResponse.body, res);
   } catch (error: any) {
-    console.error("[ERROR] AI Analytics Analysis failed:", error);
+    logger.error("AI Analytics Analysis failed", { error });
     if (!res.headersSent) {
-      res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
+      res
+        .status(500)
+        .json({
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
     }
   }
 };
 
-export const adminChat = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const handleAdminChat = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { messages } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
-      res.status(400).json({ success: false, message: "Messages array is required" });
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: "Invalid request: messages array required",
+        });
       return;
     }
 
-    const systemPrompt = `You are an intelligent store management assistant for a luxury fashion e-commerce admin. You have access to real-time store data through tools. Help the admin with:
-- Store performance summaries
-- Inventory alerts and restocking advice  
-- Order management insights
-- Product performance analysis
-- Quick answers about any store metric
-
-Be concise and direct. Use actual numbers from the data. When you detect issues (low stock, declining sales, pending orders), proactively mention them. Format numbers with $ and commas. Always use the tools to get fresh data before answering — never guess.`;
-
-    const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
-    const requestHeaders: Record<string, string> = {
-      "Authorization": `Bearer ${env.OPENROUTER_API_KEY}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": env.CLIENT_URL || "http://localhost:3000",
-      "X-Title": "The Curator Admin AI Assistant",
-    };
+    const systemPrompt = `You are the Executive AI Operations Assistant for the store administrator of The Curator, a luxury fashion e-commerce brand.
+You have live access to the database via specific admin tools.
+When asked about store performance, revenue, orders, low-stock inventory, or user stats:
+- ALWAYS use the appropriate tool before making statements.
+- Never guess numbers or make up store data.
+- Keep answers concise, factual, and actionable.
+- Format numerical tables and currency cleanly.
+- If you notice critical issues (e.g. out-of-stock items, overdue orders), highlight them proactively.`;
 
     const apiMessages: any[] = [
       { role: "system", content: systemPrompt },
@@ -493,26 +624,35 @@ Be concise and direct. Use actual numbers from the data. When you detect issues 
     let hasToolCalls = true;
 
     while (hasToolCalls && loopCount < maxLoops) {
-      console.log(`[DEBUG] Dispatching admin chat query to OpenRouter (Loop ${loopCount + 1})...`);
+      logger.debug(
+        `Dispatching admin chat query to OpenRouter (Loop ${loopCount + 1})...`
+      );
 
-      const response = await fetch(openRouterUrl, {
-        method: "POST",
-        headers: requestHeaders,
-        body: JSON.stringify({
-          model: "anthropic/claude-3-haiku",
+      const response = await callOpenRouter(
+        {
+          model: AI_MODELS.HAIKU_3,
           messages: apiMessages,
           tools: adminTools,
           tool_choice: "auto",
           stream: false,
           max_tokens: 1000,
           temperature: 0.7,
-        }),
-      });
+        },
+        { title: "The Curator Admin Assistant" }
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("[ERROR] OpenRouter request failed:", { status: response.status, errorText });
-        res.status(500).json({ success: false, message: "Failed to connect to OpenRouter service" });
+        logger.error("OpenRouter request failed in admin chat", {
+          status: response.status,
+          errorText,
+        });
+        res
+          .status(500)
+          .json({
+            success: false,
+            message: "Failed to connect to OpenRouter service",
+          });
         return;
       }
 
@@ -522,8 +662,8 @@ Be concise and direct. Use actual numbers from the data. When you detect issues 
       const toolCalls = responseMessage?.tool_calls;
 
       if (toolCalls && toolCalls.length > 0) {
-        console.log(`[DEBUG] Admin tool calls requested:`, toolCalls);
-        
+        logger.debug("Admin tool calls requested", { toolCalls });
+
         apiMessages.push(responseMessage);
 
         for (const toolCall of toolCalls) {
@@ -532,10 +672,12 @@ Be concise and direct. Use actual numbers from the data. When you detect issues 
           try {
             args = JSON.parse(toolCall.function.arguments || "{}");
           } catch (err) {
-            console.error("[ERROR] Failed to parse admin tool arguments:", err);
+            logger.error("Failed to parse admin tool arguments", {
+              error: err,
+            });
           }
 
-          console.log(`[DEBUG] Executing admin tool: ${functionName} with args:`, args);
+          logger.debug(`Executing admin tool: ${functionName}`, { args });
           const result = await executeAdminTool(functionName, args);
 
           apiMessages.push({
@@ -552,57 +694,48 @@ Be concise and direct. Use actual numbers from the data. When you detect issues 
       }
     }
 
-    console.log("[DEBUG] Dispatching final admin stream query to OpenRouter...");
-    const streamResponse = await fetch(openRouterUrl, {
-      method: "POST",
-      headers: requestHeaders,
-      body: JSON.stringify({
-        model: "anthropic/claude-3-haiku",
+    logger.debug("Dispatching final admin stream query to OpenRouter...");
+    const streamResponse = await callOpenRouter(
+      {
+        model: AI_MODELS.HAIKU_3,
         messages: apiMessages,
         stream: true,
         max_tokens: 600,
         temperature: 0.7,
-      }),
-    });
+      },
+      { title: "The Curator Admin Assistant" }
+    );
 
     if (!streamResponse.ok) {
       const errorText = await streamResponse.text();
-      console.error("[ERROR] OpenRouter admin final stream failed:", { status: streamResponse.status, errorText });
-      res.status(500).json({ success: false, message: "Failed to stream final response from OpenRouter" });
+      logger.error("OpenRouter admin final stream failed", {
+        status: streamResponse.status,
+        errorText,
+      });
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to stream final response from OpenRouter",
+        });
       return;
     }
 
     if (!streamResponse.body) {
-      res.status(500).json({ success: false, message: "Empty final stream response from completions provider" });
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Empty final stream response from completions provider",
+        });
       return;
     }
 
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-
-    try {
-      if (streamResponse.body) {
-        if (typeof (streamResponse.body as any).getReader === "function") {
-          const reader = (streamResponse.body as any).getReader();
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            res.write(value);
-          }
-        } else {
-          for await (const chunk of streamResponse.body as any) {
-            res.write(chunk);
-          }
-        }
-      }
-    } catch (streamError) {
-      console.error("[ERROR] Error in OpenRouter admin connection stream:", streamError);
-    } finally {
-      res.end();
-    }
+    await pipeSseStream(streamResponse.body, res);
   } catch (error) {
-    console.error("[ERROR] Admin Chat Controller failed:", error);
+    logger.error("Admin Chat Controller failed", { error });
     next(error);
   }
 };
+
+export const adminChat = handleAdminChat;

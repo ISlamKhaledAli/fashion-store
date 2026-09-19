@@ -9,13 +9,13 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 
 export const CartDrawer = () => {
-  const { 
-    items, 
-    isOpen, 
-    toggleDrawer, 
-    removeItem, 
-    updateQuantity, 
-    getTotalPrice 
+  const {
+    items,
+    isOpen,
+    toggleDrawer,
+    removeItem,
+    updateQuantity,
+    getTotalPrice,
   } = useCartStore();
   const { isAuthenticated } = useAuthStore();
 
@@ -31,7 +31,7 @@ export const CartDrawer = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => toggleDrawer(false)}
-            className="fixed inset-0 bg-stone-950/40 backdrop-blur-sm z-[55] transition-opacity duration-700"
+            className="fixed inset-0 z-[55] bg-stone-950/40 backdrop-blur-sm transition-opacity duration-700"
           />
 
           {/* Drawer */}
@@ -39,30 +39,30 @@ export const CartDrawer = () => {
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={{ 
+            transition={{
               type: "tween",
-              duration: 0.35, 
-              ease: [0.16, 1, 0.3, 1] 
+              duration: 0.35,
+              ease: [0.16, 1, 0.3, 1],
             }}
-            className="fixed right-0 h-full w-full max-w-[450px] z-[60] bg-surface dark:bg-stone-950 shadow-[0_20px_50px_rgba(26,28,29,0.05)] flex flex-col"
+            className="fixed right-0 z-[60] flex h-full w-full max-w-[450px] flex-col bg-surface shadow-[0_20px_50px_rgba(26,28,29,0.05)] dark:bg-stone-950"
           >
             {/* Header */}
-            <div className="flex justify-between items-center p-8 border-b border-outline-variant/10">
+            <div className="flex items-center justify-between border-b border-outline-variant/10 p-8">
               <div>
                 <h2 className="text-lg font-bold text-on-surface dark:text-stone-50">
                   Your Bag ({items.length})
                 </h2>
-                <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant mt-1">
+                <p className="mt-1 text-[10px] tracking-[0.2em] text-on-surface-variant uppercase">
                   Review your curated selection
                 </p>
               </div>
-              <Button 
+              <Button
                 variant="icon"
                 size="none"
                 onClick={() => toggleDrawer(false)}
-                className="p-2 hover:bg-surface-container-low dark:hover:bg-stone-900 rounded-full transition-colors group flex items-center justify-center h-10 w-10 shrink-0"
+                className="group flex h-10 w-10 shrink-0 items-center justify-center rounded-full p-2 transition-colors hover:bg-surface-container-low dark:hover:bg-stone-900"
                 icon={
-                  <span className="material-symbols-outlined text-on-surface dark:text-stone-50 group-hover:rotate-90 transition-transform duration-500">
+                  <span className="material-symbols-outlined text-on-surface transition-transform duration-500 group-hover:rotate-90 dark:text-stone-50">
                     close
                   </span>
                 }
@@ -70,20 +70,24 @@ export const CartDrawer = () => {
             </div>
 
             {/* Scrollable Item List */}
-            <div className="flex-1 overflow-y-auto no-scrollbar px-8 py-6 space-y-8">
+            <div className="no-scrollbar flex-1 space-y-8 overflow-y-auto px-8 py-6">
               {items.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center space-y-6">
-                  <span className="material-symbols-outlined text-6xl text-outline-variant" style={{ fontVariationSettings: "'FILL' 0, 'wght' 200" }}>
+                <div className="flex h-full flex-col items-center justify-center space-y-6 text-center">
+                  <span
+                    className="material-symbols-outlined text-6xl text-outline-variant"
+                    style={{ fontVariationSettings: "'FILL' 0, 'wght' 200" }}
+                  >
                     shopping_bag
                   </span>
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-on-surface-variant uppercase tracking-widest">Your bag is empty</p>
-                    <p className="text-xs text-on-surface-variant/60 lowercase italic">Quality takes time. Start curate yours.</p>
+                    <p className="text-sm font-medium tracking-widest text-on-surface-variant uppercase">
+                      Your bag is empty
+                    </p>
+                    <p className="text-xs text-on-surface-variant/60 lowercase italic">
+                      Quality takes time. Start curate yours.
+                    </p>
                   </div>
-                  <Button 
-                    variant="primary"
-                    onClick={() => toggleDrawer(false)}
-                  >
+                  <Button variant="primary" onClick={() => toggleDrawer(false)}>
                     Start Exploring
                   </Button>
                 </div>
@@ -97,40 +101,48 @@ export const CartDrawer = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ duration: 0.4 }}
-                      className="flex gap-6 group"
+                      className="group flex gap-6"
                     >
-                      <div className="w-20 h-[100px] flex-shrink-0 bg-surface-container-low dark:bg-stone-900 overflow-hidden rounded-sm relative">
-                        <Image 
-                          src={item.image} 
-                          alt={item.name}
-                          fill
-                          sizes="80px"
-                          className="object-cover transition-transform duration-700 group-hover:scale-110" 
-                        />
+                      <div className="relative flex h-[100px] w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-sm bg-surface-container-low dark:bg-stone-900">
+                        {item.image ? (
+                          <Image
+                            src={item.image}
+                            alt={item.name}
+                            fill
+                            sizes="80px"
+                            className="object-cover transition-transform duration-700 group-hover:scale-110"
+                          />
+                        ) : (
+                          <span className="material-symbols-outlined text-2xl text-zinc-400 dark:text-stone-600">
+                            checkroom
+                          </span>
+                        )}
                       </div>
-                      <div className="flex flex-col justify-between flex-1 py-1">
-                        <div className="flex justify-between items-start">
+                      <div className="flex flex-1 flex-col justify-between py-1">
+                        <div className="flex items-start justify-between">
                           <div>
-                            <h3 className="text-sm font-medium text-on-surface dark:text-stone-50 truncate max-w-[180px]">
+                            <h3 className="max-w-[180px] truncate text-sm font-medium text-on-surface dark:text-stone-50">
                               {item.name}
                             </h3>
-                            <p className="text-[10px] text-on-surface-variant mt-1 uppercase tracking-wider">
+                            <p className="mt-1 text-[10px] tracking-wider text-on-surface-variant uppercase">
                               {item.color} / {item.size}
                             </p>
                           </div>
-                          <Button 
+                          <Button
                             variant="ghost"
                             size="none"
                             onClick={() => removeItem(item.id)}
-                            className="text-outline-variant hover:text-error transition-colors p-2"
+                            className="p-2 text-outline-variant transition-colors hover:text-error"
                             icon={
-                              <span className="material-symbols-outlined text-[18px]">delete</span>
+                              <span className="material-symbols-outlined text-[18px]">
+                                delete
+                              </span>
                             }
                           />
                         </div>
-                        <div className="flex justify-between items-end">
-                          <div className="flex items-center gap-4 bg-surface-container-low dark:bg-stone-900 px-3 py-1.5 rounded-full">
-                            <Button 
+                        <div className="flex items-end justify-between">
+                          <div className="flex items-center gap-4 rounded-full bg-surface-container-low px-3 py-1.5 dark:bg-stone-900">
+                            <Button
                               variant="none"
                               size="none"
                               onClick={() => {
@@ -139,22 +151,28 @@ export const CartDrawer = () => {
                                   updateQuantity(item.id, newQty);
                                 }
                               }}
-                              className="text-on-surface-variant hover:text-on-surface dark:hover:text-stone-50 transition-colors flex items-center justify-center h-6 w-6"
+                              className="flex h-6 w-6 items-center justify-center text-on-surface-variant transition-colors hover:text-on-surface dark:hover:text-stone-50"
                               icon={
-                                <span className="material-symbols-outlined text-xs">remove</span>
+                                <span className="material-symbols-outlined text-xs">
+                                  remove
+                                </span>
                               }
                             />
-                            <span className="text-xs font-medium w-8 text-center">{item.quantity}</span>
-                            <Button 
+                            <span className="w-8 text-center text-xs font-medium">
+                              {item.quantity}
+                            </span>
+                            <Button
                               variant="none"
                               size="none"
                               onClick={() => {
                                 const newQty = item.quantity + 1;
                                 updateQuantity(item.id, newQty);
                               }}
-                              className="text-on-surface-variant hover:text-on-surface dark:hover:text-stone-50 transition-colors flex items-center justify-center h-6 w-6"
+                              className="flex h-6 w-6 items-center justify-center text-on-surface-variant transition-colors hover:text-on-surface dark:hover:text-stone-50"
                               icon={
-                                <span className="material-symbols-outlined text-xs">add</span>
+                                <span className="material-symbols-outlined text-xs">
+                                  add
+                                </span>
                               }
                             />
                           </div>
@@ -171,38 +189,34 @@ export const CartDrawer = () => {
 
             {/* Footer Section */}
             {items.length > 0 && (
-              <div className="p-8 bg-surface-container-low dark:bg-stone-900 space-y-6">
-                <div className="flex justify-between items-baseline">
-                  <span className="text-[10px] uppercase tracking-widest text-on-surface-variant">Subtotal</span>
+              <div className="space-y-6 bg-surface-container-low p-8 dark:bg-stone-900">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[10px] tracking-widest text-on-surface-variant uppercase">
+                    Subtotal
+                  </span>
                   <span className="text-2xl font-medium tracking-tight text-on-surface dark:text-stone-50">
                     {formatCurrency(getTotalPrice())}
                   </span>
                 </div>
-                <p className="text-[10px] text-on-surface-variant uppercase tracking-widest text-center">
+                <p className="text-center text-[10px] tracking-widest text-on-surface-variant uppercase">
                   Shipping and taxes calculated at checkout
                 </p>
                 <div className="grid grid-cols-1 gap-3">
-                  <Link 
-                    href="/cart" 
+                  <Link
+                    href="/cart"
                     onClick={() => toggleDrawer(false)}
                     className="w-full"
                   >
-                    <Button 
-                      variant="outline"
-                      className="w-full scale-100"
-                    >
+                    <Button variant="outline" className="w-full scale-100">
                       View Cart
                     </Button>
                   </Link>
-                  <Link 
-                    href="/checkout" 
+                  <Link
+                    href="/checkout"
                     onClick={() => toggleDrawer(false)}
                     className="w-full"
                   >
-                    <Button 
-                      variant="primary"
-                      className="w-full scale-100"
-                    >
+                    <Button variant="primary" className="w-full scale-100">
                       Checkout Now
                     </Button>
                   </Link>
@@ -215,4 +229,3 @@ export const CartDrawer = () => {
     </AnimatePresence>
   );
 };
-

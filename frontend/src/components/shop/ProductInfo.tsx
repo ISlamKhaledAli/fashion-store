@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { Product } from "@/types";
+import type { Product } from "@/types";
 import { formatCurrency, cn } from "@/lib/utils";
 import { useCartStore } from "@/store/cartStore";
 import { motion, AnimatePresence } from "framer-motion";
-import { productApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useRouter } from "next/navigation";
@@ -21,13 +20,15 @@ interface ProductInfoProps {
   onColorSelect: (color: string) => void;
 }
 
-
-
 type ButtonState = "idle" | "loading" | "success";
 
-export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductInfoProps) => {
+export const ProductInfo = ({
+  product,
+  selectedColor,
+  onColorSelect,
+}: ProductInfoProps) => {
   const { addItem, toggleDrawer } = useCartStore();
-  
+
   const [selectedSize, setSelectedSize] = useState<string>(
     product.variants?.[0]?.size || ""
   );
@@ -35,9 +36,13 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
   const [buttonState, setButtonState] = useState<ButtonState>("idle");
   const isAnimating = useRef(false);
   const { isAuthenticated } = useAuthStore();
-  const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
+  const {
+    addItem: addToWishlist,
+    removeItem: removeFromWishlist,
+    isInWishlist,
+  } = useWishlistStore();
   const router = useRouter();
-  
+
   const isFavorite = isInWishlist(product.id);
 
   const availableSizes = product.variants
@@ -52,7 +57,7 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
 
   const colorHasImages = (colorName: string) => {
     return product.images?.some(
-      img => img.variantColor?.toLowerCase() === colorName.toLowerCase()
+      (img) => img.variantColor?.toLowerCase() === colorName.toLowerCase()
     );
   };
 
@@ -61,20 +66,23 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
       e.preventDefault();
       e.stopPropagation();
     }
-    
+
     if (!currentVariant || isAnimating.current) return;
     isAnimating.current = true;
 
     const start = Date.now();
     setButtonState("loading");
-    
+
     await addItem({
-      id: '', // Server handles IDs
-      cartItemId: '',
+      id: "", // Server handles IDs
+      cartItemId: "",
       productId: product.id,
       variantId: currentVariant.id,
       name: product.name,
-      image: product.images.find((img) => img.isMain)?.url || product.images[0]?.url || "",
+      image:
+        product.images.find((img) => img.isMain)?.url ||
+        product.images[0]?.url ||
+        "",
       price: product.price,
       size: currentVariant.size,
       color: currentVariant.color,
@@ -85,13 +93,13 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
     // Ensure minimum 600ms loading state
     const elapsed = Date.now() - start;
     if (elapsed < 600) {
-      await new Promise(r => setTimeout(r, 600 - elapsed));
+      await new Promise((r) => setTimeout(r, 600 - elapsed));
     }
 
     setButtonState("success");
-    
+
     // Trigger fly animation immediately
-    const mainImg = document.getElementById('pdp-main-image');
+    const mainImg = document.getElementById("pdp-main-image");
     flyToCart(mainImg);
 
     setTimeout(() => {
@@ -106,7 +114,7 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
       toast.info("Please sign in to save items to your wishlist");
       return;
     }
-    
+
     try {
       if (isFavorite) {
         await removeFromWishlist(product.id);
@@ -119,15 +127,20 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
   };
 
   return (
-    <div className="sticky top-32 space-y-8 animate-in fade-in slide-in-from-right-8 duration-700">
+    <div className="animate-in fade-in slide-in-from-right-8 sticky top-32 space-y-8 duration-700">
       <div>
-        <p className="text-xs tracking-[0.2em] uppercase text-on-surface-variant mb-2">
+        <p className="mb-2 text-xs tracking-[0.2em] text-on-surface-variant uppercase">
           {product.brand?.name || "ESSENTIALS COLLECTION"}
         </p>
-        <h1 className="text-[32px] font-medium leading-tight text-on-surface">
+        <h1 className="text-[32px] leading-tight font-medium text-on-surface">
           {product.name}
         </h1>
-        <RatingDisplay rating={product.avgRating} count={product.reviewCount} size={14} className="mt-3" />
+        <RatingDisplay
+          rating={product.avgRating}
+          count={product.reviewCount}
+          size={14}
+          className="mt-3"
+        />
       </div>
 
       <div className="text-[28px] font-bold text-on-surface">
@@ -135,29 +148,31 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
       </div>
 
       <div className="space-y-4">
-        <p className="text-xs font-label tracking-widest uppercase">
+        <p className="font-label text-xs tracking-widest uppercase">
           Color / <span className="text-primary">{selectedColor}</span>
         </p>
         <div className="flex gap-3">
           {product.variants
-            .filter((v, i, arr) => arr.findIndex(x => x.color === v.color) === i) // unique colors
+            .filter(
+              (v, i, arr) => arr.findIndex((x) => x.color === v.color) === i
+            ) // unique colors
             .map((variant) => (
               <Button
                 variant="none"
                 key={variant.color}
                 onClick={() => onColorSelect(variant.color)}
-                style={{ backgroundColor: variant.colorHex || '#ccc' }}
+                style={{ backgroundColor: variant.colorHex || "#ccc" }}
                 className={cn(
-                  "w-7 h-7 rounded-full border-2 transition-all p-0 relative",
-                  selectedColor === variant.color 
-                    ? 'border-zinc-950 scale-110' 
-                    : 'border-transparent hover:border-zinc-200'
+                  "relative h-7 w-7 rounded-full border-2 p-0 transition-all",
+                  selectedColor === variant.color
+                    ? "scale-110 border-zinc-950"
+                    : "border-transparent hover:border-zinc-200"
                 )}
                 title={variant.color}
                 aria-label={`Select color ${variant.color}`}
               >
                 {colorHasImages(variant.color) && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-zinc-900 rounded-full border border-white" />
+                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full border border-white bg-zinc-900" />
                 )}
               </Button>
             ))}
@@ -165,23 +180,29 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
       </div>
 
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <p className="text-xs font-label tracking-widest uppercase">Size</p>
+        <div className="flex items-center justify-between">
+          <p className="font-label text-xs tracking-widest uppercase">Size</p>
           <div className="flex gap-4">
             <Button
               variant="none"
               size="none"
-              onClick={() => useChatStore.getState().triggerSizeAdvisor(product.id, product.name)}
-              className="text-xs underline text-primary font-medium hover:opacity-85 transition-opacity flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 outline-none"
+              onClick={() =>
+                useChatStore
+                  .getState()
+                  .triggerSizeAdvisor(product.id, product.name)
+              }
+              className="flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-xs font-medium text-primary underline transition-opacity outline-none hover:opacity-85"
             >
-              <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+              <span className="material-symbols-outlined text-[14px]">
+                auto_awesome
+              </span>
               Find my size
             </Button>
-            <a 
+            <a
               href="/size-guide"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs underline text-on-surface-variant hover:text-primary transition-colors"
+              className="text-xs text-on-surface-variant underline transition-colors hover:text-primary"
             >
               Size Guide
             </a>
@@ -195,10 +216,10 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
               variant={selectedSize === size ? "primary" : "outline"}
               size="none"
               className={cn(
-                "py-3 text-sm border transition-all duration-200",
+                "border py-3 text-sm transition-all duration-200",
                 selectedSize === size
                   ? "border-primary bg-primary text-white"
-                  : "border-outline-variant hover:border-primary text-on-surface"
+                  : "border-outline-variant text-on-surface hover:border-primary"
               )}
             >
               {size}
@@ -209,21 +230,23 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
 
       <div className="flex gap-4">
         <div className="flex items-center border border-outline-variant bg-white">
-          <Button 
+          <Button
             variant="ghost"
             size="none"
             onClick={() => setQuantity(Math.max(1, quantity - 1))}
-            className="p-3 hover:text-primary transition-colors"
+            className="p-3 transition-colors hover:text-primary"
             aria-label="Decrease quantity"
           >
             <span className="material-symbols-outlined text-lg">remove</span>
           </Button>
-          <span className="mx-4 text-sm tabular-nums min-w-1.5rem text-center">{quantity}</span>
-          <Button 
+          <span className="min-w-1.5rem mx-4 text-center text-sm tabular-nums">
+            {quantity}
+          </span>
+          <Button
             variant="ghost"
             size="none"
             onClick={() => setQuantity(quantity + 1)}
-            className="p-3 hover:text-primary transition-colors"
+            className="p-3 transition-colors hover:text-primary"
             aria-label="Increase quantity"
           >
             <span className="material-symbols-outlined text-lg">add</span>
@@ -234,7 +257,7 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
           onClick={handleAddToCart}
           disabled={buttonState !== "idle" || !currentVariant}
           className={cn(
-            "flex-1 font-medium py-4 transition-all duration-300 relative overflow-hidden group disabled:opacity-70",
+            "group relative flex-1 overflow-hidden py-4 font-medium transition-all duration-300 disabled:opacity-70",
             buttonState === "success" ? "bg-green-600 text-white" : ""
           )}
           isLoading={buttonState === "loading"}
@@ -262,7 +285,7 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
                 className="flex items-center justify-center gap-2"
               >
                 <div className="flex items-center gap-2">
-                  <motion.span 
+                  <motion.span
                     initial={{ scale: 0.5 }}
                     animate={{ scale: 1 }}
                     className="material-symbols-outlined text-xl"
@@ -281,12 +304,14 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
           size="none"
           onClick={toggleWishlist}
           className={cn(
-            "p-4 border transition-colors flex items-center justify-center rounded-sm",
-            isFavorite ? "border-red-100 bg-red-50 text-red-600" : "border-outline-variant hover:bg-surface-container text-on-surface"
+            "flex items-center justify-center rounded-sm border p-4 transition-colors",
+            isFavorite
+              ? "border-red-100 bg-red-50 text-red-600"
+              : "border-outline-variant text-on-surface hover:bg-surface-container"
           )}
           aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
           icon={
-            <motion.span 
+            <motion.span
               animate={{ scale: isFavorite ? [1, 1.2, 1] : 1 }}
               className={cn(
                 "material-symbols-outlined text-xl",
@@ -300,10 +325,14 @@ export const ProductInfo = ({ product, selectedColor, onColorSelect }: ProductIn
         />
       </div>
 
-      <div className="pt-8 border-t border-surface-container space-y-4">
+      <div className="space-y-4 border-t border-surface-container pt-8">
         <div className="flex items-center gap-4">
-          <span className="material-symbols-outlined text-on-surface-variant">local_shipping</span>
-          <p className="text-sm text-on-surface-variant">Complimentary Carbon-Neutral Shipping</p>
+          <span className="material-symbols-outlined text-on-surface-variant">
+            local_shipping
+          </span>
+          <p className="text-sm text-on-surface-variant">
+            Complimentary Carbon-Neutral Shipping
+          </p>
         </div>
       </div>
     </div>

@@ -17,16 +17,16 @@ interface StickyShowcaseProps {
 
 export const StickyShowcase = ({ image, stories }: StickyShowcaseProps) => {
   return (
-    <section 
-      className="relative bg-surface-container-lowest w-full max-w-[1440px] mx-auto flex items-start"
+    <section
+      className="relative mx-auto flex w-full max-w-[1440px] items-start bg-surface-container-lowest"
       style={{ height: `${stories.length * 100}vh` }}
     >
       {/* LEFT — sticky image */}
-      <div 
-        className="w-1/2 hidden lg:block"
-        style={{ position: 'sticky', top: '100px', height: 'fit-content' }}
+      <div
+        className="hidden w-1/2 lg:block"
+        style={{ position: "sticky", top: "100px", height: "fit-content" }}
       >
-        <div className="relative w-full h-[calc(100vh-100px)]">
+        <div className="relative h-[calc(100vh-100px)] w-full">
           {image && (
             <Image
               src={image}
@@ -39,7 +39,7 @@ export const StickyShowcase = ({ image, stories }: StickyShowcaseProps) => {
       </div>
 
       {/* RIGHT — scrolling features */}
-      <div className="w-full lg:w-1/2 flex flex-col">
+      <div className="flex w-full flex-col lg:w-1/2">
         {stories.map((story, index) => (
           <motion.div
             key={index}
@@ -47,16 +47,16 @@ export const StickyShowcase = ({ image, stories }: StickyShowcaseProps) => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-20% 0px" }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="min-h-screen flex items-center px-8 lg:px-16"
+            className="flex min-h-screen items-center px-8 lg:px-16"
           >
-            <div className="space-y-6 max-w-xl">
+            <div className="max-w-xl space-y-6">
               <span className="material-symbols-outlined text-4xl text-primary">
                 {story.icon}
               </span>
               <h2 className="text-3xl font-medium tracking-tight">
                 {story.title}
               </h2>
-              <p className="text-on-surface-variant leading-relaxed text-lg lg:text-xl">
+              <p className="text-lg leading-relaxed text-on-surface-variant lg:text-xl">
                 {story.description}
               </p>
             </div>

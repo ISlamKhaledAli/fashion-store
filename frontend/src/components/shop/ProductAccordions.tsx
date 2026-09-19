@@ -18,24 +18,26 @@ export const ProductAccordions = ({ items }: ProductAccordionsProps) => {
   const [expanded, setExpanded] = useState<number | null>(0);
 
   return (
-    <section className="bg-transparent max-w-[1440px] mx-auto px-8 lg:px-12 py-24 lg:py-32 border-t border-surface-container">
-      <div className="max-w-3xl mx-auto">
+    <section className="mx-auto max-w-[1440px] border-t border-surface-container bg-transparent px-8 py-24 lg:px-12 lg:py-32">
+      <div className="mx-auto max-w-3xl">
         {items.map((item, index) => (
-          <div 
-            key={index} 
+          <div
+            key={index}
             className="border-b border-surface-container last:border-b-0"
           >
             <Button
               variant="none"
               size="none"
               onClick={() => setExpanded(expanded === index ? null : index)}
-              className="w-full py-8 group text-left px-4"
+              className="group w-full px-4 py-8 text-left"
             >
-              <div className="flex items-center justify-between w-full">
-                <h3 className="text-lg font-medium tracking-tight pr-4">{item.title}</h3>
-                <motion.span 
+              <div className="flex w-full items-center justify-between">
+                <h3 className="pr-4 text-lg font-medium tracking-tight">
+                  {item.title}
+                </h3>
+                <motion.span
                   animate={{ rotate: expanded === index ? 45 : 0 }}
-                  className="material-symbols-outlined transition-colors group-hover:text-primary shrink-0"
+                  className="material-symbols-outlined shrink-0 transition-colors group-hover:text-primary"
                 >
                   add
                 </motion.span>
@@ -50,9 +52,9 @@ export const ProductAccordions = ({ items }: ProductAccordionsProps) => {
                   transition={{ duration: 0.3, ease: "easeInOut" }}
                   className="overflow-hidden"
                 >
-                  <div className="pb-8 text-on-surface-variant leading-relaxed space-y-4">
+                  <div className="space-y-4 pb-8 leading-relaxed text-on-surface-variant">
                     {typeof item.content === "string" ? (
-                      <div className="prose prose-sm max-w-none prose-p:leading-relaxed prose-strong:font-bold prose-strong:text-zinc-900 prose-ul:list-disc prose-ul:pl-4 prose-li:mb-1">
+                      <div className="prose prose-sm prose-p:leading-relaxed prose-strong:font-bold prose-strong:text-zinc-900 prose-ul:list-disc prose-ul:pl-4 prose-li:mb-1 max-w-none">
                         <ReactMarkdown>{item.content}</ReactMarkdown>
                       </div>
                     ) : (

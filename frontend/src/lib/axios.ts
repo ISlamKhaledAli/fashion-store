@@ -2,7 +2,8 @@ import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
 
 const isServer = typeof window === "undefined";
-const defaultBaseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const defaultBaseURL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 const api = axios.create({
   baseURL: isServer ? defaultBaseURL : "/api",
@@ -46,7 +47,8 @@ api.interceptors.response.use(
           const currentPath = window.location.pathname;
           // Prevent redirect loop if already on login/register pages
           if (currentPath !== "/login" && currentPath !== "/register") {
-            window.location.href = "/login?redirect=" + encodeURIComponent(currentPath);
+            window.location.href =
+              "/login?redirect=" + encodeURIComponent(currentPath);
           }
         }
         return Promise.reject(refreshError);

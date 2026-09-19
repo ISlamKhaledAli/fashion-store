@@ -2,7 +2,7 @@
 
 import React from "react";
 import { X } from "lucide-react";
-import { FilterState, FilterAction } from "./FilterSidebar";
+import type { FilterState, FilterAction } from "./FilterSidebar";
 import { Button } from "../ui/Button";
 
 interface ActiveFiltersProps {
@@ -48,32 +48,32 @@ export const ActiveFilters = ({ state, dispatch }: ActiveFiltersProps) => {
   if (activeItems.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-2 mb-8 items-center">
-      <span className="text-[10px] uppercase tracking-widest text-stone-400 font-bold mr-2">
+    <div className="mb-8 flex flex-wrap items-center gap-2">
+      <span className="mr-2 text-[10px] font-bold tracking-widest text-stone-400 uppercase">
         Active:
       </span>
       {activeItems.map((item, idx) => (
-        <span 
-          key={idx} 
-          className="bg-surface-container-low px-3 py-1 flex items-center gap-2 rounded-full text-[10px] uppercase tracking-wider text-on-surface font-medium border border-outline-variant/10"
+        <span
+          key={idx}
+          className="flex items-center gap-2 rounded-full border border-outline-variant/10 bg-surface-container-low px-3 py-1 text-[10px] font-medium tracking-wider text-on-surface uppercase"
         >
           {item.label}
-          <Button 
+          <Button
             variant="ghost"
             size="none"
-            onClick={item.onRemove} 
-            className="hover:text-primary transition-colors flex items-center justify-center p-0.5"
+            onClick={item.onRemove}
+            className="flex items-center justify-center p-0.5 transition-colors hover:text-primary"
             aria-label={`Remove filter ${item.label}`}
           >
             <X size={10} strokeWidth={2.5} />
           </Button>
         </span>
       ))}
-      <Button 
+      <Button
         variant="ghost"
         size="none"
         onClick={() => dispatch({ type: "reset" })}
-        className="text-[10px] uppercase underline tracking-widest text-stone-400 hover:text-primary ml-2"
+        className="ml-2 text-[10px] tracking-widest text-stone-400 uppercase underline hover:text-primary"
       >
         Clear All
       </Button>

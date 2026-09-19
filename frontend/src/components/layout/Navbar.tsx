@@ -2,7 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  AnimatePresence,
+} from "framer-motion";
 import { ShoppingBag, User, Menu, X, Search } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
@@ -66,28 +71,30 @@ export const Navbar = () => {
     <motion.nav
       style={{ height, backgroundColor }}
       className={cn(
-        "fixed top-0 w-full z-50 flex justify-between items-center px-8 backdrop-blur-xl cinematic-ease transition-all duration-500 border-b",
-        isScrolled ? "border-outline-variant/10 shadow-sm" : "border-transparent"
+        "cinematic-ease fixed top-0 z-50 flex w-full items-center justify-between border-b px-8 backdrop-blur-xl transition-all duration-500",
+        isScrolled
+          ? "border-outline-variant/10 shadow-sm"
+          : "border-transparent"
       )}
     >
       <div className="flex items-center gap-12">
-        <Link 
-          href="/" 
-          className="text-2xl font-semibold tracking-tighter text-on-surface cursor-pointer hover:opacity-70 transition-opacity"
+        <Link
+          href="/"
+          className="cursor-pointer text-2xl font-semibold tracking-tighter text-on-surface transition-opacity hover:opacity-70"
         >
           CURATOR
         </Link>
 
-        <div className="hidden md:flex items-center gap-10 font-medium tracking-tight">
+        <div className="hidden items-center gap-10 font-medium tracking-tight md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.name}
               href={link.href}
-              className="relative group py-2 text-on-surface/60 hover:text-on-surface transition-colors duration-300 cursor-pointer"
+              className="group relative cursor-pointer py-2 text-on-surface/60 transition-colors duration-300 hover:text-on-surface"
             >
               {link.name}
               <motion.span
-                className="absolute bottom-0 left-0 w-full h-1px bg-on-surface origin-left"
+                className="h-1px absolute bottom-0 left-0 w-full origin-left bg-on-surface"
                 initial={{ scaleX: 0 }}
                 whileHover={{ scaleX: 1 }}
                 transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] as const }}
@@ -123,7 +130,7 @@ export const Navbar = () => {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 exit={{ scale: 0 }}
-                className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-on-primary text-[8px] flex items-center justify-center rounded-full font-bold"
+                className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-on-primary"
               >
                 {getTotalItems()}
               </motion.span>
@@ -138,16 +145,20 @@ export const Navbar = () => {
         >
           <User size={20} strokeWidth={1.5} />
         </Link>
-        
+
         <Button
           variant="icon"
           size="icon"
-          className="md:hidden text-on-surface"
+          className="text-on-surface md:hidden"
           onClick={() => setIsMobileMenuOpen((value) => !value)}
           aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
           aria-expanded={isMobileMenuOpen}
         >
-          {isMobileMenuOpen ? <X size={20} strokeWidth={1.5} /> : <Menu size={20} strokeWidth={1.5} />}
+          {isMobileMenuOpen ? (
+            <X size={20} strokeWidth={1.5} />
+          ) : (
+            <Menu size={20} strokeWidth={1.5} />
+          )}
         </Button>
       </div>
 
@@ -159,7 +170,7 @@ export const Navbar = () => {
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
-              "fixed left-0 right-0 z-40 border-b border-outline-variant/20 bg-surface/95 px-6 py-6 shadow-xl shadow-black/5 backdrop-blur-xl md:hidden",
+              "fixed right-0 left-0 z-40 border-b border-outline-variant/20 bg-surface/95 px-6 py-6 shadow-xl shadow-black/5 backdrop-blur-xl md:hidden",
               isScrolled ? "top-[56px]" : "top-[70px]"
             )}
           >
@@ -180,14 +191,14 @@ export const Navbar = () => {
               <button
                 type="button"
                 onClick={handleSearchOpen}
-                className="min-h-12 border border-outline-variant text-sm font-bold uppercase text-on-surface transition-colors hover:bg-surface-container-low"
+                className="min-h-12 border border-outline-variant text-sm font-bold text-on-surface uppercase transition-colors hover:bg-surface-container-low"
               >
                 Search
               </button>
               <Link
                 href={accountHref}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="flex min-h-12 items-center justify-center bg-primary text-sm font-bold uppercase text-on-primary"
+                className="flex min-h-12 items-center justify-center bg-primary text-sm font-bold text-on-primary uppercase"
               >
                 {isMounted && isAuthenticated ? "Account" : "Sign in"}
               </Link>

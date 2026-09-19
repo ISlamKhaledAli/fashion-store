@@ -1,11 +1,23 @@
 "use client";
 
 import React from "react";
-import { motion, HTMLMotionProps } from "framer-motion";
+import type { HTMLMotionProps } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-interface ButtonProps extends Omit<HTMLMotionProps<"button">, "ref" | "children"> {
-  variant?: "primary" | "secondary" | "outline" | "ghost" | "icon" | "surface" | "none" | "success";
+interface ButtonProps extends Omit<
+  HTMLMotionProps<"button">,
+  "ref" | "children"
+> {
+  variant?:
+    | "primary"
+    | "secondary"
+    | "outline"
+    | "ghost"
+    | "icon"
+    | "surface"
+    | "none"
+    | "success";
   size?: "sm" | "md" | "lg" | "icon" | "none";
   isLoading?: boolean;
   isActive?: boolean;
@@ -15,31 +27,40 @@ interface ButtonProps extends Omit<HTMLMotionProps<"button">, "ref" | "children"
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ 
-    className, 
-    variant = "primary", 
-    size = "md", 
-    isLoading, 
-    isActive, 
-    icon,
-    iconPlacement = "start",
-    children, 
-    ...props 
-  }, ref) => {
+  (
+    {
+      className,
+      variant = "primary",
+      size = "md",
+      isLoading,
+      isActive,
+      icon,
+      iconPlacement = "start",
+      children,
+      ...props
+    },
+    ref
+  ) => {
     const variants = {
-      primary: "bg-primary text-on-primary hover:bg-primary/90 uppercase tracking-widest font-bold text-[13px] shadow-lg shadow-primary/10",
-      secondary: "bg-surface-container-low text-on-surface hover:bg-surface-container uppercase tracking-wide font-bold text-[13px]",
-      outline: "border border-outline-variant hover:border-primary bg-transparent text-on-surface uppercase tracking-wide font-bold text-[13px]",
-      ghost: "hover:bg-surface-container-low text-on-surface-variant transition-colors",
-      surface: "bg-white text-black hover:bg-stone-100 uppercase tracking-widest font-bold text-[13px] shadow-xl",
+      primary:
+        "bg-primary text-on-primary hover:bg-primary/90 uppercase tracking-widest font-bold text-[13px] shadow-lg shadow-primary/10",
+      secondary:
+        "bg-surface-container-low text-on-surface hover:bg-surface-container uppercase tracking-wide font-bold text-[13px]",
+      outline:
+        "border border-outline-variant hover:border-primary bg-transparent text-on-surface uppercase tracking-wide font-bold text-[13px]",
+      ghost:
+        "hover:bg-surface-container-low text-on-surface-variant transition-colors",
+      surface:
+        "bg-white text-black hover:bg-stone-100 uppercase tracking-widest font-bold text-[13px] shadow-xl",
       none: "",
       icon: cn(
-        "transition-all duration-300 flex items-center justify-center rounded-full",
-        isActive 
-          ? "text-primary opacity-100 scale-110 bg-surface-container-low" 
-          : "text-on-surface-variant hover:text-primary hover:bg-surface-container-lowest"
+        "flex items-center justify-center rounded-full transition-all duration-300",
+        isActive
+          ? "scale-110 bg-surface-container-low text-primary opacity-100"
+          : "text-on-surface-variant hover:bg-surface-container-lowest hover:text-primary"
       ),
-      success: "bg-success text-on-success uppercase tracking-widest font-bold text-[13px] shadow-lg shadow-success/10",
+      success:
+        "bg-success text-on-success uppercase tracking-widest font-bold text-[13px] shadow-lg shadow-success/10",
     };
 
     const sizes = {
@@ -57,7 +78,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         whileHover={{ scale: 0.98 }}
         whileTap={{ scale: 0.96 }}
         className={cn(
-          "inline-flex items-center justify-center cinematic-ease transition-all disabled:opacity-50 disabled:pointer-events-none cursor-pointer relative",
+          "cinematic-ease relative inline-flex cursor-pointer items-center justify-center transition-all disabled:pointer-events-none disabled:opacity-50",
           // Add gap only if both items exist and we're not only showing a spinner
           !isLoading && icon && children && "gap-3",
           variants[variant],
@@ -67,18 +88,20 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={isLoading}
         {...props}
       >
-        <span className={cn(
-          "flex w-full items-center justify-center gap-3 transition-opacity duration-300",
-          isLoading && "opacity-0"
-        )}>
+        <span
+          className={cn(
+            "flex w-full items-center justify-center gap-3 transition-opacity duration-300",
+            isLoading && "opacity-0"
+          )}
+        >
           {icon && iconPlacement === "start" && (
-            <span className="flex items-center justify-center shrink-0">
+            <span className="flex shrink-0 items-center justify-center">
               {icon}
             </span>
           )}
           {children}
           {icon && iconPlacement === "end" && (
-            <span className="flex items-center justify-center shrink-0">
+            <span className="flex shrink-0 items-center justify-center">
               {icon}
             </span>
           )}

@@ -1,153 +1,190 @@
 import api from "./axios";
-import { 
-  User, Category, Brand, Product, Order, 
-  WishlistItem, Review, ApiResponse, OrderStatus, AdminCustomer, UserMeasurements
+import type {
+  User,
+  Category,
+  Brand,
+  Product,
+  Order,
+  WishlistItem,
+  Review,
+  ApiResponse,
+  OrderStatus,
+  AdminCustomer,
+  UserMeasurements,
 } from "@/types";
 
 export const authApi = {
-  login: (credentials: Record<string, unknown>) => 
+  login: (credentials: Record<string, unknown>) =>
     api.post<ApiResponse<{ user: User }>>("/auth/login", credentials),
-  register: (data: Record<string, unknown>) => 
+  register: (data: Record<string, unknown>) =>
     api.post<ApiResponse<{ user: User }>>("/auth/register", data),
-  getMe: () => 
-    api.get<ApiResponse<User>>("/auth/me"),
+  getMe: () => api.get<ApiResponse<User>>("/auth/me"),
 };
 
 export const productApi = {
-  getAll: (params: Record<string, unknown>) => 
+  getAll: (params: Record<string, unknown>) =>
     api.get<ApiResponse<Product[]>>("/products", { params }),
-  getByIdentifier: (identifier: string) => 
+  getByIdentifier: (identifier: string) =>
     api.get<ApiResponse<Product>>(`/products/${identifier}`),
-  getFeatured: () => 
-    api.get<ApiResponse<Product[]>>("/products", { params: { featured: true } }),
-  getFilters: () => 
-    api.get<ApiResponse<{ colors: { name: string; hex: string }[] }>>("/products/filters"),
-  getReviews: (productId: string) => 
+  getFeatured: () =>
+    api.get<ApiResponse<Product[]>>("/products", {
+      params: { featured: true },
+    }),
+  getFilters: () =>
+    api.get<ApiResponse<{ colors: { name: string; hex: string }[] }>>(
+      "/products/filters"
+    ),
+  getReviews: (productId: string) =>
     api.get<ApiResponse<Review[]>>(`/reviews/product/${productId}`),
-  getRecommendations: (productId: string) => 
-    api.get<{ success: boolean; source: string; recommendations: Product[] }>(`/products/${productId}/recommendations`),
+  getRecommendations: (productId: string) =>
+    api.get<{ success: boolean; source: string; recommendations: Product[] }>(
+      `/products/${productId}/recommendations`
+    ),
 };
 
 export const categoryApi = {
-  getAll: () => 
-    api.get<ApiResponse<Category[]>>("/categories"),
+  getAll: () => api.get<ApiResponse<Category[]>>("/categories"),
 };
 
 export const brandApi = {
-  getAll: () => 
-    api.get<ApiResponse<Brand[]>>("/brands"),
+  getAll: () => api.get<ApiResponse<Brand[]>>("/brands"),
 };
 
 export const cartApi = {
   get: () => api.get<ApiResponse<unknown>>("/cart"),
-  addItem: (variantId: string, quantity: number) => 
+  addItem: (variantId: string, quantity: number) =>
     api.post<ApiResponse<unknown>>("/cart/add", { variantId, quantity }),
-  updateQuantity: (cartItemId: string, quantity: number) => 
+  updateQuantity: (cartItemId: string, quantity: number) =>
     api.put<ApiResponse<unknown>>("/cart/update", { cartItemId, quantity }),
-  removeItem: (id: string) => 
+  removeItem: (id: string) =>
     api.delete<ApiResponse<unknown>>(`/cart/remove/${id}`),
   clear: () => api.delete<ApiResponse<unknown>>("/cart/clear"),
-  validatePromo: (code: string, orderTotal: number) => 
-    api.post<ApiResponse<{ valid: boolean; discountAmount: number; message?: string }>>("/discounts/validate", { code, orderTotal }),
+  validatePromo: (code: string, orderTotal: number) =>
+    api.post<
+      ApiResponse<{ valid: boolean; discountAmount: number; message?: string }>
+    >("/discounts/validate", { code, orderTotal }),
   getShippingMethods: () =>
-    api.get<ApiResponse<{ id: string; name: string; time: string; rate: number }[]>>("/cart/shipping-methods"),
+    api.get<
+      ApiResponse<{ id: string; name: string; time: string; rate: number }[]>
+    >("/cart/shipping-methods"),
   calculateTotals: (shippingMethod: string = "standard", promoCode?: string) =>
-    api.post<ApiResponse<{
-      subtotal: number;
-      discountAmount: number;
-      discountedSubtotal: number;
-      shippingCost: number;
-      tax: number;
-      total: number;
-    }>>("/cart/calculate", { shippingMethod, promoCode }),
+    api.post<
+      ApiResponse<{
+        subtotal: number;
+        discountAmount: number;
+        discountedSubtotal: number;
+        shippingCost: number;
+        tax: number;
+        total: number;
+      }>
+    >("/cart/calculate", { shippingMethod, promoCode }),
 };
 
 export const orderApi = {
-  getMine: (params?: Record<string, unknown>) => 
+  getMine: (params?: Record<string, unknown>) =>
     api.get<ApiResponse<Order[]>>("/orders", { params }),
-  cancel: (id: string) => 
-    api.put<ApiResponse<unknown>>(`/orders/${id}/cancel`),
+  cancel: (id: string) => api.put<ApiResponse<unknown>>(`/orders/${id}/cancel`),
 };
 
 export const wishlistApi = {
   getAll: () => api.get<ApiResponse<WishlistItem[]>>("/wishlist"),
-  add: (productId: string) => 
+  add: (productId: string) =>
     api.post<ApiResponse<WishlistItem>>("/wishlist/add", { productId }),
-  remove: (productId: string) => 
+  remove: (productId: string) =>
     api.delete<ApiResponse<unknown>>(`/wishlist/remove/${productId}`),
 };
 
 export const reviewApi = {
-  create: (data: { productId: string; rating: number; title: string; body: string }) =>
-    api.post<ApiResponse<unknown>>("/reviews", data),
+  create: (data: {
+    productId: string;
+    rating: number;
+    title: string;
+    body: string;
+  }) => api.post<ApiResponse<unknown>>("/reviews", data),
 };
 
 export const addressApi = {
   getAll: () => api.get<ApiResponse<unknown[]>>("/addresses"),
-  create: (data: Record<string, unknown>) => 
+  create: (data: Record<string, unknown>) =>
     api.post<ApiResponse<unknown>>("/addresses", data),
-  update: (id: string, data: Record<string, unknown>) => 
+  update: (id: string, data: Record<string, unknown>) =>
     api.put<ApiResponse<unknown>>(`/addresses/${id}`, data),
-  delete: (id: string) => 
-    api.delete<ApiResponse<unknown>>(`/addresses/${id}`),
+  delete: (id: string) => api.delete<ApiResponse<unknown>>(`/addresses/${id}`),
 };
 
 export const adminApi = {
-  getAnalytics: () => 
+  getAnalytics: () =>
     api.get<ApiResponse<unknown>>("/admin/analytics/overview"),
-  getRevenue: (params?: Record<string, unknown>) => 
+  getRevenue: (params?: Record<string, unknown>) =>
     api.get<ApiResponse<unknown>>("/admin/analytics/revenue", { params }),
-  getTopProducts: () => 
+  getTopProducts: () =>
     api.get<ApiResponse<unknown>>("/admin/analytics/top-products"),
-  getGeographicData: () => 
+  getGeographicData: () =>
     api.get<ApiResponse<unknown>>("/admin/analytics/geographic"),
   getCategoryRevenue: () =>
     api.get<ApiResponse<unknown>>("/admin/analytics/categories"),
   getCustomerRetention: () =>
     api.get<ApiResponse<unknown>>("/admin/analytics/retention"),
-  getOrders: (params: { page?: number; limit?: number; search?: string; status?: OrderStatus }) => 
-    api.get<ApiResponse<Order[]>>("/admin/orders", { params }),
-  updateOrderStatus: (id: string, status: OrderStatus) => 
+  getOrders: (params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: OrderStatus;
+  }) => api.get<ApiResponse<Order[]>>("/admin/orders", { params }),
+  updateOrderStatus: (id: string, status: OrderStatus) =>
     api.put<ApiResponse<Order>>(`/admin/orders/${id}`, { status }),
   bulkUpdateOrderStatus: (ids: string[], status: OrderStatus) =>
-    api.post<ApiResponse<unknown>>("/admin/orders/bulk-status", { ids, status }),
+    api.post<ApiResponse<unknown>>("/admin/orders/bulk-status", {
+      ids,
+      status,
+    }),
   bulkDeleteOrders: (ids: string[]) =>
     api.post<ApiResponse<unknown>>("/admin/orders/bulk-delete", { ids }),
-  getCustomers: (params?: Record<string, unknown>) => 
+  getCustomers: (params?: Record<string, unknown>) =>
     api.get<ApiResponse<AdminCustomer[]>>("/admin/customers", { params }),
-  updateCustomerStatus: (id: string, status: 'ACTIVE' | 'BANNED') =>
+  updateCustomerStatus: (id: string, status: "ACTIVE" | "BANNED") =>
     api.put<ApiResponse<unknown>>(`/admin/customers/${id}/status`, { status }),
-  getProducts: (params?: Record<string, unknown>) => 
+  getProducts: (params?: Record<string, unknown>) =>
     api.get<ApiResponse<Product[]>>("/admin/products", { params }),
-  getBrands: () =>
-    api.get<ApiResponse<Brand[]>>("/brands"),
+  getBrands: () => api.get<ApiResponse<Brand[]>>("/brands"),
   getProductById: (id: string) =>
     api.get<ApiResponse<Product>>(`/products/admin/${id}`),
-  createProduct: (data: Record<string, unknown>) => 
+  createProduct: (data: Record<string, unknown>) =>
     api.post<ApiResponse<Product>>("/products", data),
   updateProduct: (id: string, data: Record<string, unknown>) => {
     // Rely on product.validator.ts on the backend to strip unused fields
     return api.put<ApiResponse<Product>>(`/products/${id}`, data);
   },
-  updateProductImage: (productId: string, imageId: string, data: { variantColor?: string | null, isMain?: boolean, position?: number }) => 
-    api.put<ApiResponse<unknown>>(`/products/${productId}/images/${imageId}`, data),
-  deleteProduct: (id: string) => 
+  updateProductImage: (
+    productId: string,
+    imageId: string,
+    data: { variantColor?: string | null; isMain?: boolean; position?: number }
+  ) =>
+    api.put<ApiResponse<unknown>>(
+      `/products/${productId}/images/${imageId}`,
+      data
+    ),
+  deleteProduct: (id: string) =>
     api.delete<ApiResponse<unknown>>(`/products/${id}`),
   uploadMedia: (file: File) => {
     const formData = new FormData();
     formData.append("image", file);
-    return api.post<ApiResponse<{ url: string; publicId: string }>>("/upload/image", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    return api.post<ApiResponse<{ url: string; publicId: string }>>(
+      "/upload/image",
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    );
   },
-  getCategories: () =>
-    api.get<ApiResponse<Category[]>>("/admin/categories"),
+  getCategories: () => api.get<ApiResponse<Category[]>>("/admin/categories"),
   createCategory: (data: Partial<Category>) =>
     api.post<ApiResponse<Category>>("/categories", data),
   updateCategory: (id: string, data: Partial<Category>) =>
     api.put<ApiResponse<Category>>(`/categories/${id}`, data),
-  reorderCategories: (items: { id: string; position: number; parentId: string | null }[]) =>
-    api.post<ApiResponse<unknown>>("/admin/categories/reorder", { items }),
+  reorderCategories: (
+    items: { id: string; position: number; parentId: string | null }[]
+  ) => api.post<ApiResponse<unknown>>("/admin/categories/reorder", { items }),
   deleteCategory: (id: string) =>
     api.delete<ApiResponse<unknown>>(`/categories/${id}`),
   createBrand: (data: Partial<Brand>) =>
@@ -156,8 +193,7 @@ export const adminApi = {
     api.put<ApiResponse<Brand>>(`/brands/${id}`, data),
   deleteBrand: (id: string) =>
     api.delete<ApiResponse<unknown>>(`/brands/${id}`),
-  getInventory: () => 
-    api.get<ApiResponse<Product[]>>("/admin/inventory"),
+  getInventory: () => api.get<ApiResponse<Product[]>>("/admin/inventory"),
   updateStock: (variantId: string, stock: number) =>
     api.put<ApiResponse<unknown>>(`/admin/inventory/${variantId}`, { stock }),
   getDiscounts: () =>
@@ -165,7 +201,10 @@ export const adminApi = {
   createDiscount: (data: Record<string, unknown>) =>
     api.post<ApiResponse<Record<string, unknown>>>("/admin/discounts", data),
   updateDiscount: (id: string, data: Record<string, unknown>) =>
-    api.put<ApiResponse<Record<string, unknown>>>(`/admin/discounts/${id}`, data),
+    api.put<ApiResponse<Record<string, unknown>>>(
+      `/admin/discounts/${id}`,
+      data
+    ),
   deleteDiscount: (id: string) =>
     api.delete<ApiResponse<unknown>>(`/admin/discounts/${id}`),
   generateDescription: (data: {
@@ -176,29 +215,49 @@ export const adminApi = {
     colors?: string[];
     sizes?: string[];
     images?: string[];
-  }) => api.post<{ success: boolean; description?: string; data?: { description?: string } }>("/admin/ai/generate-description", data, { withCredentials: true }),
+  }) =>
+    api.post<{
+      success: boolean;
+      description?: string;
+      data?: { description?: string };
+    }>("/admin/ai/generate-description", data, { withCredentials: true }),
   generateAccordion: (data: {
     title: string;
     productName: string;
     category?: string;
     brand?: string;
-  }) => api.post<{ success: boolean; content: string }>("/admin/ai/generate-accordion", data, { withCredentials: true }),
+  }) =>
+    api.post<{ success: boolean; content: string }>(
+      "/admin/ai/generate-accordion",
+      data,
+      { withCredentials: true }
+    ),
   generateFeatures: (data: {
     productName: string;
     description?: string;
     category?: string;
     brand?: string;
-  }) => api.post<{ success: boolean; features: { icon: string; title: string; description: string }[] }>("/admin/ai/generate-features", data, { withCredentials: true }),
+  }) =>
+    api.post<{
+      success: boolean;
+      features: { icon: string; title: string; description: string }[];
+    }>("/admin/ai/generate-features", data, { withCredentials: true }),
   generateAllAccordions: (data: {
     productName: string;
     description?: string;
     category?: string;
     brand?: string;
-  }) => api.post<{ success: boolean; details: { title: string; content: string }[] }>("/admin/ai/generate-all-accordions", data, { withCredentials: true }),
+  }) =>
+    api.post<{
+      success: boolean;
+      details: { title: string; content: string }[];
+    }>("/admin/ai/generate-all-accordions", data, { withCredentials: true }),
 };
 
 export const sizeApi = {
-  getMeasurements: () => api.get<ApiResponse<UserMeasurements | null>>("/size/measurements"),
-  updateMeasurements: (data: UserMeasurements) => api.put<ApiResponse<UserMeasurements>>("/size/measurements", data),
+  getMeasurements: () =>
+    api.get<ApiResponse<UserMeasurements | null>>("/size/measurements"),
+  updateMeasurements: (data: UserMeasurements) =>
+    api.put<ApiResponse<UserMeasurements>>("/size/measurements", data),
   clearMeasurements: () => api.delete<ApiResponse<null>>("/size/measurements"),
 };

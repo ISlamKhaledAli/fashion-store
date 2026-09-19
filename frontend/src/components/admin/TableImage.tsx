@@ -21,29 +21,30 @@ export const TableImage: React.FC<TableImageProps> = ({
   alt = "Row image",
   active = false,
   className,
-  containerClassName
+  containerClassName,
 }) => {
   return (
-    <div className={cn(
-      "overflow-hidden shrink-0 bg-zinc-100 flex items-center justify-center",
-      containerClassName
-    )}>
+    <div
+      className={cn(
+        "flex shrink-0 items-center justify-center overflow-hidden bg-zinc-100",
+        containerClassName
+      )}
+    >
       {src ? (
         <img
           src={src}
           alt={alt}
           className={cn(
-            "w-full h-full object-cover vibrant-img",
+            "vibrant-img h-full w-full object-cover",
             active && "is-active",
             className
           )}
         />
       ) : (
-        <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">
+        <span className="text-[10px] font-black tracking-widest text-zinc-300 uppercase">
           IMG
         </span>
       )}
     </div>
   );
 };
-

@@ -3,8 +3,13 @@ import { prisma } from "../lib/prisma";
 import { sendResponse } from "../utils/apiResponse";
 import { categorySchema } from "../validators/common.validator";
 import { NotFoundError } from "../utils/AppError";
+import { isNotFoundError } from "../utils/prismaErrors";
 
-export const getCategories = async (req: Request, res: Response, next: NextFunction) => {
+export const getCategories = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const categories = await prisma.category.findMany({
       where: { parentId: null },
@@ -19,14 +24,18 @@ export const getCategories = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-export const createCategory = async (req: Request, res: Response, next: NextFunction) => {
+export const createCategory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { parentId, ...rest } = categorySchema.parse(req.body);
-    const category = await prisma.category.create({ 
+    const category = await prisma.category.create({
       data: {
         ...rest,
-        ...(parentId ? { parent: { connect: { id: parentId } } } : {})
-      } 
+        ...(parentId ? { parent: { connect: { id: parentId } } } : {}),
+      },
     });
     return sendResponse({ res, status: 201, success: true, data: category });
   } catch (error) {
@@ -34,7 +43,11 @@ export const createCategory = async (req: Request, res: Response, next: NextFunc
   }
 };
 
-export const updateCategory = async (req: Request, res: Response, next: NextFunction) => {
+export const updateCategory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { id } = req.params;
     const { parentId, ...rest } = categorySchema.partial().parse(req.body);
@@ -43,30 +56,39 @@ export const updateCategory = async (req: Request, res: Response, next: NextFunc
       where: { id: String(id) },
       data: {
         ...rest,
-        ...(parentId === null 
-          ? { parent: { disconnect: true } } 
-          : parentId 
-            ? { parent: { connect: { id: parentId } } } 
-            : {})
+        ...(parentId === null
+          ? { parent: { disconnect: true } }
+          : parentId
+            ? { parent: { connect: { id: parentId } } }
+            : {}),
       },
     });
     return sendResponse({ res, status: 200, success: true, data: category });
   } catch (error) {
-    if (error instanceof Error && (error as any).code === "P2025") {
-      throw new NotFoundError("Category not found");
+    if (isNotFoundError(error)) {
+      return next(new NotFoundError("Category not found"));
     }
     next(error);
   }
 };
 
-export const deleteCategory = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteCategory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { id } = req.params;
     await prisma.category.delete({ where: { id: String(id) } });
-    return sendResponse({ res, status: 200, success: true, message: "Category deleted" });
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Category deleted",
+    });
   } catch (error) {
-    if (error instanceof Error && (error as any).code === "P2025") {
-      throw new NotFoundError("Category not found");
+    if (isNotFoundError(error)) {
+      return next(new NotFoundError("Category not found"));
     }
     next(error);
   }

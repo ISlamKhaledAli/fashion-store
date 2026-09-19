@@ -3,8 +3,13 @@ import { prisma } from "../lib/prisma";
 import { sendResponse } from "../utils/apiResponse";
 import { reviewSchema } from "../validators/review.validator";
 import { ConflictError, NotFoundError } from "../utils/AppError";
+import { isNotFoundError } from "../utils/prismaErrors";
 
-export const getProductReviews = async (req: Request, res: Response, next: NextFunction) => {
+export const getProductReviews = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { productId } = req.params;
     const reviews = await prisma.review.findMany({
@@ -18,7 +23,11 @@ export const getProductReviews = async (req: Request, res: Response, next: NextF
   }
 };
 
-export const createReview = async (req: Request, res: Response, next: NextFunction) => {
+export const createReview = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const userId = req.user?.id as string;
     const validatedData = reviewSchema.parse(req.body);
@@ -49,7 +58,11 @@ export const createReview = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const updateReview = async (req: Request, res: Response, next: NextFunction) => {
+export const updateReview = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { id } = req.params;
     const userId = req.user?.id;
@@ -62,14 +75,18 @@ export const updateReview = async (req: Request, res: Response, next: NextFuncti
 
     return sendResponse({ res, status: 200, success: true, data: review });
   } catch (error) {
-    if (error instanceof Error && (error as any).code === "P2025") {
-      throw new NotFoundError("Review not found");
+    if (isNotFoundError(error)) {
+      return next(new NotFoundError("Review not found"));
     }
     next(error);
   }
 };
 
-export const deleteReview = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteReview = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { id } = req.params;
     const userId = req.user?.id;
@@ -78,10 +95,15 @@ export const deleteReview = async (req: Request, res: Response, next: NextFuncti
       where: { id: String(id), userId },
     });
 
-    return sendResponse({ res, status: 200, success: true, message: "Review deleted" });
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Review deleted",
+    });
   } catch (error) {
-    if (error instanceof Error && (error as any).code === "P2025") {
-      throw new NotFoundError("Review not found");
+    if (isNotFoundError(error)) {
+      return next(new NotFoundError("Review not found"));
     }
     next(error);
   }

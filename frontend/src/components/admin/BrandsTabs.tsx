@@ -29,10 +29,15 @@ export const BrandsTabs: React.FC<BrandsTabsProps> = ({
   className,
 }) => {
   return (
-    <div className={cn("flex items-center gap-10 border-b border-zinc-100 px-2", className)}>
+    <div
+      className={cn(
+        "flex items-center gap-10 border-b border-zinc-100 px-2",
+        className
+      )}
+    >
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
-        
+
         return (
           <Button
             variant="none"
@@ -40,21 +45,23 @@ export const BrandsTabs: React.FC<BrandsTabsProps> = ({
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
             className={cn(
-              "relative pb-4 pt-1 flex items-center gap-2.5 transition-all duration-300 outline-none group",
-              isActive 
-                ? "text-zinc-900 font-semibold" 
-                : "text-zinc-400 hover:text-zinc-600 font-medium"
+              "group relative flex items-center gap-2.5 pt-1 pb-4 transition-all duration-300 outline-none",
+              isActive
+                ? "font-semibold text-zinc-900"
+                : "font-medium text-zinc-400 hover:text-zinc-600"
             )}
           >
             <span className="text-sm tracking-tight">{tab.label}</span>
-            
+
             {tab.count !== undefined && (
-              <span className={cn(
-                "px-2 py-0.5 rounded-full text-[10px] font-bold tabular-nums transition-all duration-300",
-                isActive 
-                  ? "bg-zinc-100 text-zinc-900" 
-                  : "bg-zinc-50 text-zinc-400 group-hover:text-zinc-500"
-              )}>
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums transition-all duration-300",
+                  isActive
+                    ? "bg-zinc-100 text-zinc-900"
+                    : "bg-zinc-50 text-zinc-400 group-hover:text-zinc-500"
+                )}
+              >
                 {tab.count}
               </span>
             )}
@@ -63,14 +70,14 @@ export const BrandsTabs: React.FC<BrandsTabsProps> = ({
             {isActive && (
               <motion.div
                 layoutId="brandsTabUnderline"
-                className="absolute bottom-0 left-0 right-0 h-[2px] bg-zinc-800 rounded-full"
+                className="absolute right-0 bottom-0 left-0 h-[2px] rounded-full bg-zinc-800"
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
             )}
-            
+
             {/* Subtle Hover Indication (for non-active) */}
             {!isActive && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-zinc-200 scale-x-0 group-hover:scale-x-100 origin-center transition-transform duration-300 rounded-full" />
+              <span className="absolute right-0 bottom-0 left-0 h-[2px] origin-center scale-x-0 rounded-full bg-zinc-200 transition-transform duration-300 group-hover:scale-x-100" />
             )}
           </Button>
         );

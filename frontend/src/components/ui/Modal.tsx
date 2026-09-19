@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { X } from "lucide-react";
 import { CloseButton } from "./CloseButton";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
@@ -68,7 +67,7 @@ export function Modal({
           ref={overlayRef}
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/40 p-4 backdrop-blur-sm"
           onClick={handleOverlayClick}
         >
           <motion.div
@@ -76,21 +75,21 @@ export function Modal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className={cn(
-              "w-full bg-white rounded-2xl shadow-xl border border-zinc-100 overflow-hidden pointer-events-auto",
+              "pointer-events-auto w-full overflow-hidden rounded-2xl border border-zinc-100 bg-white shadow-xl",
               maxWidthMap[maxWidth],
               className
             )}
           >
             {(title || onClose) && (
-              <div className="px-6 py-4 flex items-center justify-between border-b border-zinc-100">
+              <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4">
                 <div>
                   {title && (
-                    <h3 className="text-lg font-bold text-zinc-950 tracking-tight">
+                    <h3 className="text-lg font-bold tracking-tight text-zinc-950">
                       {title}
                     </h3>
                   )}
                   {description && (
-                    <p className="text-xs text-zinc-400 mt-0.5 font-medium">
+                    <p className="mt-0.5 text-xs font-medium text-zinc-400">
                       {description}
                     </p>
                   )}
@@ -98,7 +97,7 @@ export function Modal({
                 {onClose && (
                   <CloseButton
                     onClick={onClose}
-                    className="p-1.5 hover:bg-zinc-100 cursor-pointer"
+                    className="cursor-pointer p-1.5 hover:bg-zinc-100"
                     size={18}
                   />
                 )}

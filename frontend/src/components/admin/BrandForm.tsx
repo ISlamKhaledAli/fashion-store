@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Brand } from "@/types";
+import type { Brand } from "@/types";
 import { adminApi } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { toast } from "sonner";
@@ -16,19 +16,25 @@ interface BrandFormProps {
   onCancel: () => void;
 }
 
-export const BrandForm: React.FC<BrandFormProps> = ({ brand, onSuccess, onCancel }) => {
+export const BrandForm: React.FC<BrandFormProps> = ({
+  brand,
+  onSuccess,
+  onCancel,
+}) => {
   const isEditing = !!brand;
   const [name, setName] = useState(brand?.name || "");
   const [slug, setSlug] = useState(brand?.slug || "");
   const [description, setDescription] = useState(brand?.description || "");
   const [logo, setLogo] = useState(brand?.logo || "");
-  const [status, setStatus] = useState<"ACTIVE" | "INACTIVE">(brand?.status || "ACTIVE");
-  
+  const [status, setStatus] = useState<"ACTIVE" | "INACTIVE">(
+    brand?.status || "ACTIVE"
+  );
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-generate slug from name if not editing an existing slug (or if slug is empty)
@@ -119,71 +125,75 @@ export const BrandForm: React.FC<BrandFormProps> = ({ brand, onSuccess, onCancel
   };
 
   return (
-    <div className="bg-white border border-outline-variant/30 rounded-[4px] p-8 shadow-sm flex flex-col min-h-[600px]">
-      <div className="flex justify-between items-center mb-10">
+    <div className="flex min-h-[600px] flex-col rounded-[4px] border border-outline-variant/30 bg-white p-8 shadow-sm">
+      <div className="mb-10 flex items-center justify-between">
         <h3 className="text-lg font-semibold text-on-surface">
           {isEditing ? "Edit Brand" : "Add Brand"}
         </h3>
         {isEditing && (
-          <span className="text-[11px] uppercase tracking-widest text-on-surface-variant bg-surface-container px-2 py-1">
+          <span className="bg-surface-container px-2 py-1 text-[11px] tracking-widest text-on-surface-variant uppercase">
             Editing {brand?.name}
           </span>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8 flex-grow">
+      <form onSubmit={handleSubmit} className="flex-grow space-y-8">
         {/* Logo Upload */}
-        <div className="flex flex-col items-center mb-12">
-          <div 
+        <div className="mb-12 flex flex-col items-center">
+          <div
             onClick={() => fileInputRef.current?.click()}
-            className={cn(
-              "cursor-pointer group relative",
-            )}
+            className={cn("group relative cursor-pointer")}
           >
-            <BrandLogo 
-              src={logo} 
-              name={name || "New Brand"} 
-              size="xxl" 
+            <BrandLogo
+              src={logo}
+              name={name || "New Brand"}
+              size="xxl"
               containerClassName={cn(
                 "border-dashed",
                 logo ? "border-solid" : "border-outline-variant"
               )}
             />
             {!logo && !isUploading && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none">
-                <CloudUpload className="text-stone-300 text-4xl group-hover:text-stone-900 transition-colors" />
-                <span className="text-[12px] text-on-surface-variant text-center px-8">
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3">
+                <CloudUpload className="text-4xl text-stone-300 transition-colors group-hover:text-stone-900" />
+                <span className="px-8 text-center text-[12px] text-on-surface-variant">
                   Drag & drop or click to upload
                 </span>
               </div>
             )}
             {isUploading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/60 rounded-full">
-                <span className="text-[12px] text-on-surface-variant font-medium">Uploading...</span>
+              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-white/60">
+                <span className="text-[12px] font-medium text-on-surface-variant">
+                  Uploading...
+                </span>
               </div>
             )}
             {logo && (
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full">
+              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
                 <CloudUpload className="text-white" size={32} />
               </div>
             )}
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileUpload} 
-              className="hidden" 
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              className="hidden"
               accept="image/*"
             />
           </div>
-          <label className="mt-4 text-[11px] uppercase tracking-widest text-on-surface-variant font-medium">Brand Logo</label>
+          <label className="mt-4 text-[11px] font-medium tracking-widest text-on-surface-variant uppercase">
+            Brand Logo
+          </label>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="flex flex-col gap-2">
-            <label className="text-[11px] uppercase tracking-widest text-on-surface-variant font-medium">Brand Name</label>
-            <input 
-              className="w-full bg-surface-container-low border-none focus:ring-1 focus:ring-primary rounded-sm h-[48px] px-4 text-on-surface text-sm transition-all outline-none" 
-              type="text" 
+            <label className="text-[11px] font-medium tracking-widest text-on-surface-variant uppercase">
+              Brand Name
+            </label>
+            <input
+              className="h-[48px] w-full rounded-sm border-none bg-surface-container-low px-4 text-sm text-on-surface transition-all outline-none focus:ring-1 focus:ring-primary"
+              type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Velasquez"
@@ -191,12 +201,14 @@ export const BrandForm: React.FC<BrandFormProps> = ({ brand, onSuccess, onCancel
             />
           </div>
           <div className="flex flex-col gap-2">
-            <label className="text-[11px] uppercase tracking-widest text-on-surface-variant font-medium">Slug</label>
+            <label className="text-[11px] font-medium tracking-widest text-on-surface-variant uppercase">
+              Slug
+            </label>
             <div className="relative flex items-center">
-              <span className="absolute left-4 text-stone-400 text-sm">/</span>
-              <input 
-                className="w-full bg-surface-container-low border-none focus:ring-1 focus:ring-primary rounded-sm h-[48px] pl-7 pr-4 text-on-surface text-sm transition-all outline-none" 
-                type="text" 
+              <span className="absolute left-4 text-sm text-stone-400">/</span>
+              <input
+                className="h-[48px] w-full rounded-sm border-none bg-surface-container-low pr-4 pl-7 text-sm text-on-surface transition-all outline-none focus:ring-1 focus:ring-primary"
+                type="text"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
                 placeholder="velasquez-studio"
@@ -207,9 +219,11 @@ export const BrandForm: React.FC<BrandFormProps> = ({ brand, onSuccess, onCancel
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-[11px] uppercase tracking-widest text-on-surface-variant font-medium">Brand Story (Bio)</label>
-          <textarea 
-            className="w-full bg-surface-container-low border-none focus:ring-1 focus:ring-primary rounded-sm p-4 text-on-surface text-sm transition-all outline-none resize-none" 
+          <label className="text-[11px] font-medium tracking-widest text-on-surface-variant uppercase">
+            Brand Story (Bio)
+          </label>
+          <textarea
+            className="w-full resize-none rounded-sm border-none bg-surface-container-low p-4 text-sm text-on-surface transition-all outline-none focus:ring-1 focus:ring-primary"
             rows={4}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -218,30 +232,44 @@ export const BrandForm: React.FC<BrandFormProps> = ({ brand, onSuccess, onCancel
         </div>
 
         {/* Visibility Toggle */}
-        <div className="flex items-center justify-between pt-4 border-t border-outline-variant/10">
+        <div className="flex items-center justify-between border-t border-outline-variant/10 pt-4">
           <div>
             <p className="text-sm font-medium">Brand Visibility</p>
-            <p className="text-[11px] text-on-surface-variant">Control if this brand is visible in filters.</p>
+            <p className="text-[11px] text-on-surface-variant">
+              Control if this brand is visible in filters.
+            </p>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-[13px] text-on-surface-variant">Status:</span>
-            <div 
-              onClick={() => setStatus(status === "ACTIVE" ? "INACTIVE" : "ACTIVE")}
-              className="flex items-center gap-2 cursor-pointer group"
+            <div
+              onClick={() =>
+                setStatus(status === "ACTIVE" ? "INACTIVE" : "ACTIVE")
+              }
+              className="group flex cursor-pointer items-center gap-2"
             >
-              <div className={cn(
-                "w-10 h-5 rounded-full relative flex items-center px-1 transition-colors tabular-nums",
-                status === "ACTIVE" ? "bg-primary" : "bg-surface-container-high"
-              )}>
-                <div className={cn(
-                  "w-3 h-3 bg-white rounded-full transition-all",
-                  status === "ACTIVE" ? "ml-auto" : "ml-0"
-                )}></div>
+              <div
+                className={cn(
+                  "relative flex h-5 w-10 items-center rounded-full px-1 tabular-nums transition-colors",
+                  status === "ACTIVE"
+                    ? "bg-primary"
+                    : "bg-surface-container-high"
+                )}
+              >
+                <div
+                  className={cn(
+                    "h-3 w-3 rounded-full bg-white transition-all",
+                    status === "ACTIVE" ? "ml-auto" : "ml-0"
+                  )}
+                ></div>
               </div>
-              <span className={cn(
-                "text-[13px] font-medium transition-colors",
-                status === "ACTIVE" ? "text-primary" : "text-on-surface-variant"
-              )}>
+              <span
+                className={cn(
+                  "text-[13px] font-medium transition-colors",
+                  status === "ACTIVE"
+                    ? "text-primary"
+                    : "text-on-surface-variant"
+                )}
+              >
                 {status === "ACTIVE" ? "Published" : "Draft"}
               </span>
             </div>
@@ -250,31 +278,31 @@ export const BrandForm: React.FC<BrandFormProps> = ({ brand, onSuccess, onCancel
       </form>
 
       {/* Footer Actions */}
-      <div className="mt-12 pt-8 border-t border-outline-variant/10 flex flex-col gap-4">
+      <div className="mt-12 flex flex-col gap-4 border-t border-outline-variant/10 pt-8">
         <div className="flex gap-3">
-          <Button 
-            className="flex-grow h-[48px]" 
+          <Button
+            className="h-[48px] flex-grow"
             onClick={handleSubmit}
             isLoading={isSubmitting}
           >
             {isEditing ? "Save Changes" : "Create Brand"}
           </Button>
-          <Button 
-            variant="outline" 
-            className="px-8 h-[48px]" 
+          <Button
+            variant="outline"
+            className="h-[48px] px-8"
             onClick={onCancel}
           >
             Cancel
           </Button>
         </div>
-        
+
         {isEditing && (
           <div className="flex justify-start">
-            <Button 
+            <Button
               variant="none"
               size="none"
               onClick={() => setIsConfirmOpen(true)}
-              className="text-error text-[13px] font-medium flex items-center gap-1 hover:underline group"
+              className="group flex items-center gap-1 text-[13px] font-medium text-error hover:underline"
             >
               <Trash2 className="text-error" size={16} />
               Delete Brand
@@ -283,7 +311,7 @@ export const BrandForm: React.FC<BrandFormProps> = ({ brand, onSuccess, onCancel
         )}
       </div>
 
-      <ConfirmDialog 
+      <ConfirmDialog
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={handleDelete}

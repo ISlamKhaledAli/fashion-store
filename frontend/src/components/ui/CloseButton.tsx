@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { motion, HTMLMotionProps } from "framer-motion";
+import type { HTMLMotionProps } from "framer-motion";
+import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -11,7 +12,12 @@ interface CloseButtonProps extends Omit<HTMLMotionProps<"button">, "onClick"> {
   className?: string;
 }
 
-export const CloseButton = ({ onClick, size = 20, className, ...props }: CloseButtonProps) => {
+export const CloseButton = ({
+  onClick,
+  size = 20,
+  className,
+  ...props
+}: CloseButtonProps) => {
   return (
     <motion.button
       whileHover="hover"
@@ -19,10 +25,10 @@ export const CloseButton = ({ onClick, size = 20, className, ...props }: CloseBu
       initial="initial"
       onClick={onClick}
       className={cn(
-        "p-2 rounded-full transition-colors duration-300",
-        "bg-transparent hover:bg-zinc-100 active:bg-zinc-200 cursor-pointer",
+        "rounded-full p-2 transition-colors duration-300",
+        "cursor-pointer bg-transparent hover:bg-zinc-100 active:bg-zinc-200",
         "text-zinc-500 hover:text-zinc-900",
-        "focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2",
+        "focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 focus:outline-none",
         className
       )}
       {...props}
@@ -31,10 +37,10 @@ export const CloseButton = ({ onClick, size = 20, className, ...props }: CloseBu
         variants={{
           initial: { rotate: 0, scale: 1 },
           hover: { rotate: 90, scale: 1.1 },
-          tap: { scale: 0.9 }
+          tap: { scale: 0.9 },
         }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        className="flex items-center justify-center translate-z-0"
+        className="flex translate-z-0 items-center justify-center"
         style={{ z: 0 }}
       >
         <X size={size} />

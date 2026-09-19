@@ -35,7 +35,7 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
   return (
     <div
       className={cn(
-        "flex items-center gap-8 border-b border-zinc-100 px-2 overflow-x-auto no-scrollbar",
+        "no-scrollbar flex items-center gap-8 overflow-x-auto border-b border-zinc-100 px-2",
         className
       )}
     >
@@ -48,11 +48,9 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
             className={cn(
-              "relative pb-4 pt-1 flex items-center gap-2 whitespace-nowrap transition-colors duration-200 outline-none",
-              "text-[10px] font-black uppercase tracking-[0.3em]",
-              isActive
-                ? "text-zinc-950"
-                : "text-zinc-400 hover:text-zinc-700"
+              "relative flex items-center gap-2 pt-1 pb-4 whitespace-nowrap transition-colors duration-200 outline-none",
+              "text-[10px] font-black tracking-[0.3em] uppercase",
+              isActive ? "text-zinc-950" : "text-zinc-400 hover:text-zinc-700"
             )}
           >
             {tab.label}
@@ -60,7 +58,7 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
             {tab.count !== undefined && (
               <span
                 className={cn(
-                  "px-1.5 py-0.5 rounded text-[9px] font-bold tabular-nums transition-colors duration-200",
+                  "rounded px-1.5 py-0.5 text-[9px] font-bold tabular-nums transition-colors duration-200",
                   isActive
                     ? "bg-zinc-950 text-white"
                     : "bg-zinc-100 text-zinc-400"
@@ -74,14 +72,14 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
             {isActive && (
               <motion.div
                 layoutId={layoutId}
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-950 rounded-full"
+                className="absolute right-0 bottom-0 left-0 h-0.5 rounded-full bg-zinc-950"
                 transition={{ type: "spring", stiffness: 500, damping: 40 }}
               />
             )}
 
             {/* Hover underline (only when not active) */}
             {!isActive && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-200 scale-x-0 hover:scale-x-100 origin-left transition-transform duration-200 rounded-full" />
+              <span className="absolute right-0 bottom-0 left-0 h-0.5 origin-left scale-x-0 rounded-full bg-zinc-200 transition-transform duration-200 hover:scale-x-100" />
             )}
           </Button>
         );

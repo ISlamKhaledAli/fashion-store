@@ -22,9 +22,9 @@ export function formatDate(dateString: string) {
 
 export function getApiUrl(path: string): string {
   if (typeof window === "undefined") {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+    const baseUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
     return `${baseUrl}${path}`;
   }
   return `/api${path}`;
 }
-

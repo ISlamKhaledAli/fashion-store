@@ -33,7 +33,8 @@ export const useChatStore = create<ChatState>()(
         {
           id: "welcome",
           role: "assistant",
-          content: "Hello! I am your personal stylist at **The Curator** 🌌. How can I help you complete your look today? Feel free to ask in English or Arabic! 😊",
+          content:
+            "Hello! I am your personal stylist at **The Curator** 🌌. How can I help you complete your look today? Feel free to ask in English or Arabic! 😊",
           timestamp: Date.now(),
         },
       ],
@@ -51,7 +52,7 @@ export const useChatStore = create<ChatState>()(
 
         set((state) => {
           let updatedMessages = [...state.messages, newMessage];
-          
+
           // Max stored messages: 100 (trim oldest when exceeded)
           if (updatedMessages.length > 100) {
             const hasWelcome = updatedMessages[0]?.id === "welcome";
@@ -61,7 +62,9 @@ export const useChatStore = create<ChatState>()(
                 ...updatedMessages.slice(updatedMessages.length - 99),
               ];
             } else {
-              updatedMessages = updatedMessages.slice(updatedMessages.length - 100);
+              updatedMessages = updatedMessages.slice(
+                updatedMessages.length - 100
+              );
             }
           }
 
@@ -91,7 +94,8 @@ export const useChatStore = create<ChatState>()(
             {
               id: "welcome",
               role: "assistant",
-              content: "Hello! I am your personal stylist at **The Curator** 🌌. How can I help you complete your look today? Feel free to ask in English or Arabic! 😊",
+              content:
+                "Hello! I am your personal stylist at **The Curator** 🌌. How can I help you complete your look today? Feel free to ask in English or Arabic! 😊",
               timestamp: Date.now(),
             },
           ],
@@ -129,7 +133,9 @@ export const useChatStore = create<ChatState>()(
                 ...updatedMessages.slice(updatedMessages.length - 99),
               ];
             } else {
-              updatedMessages = updatedMessages.slice(updatedMessages.length - 100);
+              updatedMessages = updatedMessages.slice(
+                updatedMessages.length - 100
+              );
             }
           }
           return { messages: updatedMessages };
@@ -145,13 +151,13 @@ export const useChatStore = create<ChatState>()(
         };
 
         set((state) => ({
-          messages: [...state.messages, placeholderMessage]
+          messages: [...state.messages, placeholderMessage],
         }));
 
         // 4. Stream response from /api/size/recommend
         try {
           const updatedMessages = get().messages.slice(0, -1);
-          
+
           const response = await fetch(getApiUrl("/size/recommend"), {
             method: "POST",
             headers: {
@@ -160,7 +166,10 @@ export const useChatStore = create<ChatState>()(
             credentials: "include",
             body: JSON.stringify({
               productId,
-              messages: updatedMessages.map(m => ({ role: m.role, content: m.content })),
+              messages: updatedMessages.map((m) => ({
+                role: m.role,
+                content: m.content,
+              })),
             }),
           });
 
@@ -182,7 +191,7 @@ export const useChatStore = create<ChatState>()(
             if (done) break;
 
             buffer += decoder.decode(value, { stream: true });
-            
+
             let lineEnd;
             while ((lineEnd = buffer.indexOf("\n")) >= 0) {
               const line = buffer.slice(0, lineEnd).trim();
@@ -193,10 +202,14 @@ export const useChatStore = create<ChatState>()(
                 if (dataStr === "[DONE]") continue;
                 try {
                   const parsed = JSON.parse(dataStr);
-                  
+
                   if (parsed.measurementsSaved) {
                     if (typeof window !== "undefined") {
-                      window.dispatchEvent(new CustomEvent("measurements-saved", { detail: parsed.measurements }));
+                      window.dispatchEvent(
+                        new CustomEvent("measurements-saved", {
+                          detail: parsed.measurements,
+                        })
+                      );
                     }
                     continue;
                   }
@@ -212,7 +225,9 @@ export const useChatStore = create<ChatState>()(
           }
         } catch (err) {
           console.error("Size advisor streaming request failed:", err);
-          get().updateLastMessage("I'm sorry, I ran into a connection issue 🔌. Please try asking again in a moment.");
+          get().updateLastMessage(
+            "I'm sorry, I ran into a connection issue 🔌. Please try asking again in a moment."
+          );
         }
       },
     }),

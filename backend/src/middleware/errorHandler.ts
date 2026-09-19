@@ -2,7 +2,12 @@ import { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 import jwt from "jsonwebtoken";
-import { AppError, AuthError, ConflictError, NotFoundError } from "../utils/AppError";
+import {
+  AppError,
+  AuthError,
+  ConflictError,
+  NotFoundError,
+} from "../utils/AppError";
 import logger from "../utils/logger";
 import { sendResponse } from "../utils/apiResponse";
 import { env } from "../utils/validateEnv";
@@ -29,7 +34,7 @@ export const errorHandler = (
       statusCode = 409;
       const target = (err.meta?.target as string[])?.join(", ") || "field";
       message = `Unique constraint failed on ${target}`;
-      console.error("[PRISMA CONFLICT]", err.meta);
+      logger.error("Prisma conflict error", { meta: err.meta });
     } else if (err.code === "P2025") {
       statusCode = 404;
       message = "Record not found";
@@ -37,9 +42,13 @@ export const errorHandler = (
   }
 
   // Handle JWT Errors
-  if (err instanceof jwt.JsonWebTokenError || err instanceof jwt.TokenExpiredError) {
+  if (
+    err instanceof jwt.JsonWebTokenError ||
+    err instanceof jwt.TokenExpiredError
+  ) {
     statusCode = 401;
-    message = err instanceof jwt.TokenExpiredError ? "Token expired" : "Invalid token";
+    message =
+      err instanceof jwt.TokenExpiredError ? "Token expired" : "Invalid token";
   }
 
   // Handle Zod Error

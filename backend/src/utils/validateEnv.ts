@@ -7,15 +7,22 @@ const envSchema = z.object({
   DIRECT_URL_TEST: z.string().url().optional(),
   JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
   JWT_REFRESH_SECRET: z.string().min(1, "JWT_REFRESH_SECRET is required"),
-  STRIPE_SECRET_KEY: z.string().startsWith("sk_", "STRIPE_SECRET_KEY must start with sk_"),
-  STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_", "STRIPE_WEBHOOK_SECRET must start with whsec_"),
+  STRIPE_SECRET_KEY: z
+    .string()
+    .startsWith("sk_", "STRIPE_SECRET_KEY must start with sk_"),
+  STRIPE_WEBHOOK_SECRET: z
+    .string()
+    .startsWith("whsec_", "STRIPE_WEBHOOK_SECRET must start with whsec_"),
   CLOUDINARY_CLOUD_NAME: z.string().min(1, "CLOUDINARY_CLOUD_NAME is required"),
   CLOUDINARY_API_KEY: z.string().min(1, "CLOUDINARY_API_KEY is required"),
   CLOUDINARY_API_SECRET: z.string().min(1, "CLOUDINARY_API_SECRET is required"),
   CLIENT_URL: z.string().url(),
   PORT: z.string().default("5000"),
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
   OPENROUTER_API_KEY: z.string().min(1, "OPENROUTER_API_KEY is required"),
+  GEMINI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
   // Email variables
   EMAIL_HOST: z.string().optional(),

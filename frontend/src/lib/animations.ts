@@ -11,28 +11,28 @@ export const flyToCart = (
   if (isFlying) return;
   isFlying = true;
 
-  const cartIcon = document.getElementById('cart-icon');
-  
+  const cartIcon = document.getElementById("cart-icon");
+
   // Resolve the element from either RefObject or direct Element
-  const element = target && 'current' in target ? target.current : target;
-  
+  const element = target && "current" in target ? target.current : target;
+
   const imgRect = element?.getBoundingClientRect();
   const cartRect = cartIcon?.getBoundingClientRect();
-  
+
   if (!imgRect || !cartRect || !element) {
     onComplete?.();
     return;
   }
-  
-  const clone = document.createElement('img');
+
+  const clone = document.createElement("img");
   if (element instanceof HTMLImageElement) {
     clone.src = element.src;
   } else {
     // If it's not an img, look for an img inside it or use a placeholder/transparent if needed
-    const nestedImg = element.querySelector('img');
+    const nestedImg = element.querySelector("img");
     if (nestedImg) clone.src = nestedImg.src;
   }
-  
+
   clone.style.cssText = `
     position: fixed;
     top: ${imgRect.top}px;
@@ -46,20 +46,20 @@ export const flyToCart = (
     object-fit: cover;
   `;
   document.body.appendChild(clone);
-  
+
   requestAnimationFrame(() => {
     clone.style.top = `${cartRect.top}px`;
     clone.style.left = `${cartRect.left}px`;
-    clone.style.width = '20px';
-    clone.style.height = '20px';
-    clone.style.opacity = '0';
-    clone.style.borderRadius = '50%';
+    clone.style.width = "20px";
+    clone.style.height = "20px";
+    clone.style.opacity = "0";
+    clone.style.borderRadius = "50%";
   });
-  
+
   setTimeout(() => {
     clone.remove();
-    cartIcon?.classList.add('cart-bounce');
-    setTimeout(() => cartIcon?.classList.remove('cart-bounce'), 300);
+    cartIcon?.classList.add("cart-bounce");
+    setTimeout(() => cartIcon?.classList.remove("cart-bounce"), 300);
     isFlying = false;
     onComplete?.();
   }, 1050);

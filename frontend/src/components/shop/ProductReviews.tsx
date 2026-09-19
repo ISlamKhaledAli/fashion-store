@@ -8,7 +8,7 @@ import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Textarea } from "../ui/Textarea";
 import Link from "next/link";
-import { Review } from "@/types";
+import type { Review } from "@/types";
 
 interface ProductReviewsProps {
   productId: string;
@@ -16,7 +16,11 @@ interface ProductReviewsProps {
   reviewCount?: number;
 }
 
-export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductReviewsProps) => {
+export const ProductReviews = ({
+  productId,
+  avgRating,
+  reviewCount,
+}: ProductReviewsProps) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [rating, setRating] = useState(5);
@@ -25,7 +29,7 @@ export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductRev
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [hasReviewed, setHasReviewed] = useState(false);
-  
+
   const { isAuthenticated, user } = useAuthStore();
 
   useEffect(() => {
@@ -35,10 +39,10 @@ export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductRev
         if (res.data.success) {
           const fetchedReviews = res.data.data as Review[];
           setReviews(fetchedReviews);
-          
+
           // Check if current user has already reviewed
           if (user) {
-            const userReview = fetchedReviews.some(r => r.userId === user.id);
+            const userReview = fetchedReviews.some((r) => r.userId === user.id);
             setHasReviewed(userReview);
           }
         }
@@ -52,23 +56,23 @@ export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductRev
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAuthenticated) return;
-    
+
     setIsSubmitting(true);
     setError("");
-    
+
     try {
       const res = await reviewApi.create({
         productId,
         rating,
         title,
-        body
+        body,
       });
-      
+
       if (res.data.success) {
         // Add new review to list immediately
         const newReview: Review = {
           ...(res.data.data as Review),
-          user: { name: user?.name || "Anonymous", avatar: user?.avatar }
+          user: { name: user?.name || "Anonymous", avatar: user?.avatar },
         };
         setReviews([newReview, ...reviews]);
         setShowForm(false);
@@ -87,50 +91,63 @@ export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductRev
   };
 
   return (
-    <section className="bg-white max-w-[1440px] mx-auto px-8 lg:px-12 py-24 lg:py-32 border-t border-outline-variant/10">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-16">
-        <div className="lg:col-span-1 space-y-8">
+    <section className="mx-auto max-w-[1440px] border-t border-outline-variant/10 bg-white px-8 py-24 lg:px-12 lg:py-32">
+      <div className="grid grid-cols-1 gap-16 lg:grid-cols-4">
+        <div className="space-y-8 lg:col-span-1">
           <div className="space-y-4">
-            <h2 className="text-3xl font-medium tracking-tight">User Reviews</h2>
+            <h2 className="text-3xl font-medium tracking-tight">
+              User Reviews
+            </h2>
             <div className="space-y-2">
-              <div className="text-6xl font-bold tracking-tighter">{avgRating != null ? avgRating.toFixed(1) : "—"}</div>
+              <div className="text-6xl font-bold tracking-tighter">
+                {avgRating != null ? avgRating.toFixed(1) : "—"}
+              </div>
               <div className="flex text-primary">
                 {[...Array(5)].map((_, i) => (
-                  <span 
-                    key={i} 
-                    className="material-symbols-outlined text-2xl" 
-                    style={{ fontVariationSettings: `'FILL' ${avgRating != null && i < Math.floor(avgRating) ? 1 : 0}` }}
+                  <span
+                    key={i}
+                    className="material-symbols-outlined text-2xl"
+                    style={{
+                      fontVariationSettings: `'FILL' ${avgRating != null && i < Math.floor(avgRating) ? 1 : 0}`,
+                    }}
                   >
                     star
                   </span>
                 ))}
               </div>
-              <p className="text-xs text-on-surface-variant uppercase tracking-[0.2em] font-bold">
-                {reviews.length > 0 ? `Based on ${reviews.length} Reviews` : "No reviews yet"}
+              <p className="text-xs font-bold tracking-[0.2em] text-on-surface-variant uppercase">
+                {reviews.length > 0
+                  ? `Based on ${reviews.length} Reviews`
+                  : "No reviews yet"}
               </p>
             </div>
           </div>
 
-          <div className="pt-8 border-t border-outline-variant/30">
+          <div className="border-t border-outline-variant/30 pt-8">
             {!isAuthenticated ? (
               <div className="space-y-4">
-                <p className="text-sm text-on-surface-variant italic">Share your thoughts on this product.</p>
+                <p className="text-sm text-on-surface-variant italic">
+                  Share your thoughts on this product.
+                </p>
                 <Link href={`/login?redirect=/products/${productId}`}>
-                  <Button variant="outline" className="w-full text-[10px] uppercase tracking-widest font-bold py-4">
+                  <Button
+                    variant="outline"
+                    className="w-full py-4 text-[10px] font-bold tracking-widest uppercase"
+                  >
                     Login to Write a Review
                   </Button>
                 </Link>
               </div>
             ) : hasReviewed ? (
-              <div className="p-4 bg-surface-container-low rounded-sm border border-outline-variant/20">
-                <p className="text-sm text-on-surface-variant font-medium text-center">
+              <div className="rounded-sm border border-outline-variant/20 bg-surface-container-low p-4">
+                <p className="text-center text-sm font-medium text-on-surface-variant">
                   You have already reviewed this product.
                 </p>
               </div>
             ) : !showForm ? (
-              <Button 
+              <Button
                 onClick={() => setShowForm(true)}
-                className="w-full py-5 border border-primary text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-primary hover:text-white transition-all duration-300"
+                className="w-full border border-primary py-5 text-[10px] font-bold tracking-[0.3em] uppercase transition-all duration-300 hover:bg-primary hover:text-white"
                 variant="outline"
               >
                 Write a Review
@@ -139,7 +156,7 @@ export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductRev
           </div>
         </div>
 
-        <div className="lg:col-span-3 space-y-16">
+        <div className="space-y-16 lg:col-span-3">
           <AnimatePresence>
             {showForm && (
               <motion.div
@@ -148,17 +165,28 @@ export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductRev
                 exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden"
               >
-                <form onSubmit={handleSubmit} className="bg-surface-container-lowest p-8 md:p-12 border border-outline-variant rounded-sm space-y-8">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-2xl font-medium tracking-tight">Submit Your Review</h3>
-                    <Button variant="ghost" size="icon" onClick={() => setShowForm(false)}>
+                <form
+                  onSubmit={handleSubmit}
+                  className="space-y-8 rounded-sm border border-outline-variant bg-surface-container-lowest p-8 md:p-12"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-2xl font-medium tracking-tight">
+                      Submit Your Review
+                    </h3>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowForm(false)}
+                    >
                       <span className="material-symbols-outlined">close</span>
                     </Button>
                   </div>
 
                   <div className="space-y-6">
                     <div className="space-y-4">
-                      <p className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">Rating</p>
+                      <p className="text-[10px] font-bold tracking-widest text-on-surface-variant uppercase">
+                        Rating
+                      </p>
                       <div className="flex gap-2">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <Button
@@ -167,11 +195,13 @@ export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductRev
                             variant="none"
                             size="none"
                             onClick={() => setRating(star)}
-                            className="text-primary hover:scale-110 transition-transform cursor-pointer"
+                            className="cursor-pointer text-primary transition-transform hover:scale-110"
                           >
-                            <span 
+                            <span
                               className="material-symbols-outlined text-3xl"
-                              style={{ fontVariationSettings: `'FILL' ${star <= rating ? 1 : 0}` }}
+                              style={{
+                                fontVariationSettings: `'FILL' ${star <= rating ? 1 : 0}`,
+                              }}
                             >
                               star
                             </span>
@@ -201,14 +231,14 @@ export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductRev
                   </div>
 
                   {error && (
-                    <p className="text-red-600 text-sm font-medium">{error}</p>
+                    <p className="text-sm font-medium text-red-600">{error}</p>
                   )}
 
                   <Button
                     type="submit"
                     isLoading={isSubmitting}
                     disabled={isSubmitting}
-                    className="px-12 py-4 bg-primary text-on-primary text-[10px] uppercase tracking-widest font-bold hover:bg-primary/90 transition-all"
+                    className="bg-primary px-12 py-4 text-[10px] font-bold tracking-widest text-on-primary uppercase transition-all hover:bg-primary/90"
                   >
                     Submit Review
                   </Button>
@@ -217,11 +247,13 @@ export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductRev
             )}
           </AnimatePresence>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16">
+          <div className="grid grid-cols-1 gap-x-12 gap-y-16 md:grid-cols-2">
             <AnimatePresence mode="popLayout">
               {reviews.length === 0 ? (
-                <div className="col-span-full py-12 text-center border-2 border-dashed border-outline-variant/20">
-                  <p className="text-on-surface-variant italic">No reviews yet. Be the first to share your experience!</p>
+                <div className="col-span-full border-2 border-dashed border-outline-variant/20 py-12 text-center">
+                  <p className="text-on-surface-variant italic">
+                    No reviews yet. Be the first to share your experience!
+                  </p>
                 </div>
               ) : (
                 reviews.map((review, idx) => (
@@ -231,32 +263,40 @@ export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductRev
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: idx * 0.05 }}
-                    className="space-y-4 p-8 border border-outline-variant/20 rounded-sm hover:border-outline-variant transition-colors bg-white group"
+                    className="group space-y-4 rounded-sm border border-outline-variant/20 bg-white p-8 transition-colors hover:border-outline-variant"
                   >
-                    <div className="flex justify-between items-start">
+                    <div className="flex items-start justify-between">
                       <div className="space-y-1">
                         <div className="flex items-center gap-3">
-                          <p className="font-medium tracking-tight text-lg">{review.user?.name}</p>
-                          <span className="w-1 h-1 bg-outline-variant rounded-full" />
-                          <span className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest">
+                          <p className="text-lg font-medium tracking-tight">
+                            {review.user?.name}
+                          </p>
+                          <span className="h-1 w-1 rounded-full bg-outline-variant" />
+                          <span className="text-[10px] font-bold tracking-widest text-on-surface-variant uppercase">
                             {new Date(review.createdAt).toLocaleDateString()}
                           </span>
                         </div>
-                        {review.title && <h4 className="font-bold text-sm tracking-tight">{review.title}</h4>}
+                        {review.title && (
+                          <h4 className="text-sm font-bold tracking-tight">
+                            {review.title}
+                          </h4>
+                        )}
                       </div>
                       <div className="flex text-primary">
                         {[...Array(5)].map((_, i) => (
-                          <span 
-                            key={i} 
-                            className="material-symbols-outlined text-sm" 
-                            style={{ fontVariationSettings: `'FILL' ${i < review.rating ? 1 : 0}` }}
+                          <span
+                            key={i}
+                            className="material-symbols-outlined text-sm"
+                            style={{
+                              fontVariationSettings: `'FILL' ${i < review.rating ? 1 : 0}`,
+                            }}
                           >
                             star
                           </span>
                         ))}
                       </div>
                     </div>
-                    <p className="text-on-surface-variant leading-relaxed text-sm">
+                    <p className="text-sm leading-relaxed text-on-surface-variant">
                       {review.body}
                     </p>
                   </motion.div>
@@ -269,4 +309,3 @@ export const ProductReviews = ({ productId, avgRating, reviewCount }: ProductRev
     </section>
   );
 };
-

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Product } from "@/types";
+import type { Product } from "@/types";
 import { productApi } from "@/lib/api";
 
 interface UseProductListConfig {
@@ -9,7 +9,12 @@ interface UseProductListConfig {
   featured?: boolean;
 }
 
-export const useProductList = ({ limit = 8, excludeId, category, featured }: UseProductListConfig = {}) => {
+export const useProductList = ({
+  limit = 8,
+  excludeId,
+  category,
+  featured,
+}: UseProductListConfig = {}) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +32,7 @@ export const useProductList = ({ limit = 8, excludeId, category, featured }: Use
         if (featured !== undefined) params.featured = featured;
 
         const res = await productApi.getAll(params);
-        
+
         if (isMounted) {
           if (res.data.success) {
             // Apply client-side exclusion and final limit
@@ -54,7 +59,7 @@ export const useProductList = ({ limit = 8, excludeId, category, featured }: Use
     return () => {
       isMounted = false;
     };
-    // Stringify config to detect deep changes if necessary, 
+    // Stringify config to detect deep changes if necessary,
     // but typically config is defined in render so we use specific deps.
     // In our case, we'll use specific deps to avoid infinite loops.
   }, [limit, excludeId, category, featured]);

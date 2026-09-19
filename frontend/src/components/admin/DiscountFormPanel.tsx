@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, memo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { AdminDrawer } from "./AdminDrawer";
-import { RotateCcw, Calendar, Percent, DollarSign, Check, Tag } from "lucide-react";
+import { RotateCcw, Calendar, Percent, DollarSign } from "lucide-react";
 import { adminApi } from "@/lib/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
-import { DiscountItem } from "@/app/admin/discounts/page";
+import type { DiscountItem } from "@/app/admin/discounts/page";
 
 interface DiscountFormPanelProps {
   isOpen: boolean;
@@ -22,7 +22,9 @@ interface DiscountFormPanelProps {
 const SubsectionHeader = ({ title }: { title: string }) => (
   <div className="flex items-center gap-4 py-4">
     <div className="h-[1px] flex-1 bg-zinc-100" />
-    <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">{title}</h4>
+    <h4 className="text-[10px] font-bold tracking-[0.2em] text-zinc-400 uppercase">
+      {title}
+    </h4>
     <div className="h-[1px] flex-1 bg-zinc-100" />
   </div>
 );
@@ -54,8 +56,12 @@ export const DiscountFormPanel: React.FC<DiscountFormPanelProps> = ({
         value: discount.value.toString(),
         minOrder: discount.minOrder?.toString() || "",
         maxUses: discount.maxUses?.toString() || "",
-        startDate: discount.startDate ? new Date(discount.startDate).toISOString().split("T")[0] : "",
-        expiresAt: discount.expiresAt ? new Date(discount.expiresAt).toISOString().split("T")[0] : "",
+        startDate: discount.startDate
+          ? new Date(discount.startDate).toISOString().split("T")[0]
+          : "",
+        expiresAt: discount.expiresAt
+          ? new Date(discount.expiresAt).toISOString().split("T")[0]
+          : "",
         isActive: discount.isActive,
       });
     } else {
@@ -83,7 +89,7 @@ export const DiscountFormPanel: React.FC<DiscountFormPanelProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.code || !formData.value) {
       toast.error("Manifest incomplete: Code and value are required.");
       return;
@@ -110,7 +116,10 @@ export const DiscountFormPanel: React.FC<DiscountFormPanelProps> = ({
       onSuccess();
       onClose();
     } catch (error: unknown) {
-      toast.error((error as { response?: { data?: { message?: string } } }).response?.data?.message || "Sync failure.");
+      toast.error(
+        (error as { response?: { data?: { message?: string } } }).response?.data
+          ?.message || "Sync failure."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -121,12 +130,16 @@ export const DiscountFormPanel: React.FC<DiscountFormPanelProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={discount ? "Refine Promotion" : "New Manifest"}
-      subtitle={discount ? `REF: ${discount.id.slice(-6).toUpperCase()}` : "Designing a new editorial reward"}
+      subtitle={
+        discount
+          ? `REF: ${discount.id.slice(-6).toUpperCase()}`
+          : "Designing a new editorial reward"
+      }
       footer={
         <>
           <Button
             variant="outline"
-            className="flex-1 font-black uppercase tracking-[0.2em] text-[10px] py-6 rounded-sm"
+            className="flex-1 rounded-sm py-6 text-[10px] font-black tracking-[0.2em] uppercase"
             onClick={onClose}
           >
             Discard
@@ -134,7 +147,7 @@ export const DiscountFormPanel: React.FC<DiscountFormPanelProps> = ({
           <Button
             type="submit"
             variant="primary"
-            className="flex-1 font-black uppercase tracking-[0.2em] text-[10px] py-6 rounded-sm shadow-2xl shadow-black/10 transition-all hover:-translate-y-0.5"
+            className="flex-1 rounded-sm py-6 text-[10px] font-black tracking-[0.2em] uppercase shadow-2xl shadow-black/10 transition-all hover:-translate-y-0.5"
             onClick={handleSubmit}
             isLoading={isSubmitting}
           >
@@ -147,163 +160,190 @@ export const DiscountFormPanel: React.FC<DiscountFormPanelProps> = ({
         {/* Promotion Context */}
         <section className="space-y-6">
           <SubsectionHeader title="Promotion Context" />
-          
+
           <div className="space-y-4">
-             <div className="flex gap-2">
-                <div className="flex-1">
-                    <Input
-                        label="Discount Code"
-                        value={formData.code}
-                        onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                        placeholder="e.g. SUMMER24"
-                        className="font-mono tracking-widest uppercase py-4"
-                        required
-                    />
-                </div>
-                <div className="pt-7">
-                    <Button
-                        type="button"
-                        variant="none"
-                        size="none"
-                        onClick={generateRandomCode}
-                        className="p-3 bg-zinc-50 border border-zinc-100 text-zinc-400 hover:text-zinc-950 hover:border-zinc-300 rounded-xl shadow-sm"
-                        title="Generate Random Code"
-                    >
-                        <RotateCcw size={18} />
-                    </Button>
-                </div>
-             </div>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Input
+                  label="Discount Code"
+                  value={formData.code}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      code: e.target.value.toUpperCase(),
+                    })
+                  }
+                  placeholder="e.g. SUMMER24"
+                  className="py-4 font-mono tracking-widest uppercase"
+                  required
+                />
+              </div>
+              <div className="pt-7">
+                <Button
+                  type="button"
+                  variant="none"
+                  size="none"
+                  onClick={generateRandomCode}
+                  className="rounded-xl border border-zinc-100 bg-zinc-50 p-3 text-zinc-400 shadow-sm hover:border-zinc-300 hover:text-zinc-950"
+                  title="Generate Random Code"
+                >
+                  <RotateCcw size={18} />
+                </Button>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-3">
-            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 ml-1">Reward Classification</label>
-            <div className="grid grid-cols-2 gap-1.5 p-1.5 bg-zinc-50 rounded-2xl border border-zinc-100">
-                <Button
+            <label className="ml-1 text-[10px] font-bold tracking-[0.2em] text-zinc-400 uppercase">
+              Reward Classification
+            </label>
+            <div className="grid grid-cols-2 gap-1.5 rounded-2xl border border-zinc-100 bg-zinc-50 p-1.5">
+              <Button
                 type="button"
                 variant="none"
                 size="none"
                 onClick={() => setFormData({ ...formData, type: "PERCENTAGE" })}
                 className={cn(
-                    "flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                    formData.type === "PERCENTAGE"
+                  "flex items-center justify-center gap-2 rounded-xl py-3 text-[10px] font-black tracking-widest uppercase transition-all",
+                  formData.type === "PERCENTAGE"
                     ? "bg-white text-zinc-950 shadow-sm"
                     : "text-zinc-400 hover:text-zinc-600"
                 )}
-                >
+              >
                 <Percent size={14} />
                 <span>Percentage</span>
-                </Button>
-                <Button
+              </Button>
+              <Button
                 type="button"
                 variant="none"
                 size="none"
                 onClick={() => setFormData({ ...formData, type: "FIXED" })}
                 className={cn(
-                    "flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                    formData.type === "FIXED"
+                  "flex items-center justify-center gap-2 rounded-xl py-3 text-[10px] font-black tracking-widest uppercase transition-all",
+                  formData.type === "FIXED"
                     ? "bg-white text-zinc-950 shadow-sm"
                     : "text-zinc-400 hover:text-zinc-600"
                 )}
-                >
+              >
                 <DollarSign size={14} />
                 <span>Fixed Amount</span>
-                </Button>
+              </Button>
             </div>
           </div>
         </section>
 
         {/* Financial Matrix */}
         <section className="space-y-6">
-           <SubsectionHeader title="Financial Matrix" />
-           <div className="grid grid-cols-2 gap-6">
-                <Input
-                    label={formData.type === "PERCENTAGE" ? "Value (%)" : "Value ($)"}
-                    type="number"
-                    value={formData.value}
-                    onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                    placeholder={formData.type === "PERCENTAGE" ? "20" : "50.00"}
-                    required
-                />
-                <Input
-                    label="Minimum Order"
-                    type="number"
-                    value={formData.minOrder}
-                    onChange={(e) => setFormData({ ...formData, minOrder: e.target.value })}
-                    placeholder="0.00"
-                    icon={<span className="text-[10px] font-bold">$</span>}
-                />
-            </div>
+          <SubsectionHeader title="Financial Matrix" />
+          <div className="grid grid-cols-2 gap-6">
+            <Input
+              label={formData.type === "PERCENTAGE" ? "Value (%)" : "Value ($)"}
+              type="number"
+              value={formData.value}
+              onChange={(e) =>
+                setFormData({ ...formData, value: e.target.value })
+              }
+              placeholder={formData.type === "PERCENTAGE" ? "20" : "50.00"}
+              required
+            />
+            <Input
+              label="Minimum Order"
+              type="number"
+              value={formData.minOrder}
+              onChange={(e) =>
+                setFormData({ ...formData, minOrder: e.target.value })
+              }
+              placeholder="0.00"
+              icon={<span className="text-[10px] font-bold">$</span>}
+            />
+          </div>
         </section>
 
         {/* Temporal & Cycle */}
         <section className="space-y-6">
-            <SubsectionHeader title="Temporal & Cycle" />
-            <div className="grid grid-cols-2 gap-6">
-                <Input
-                    label="Usage Limit"
-                    type="number"
-                    value={formData.maxUses}
-                    onChange={(e) => setFormData({ ...formData, maxUses: e.target.value })}
-                    placeholder="Unlimited"
+          <SubsectionHeader title="Temporal & Cycle" />
+          <div className="grid grid-cols-2 gap-6">
+            <Input
+              label="Usage Limit"
+              type="number"
+              value={formData.maxUses}
+              onChange={(e) =>
+                setFormData({ ...formData, maxUses: e.target.value })
+              }
+              placeholder="Unlimited"
+            />
+            <div className="space-y-2">
+              <label className="ml-1 text-[10px] font-bold tracking-[0.2em] text-zinc-400 uppercase">
+                Cycle Start
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, startDate: e.target.value })
+                  }
+                  className="w-full appearance-none rounded-xl border border-zinc-100 bg-zinc-50 px-4 py-3.5 text-sm transition-all focus:ring-1 focus:ring-zinc-950 focus:outline-none"
                 />
-                <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 ml-1">Cycle Start</label>
-                    <div className="relative">
-                        <input
-                            type="date"
-                            value={formData.startDate}
-                            onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                            className="w-full bg-zinc-50 border border-zinc-100 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-950 transition-all appearance-none"
-                        />
-                        <Calendar
-                            size={16}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
-                        />
-                    </div>
-                </div>
-                <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 ml-1">Cycle End / Expiry</label>
-                    <div className="relative">
-                        <input
-                            type="date"
-                            value={formData.expiresAt}
-                            onChange={(e) => setFormData({ ...formData, expiresAt: e.target.value })}
-                            className="w-full bg-zinc-50 border border-zinc-100 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-950 transition-all appearance-none"
-                        />
-                        <Calendar
-                            size={16}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
-                        />
-                    </div>
-                </div>
+                <Calendar
+                  size={16}
+                  className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-zinc-400"
+                />
+              </div>
             </div>
+            <div className="space-y-2">
+              <label className="ml-1 text-[10px] font-bold tracking-[0.2em] text-zinc-400 uppercase">
+                Cycle End / Expiry
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={formData.expiresAt}
+                  onChange={(e) =>
+                    setFormData({ ...formData, expiresAt: e.target.value })
+                  }
+                  className="w-full appearance-none rounded-xl border border-zinc-100 bg-zinc-50 px-4 py-3.5 text-sm transition-all focus:ring-1 focus:ring-zinc-950 focus:outline-none"
+                />
+                <Calendar
+                  size={16}
+                  className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-zinc-400"
+                />
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* Publication Status */}
         <section className="space-y-6">
-             <div className="flex items-center justify-between gap-6 px-6 py-5 bg-white border border-zinc-100 rounded-2xl shadow-sm">
-                <div className="flex flex-col flex-1">
-                    <h4 className="text-sm font-bold tracking-tight text-zinc-950">Manifest Status</h4>
-                    <p className="text-[11px] text-zinc-400 mt-1 font-medium italic">Instantly enable this code in the archival cycle.</p>
-                </div>
-                <Button
-                    type="button"
-                    variant="none"
-                    size="none"
-                    onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
-                    className={cn(
-                        "w-12 h-6 rounded-full relative transition-colors duration-300",
-                        formData.isActive ? "bg-zinc-950" : "bg-zinc-200"
-                    )}
-                >
-                    <motion.div 
-                        initial={false}
-                        animate={{ x: formData.isActive ? 24 : 0 }}
-                        transition={{ duration: 0.2, ease: "easeInOut" }}
-                        className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm" 
-                    />
-                </Button>
+          <div className="flex items-center justify-between gap-6 rounded-2xl border border-zinc-100 bg-white px-6 py-5 shadow-sm">
+            <div className="flex flex-1 flex-col">
+              <h4 className="text-sm font-bold tracking-tight text-zinc-950">
+                Manifest Status
+              </h4>
+              <p className="mt-1 text-[11px] font-medium text-zinc-400 italic">
+                Instantly enable this code in the archival cycle.
+              </p>
             </div>
+            <Button
+              type="button"
+              variant="none"
+              size="none"
+              onClick={() =>
+                setFormData({ ...formData, isActive: !formData.isActive })
+              }
+              className={cn(
+                "relative h-6 w-12 rounded-full transition-colors duration-300",
+                formData.isActive ? "bg-zinc-950" : "bg-zinc-200"
+              )}
+            >
+              <motion.div
+                initial={false}
+                animate={{ x: formData.isActive ? 24 : 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm"
+              />
+            </Button>
+          </div>
         </section>
       </form>
     </AdminDrawer>

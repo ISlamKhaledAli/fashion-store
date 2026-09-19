@@ -1,7 +1,7 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CartDrawer } from "@/components/layout/CartDrawer";
-import { ChatAssistant } from "@/components/layout/ChatAssistant";
+import { ChatAssistantWrapper } from "@/components/layout/ChatAssistantWrapper";
 
 export default function ShopLayout({
   children,
@@ -12,10 +12,8 @@ export default function ShopLayout({
     <>
       <Navbar />
       <CartDrawer />
-      <main className="min-h-screen pt-[70px]">
-        {children}
-      </main>
-      <ChatAssistant />
+      <main className="min-h-screen pt-[70px]">{children}</main>
+      <ChatAssistantWrapper />
       <Footer />
     </>
   );

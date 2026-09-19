@@ -38,7 +38,7 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
   const [inputVal, setInputVal] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [measurementsSaved, setMeasurementsSaved] = useState(false);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const { user } = useAuthStore();
@@ -136,17 +136,20 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
           if (line.startsWith("data: ")) {
             const dataStr = line.slice(6).trim();
             if (dataStr === "[DONE]") continue;
-            
+
             try {
               const parsed = JSON.parse(dataStr);
-              
+
               // Handle saving trigger toast
               if (parsed.measurementsSaved) {
                 setMeasurementsSaved(true);
-                toast.success("Measurements successfully saved to your profile!", {
-                  icon: <CheckCircle2 className="w-5 h-5 text-green-500" />,
-                  duration: 5000
-                });
+                toast.success(
+                  "Measurements successfully saved to your profile!",
+                  {
+                    icon: <CheckCircle2 className="h-5 w-5 text-green-500" />,
+                    duration: 5000,
+                  }
+                );
                 continue;
               }
 
@@ -169,23 +172,30 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
       }
 
       // Automatically detect and extract recommended sizes like "**Size L**", "**Size 42.5**", or "**L**"
-      const match = assistantReply.match(/\*\*Size\s+([^*]+)\*\*/i) || 
-                    assistantReply.match(/\*\*([^*]+)\*\*/i) ||
-                    assistantReply.match(/size\s+([a-zA-Z0-9.\-\/]+)/i);
+      const match =
+        assistantReply.match(/\*\*Size\s+([^*]+)\*\*/i) ||
+        assistantReply.match(/\*\*([^*]+)\*\*/i) ||
+        assistantReply.match(/size\s+([a-zA-Z0-9.\-\/]+)/i);
 
       if (match && onSizeRecommended) {
         const rawRecommended = match[1].trim();
         // Cross-reference with available product sizes to ensure we pass a valid select option
-        const matchedSize = availableSizes.find(
-          (s) => s.toLowerCase() === rawRecommended.toLowerCase()
-        ) || availableSizes.find(
-          (s) => rawRecommended.toLowerCase().includes(s.toLowerCase())
-        );
+        const matchedSize =
+          availableSizes.find(
+            (s) => s.toLowerCase() === rawRecommended.toLowerCase()
+          ) ||
+          availableSizes.find((s) =>
+            rawRecommended.toLowerCase().includes(s.toLowerCase())
+          );
 
         if (matchedSize) {
-          console.log(`[DEBUG] Automatically auto-selecting recommended size: ${matchedSize}`);
+          console.log(
+            `[DEBUG] Automatically auto-selecting recommended size: ${matchedSize}`
+          );
           onSizeRecommended(matchedSize);
-          toast.success(`We selected recommended Size: ${matchedSize} for you!`);
+          toast.success(
+            `We selected recommended Size: ${matchedSize} for you!`
+          );
         }
       }
     } catch (err) {
@@ -195,7 +205,8 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
           msg.id === assistantPlaceholderId
             ? {
                 ...msg,
-                content: "I'm sorry, I hit a connection issue while calculating your size. Please try again in a moment.",
+                content:
+                  "I'm sorry, I hit a connection issue while calculating your size. Please try again in a moment.",
               }
             : msg
         )
@@ -221,7 +232,7 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
             animate={{ opacity: 0.4 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black z-[99990] cursor-pointer"
+            className="fixed inset-0 z-[99990] cursor-pointer bg-black"
           />
 
           {/* Slide-over Right Drawer Panel */}
@@ -230,19 +241,19 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed right-0 top-0 bottom-0 w-full sm:w-[460px] bg-stone-50 shadow-2xl border-l border-stone-200 z-[99999] flex flex-col font-sans"
+            className="fixed top-0 right-0 bottom-0 z-[99999] flex w-full flex-col border-l border-stone-200 bg-stone-50 font-sans shadow-2xl sm:w-[460px]"
           >
             {/* Header */}
-            <div className="bg-stone-900 px-6 py-5 flex items-center justify-between border-b border-stone-800 text-white">
+            <div className="flex items-center justify-between border-b border-stone-800 bg-stone-900 px-6 py-5 text-white">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                  <Sparkles className="w-4.5 h-4.5 text-primary animate-pulse" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10">
+                  <Sparkles className="h-4.5 w-4.5 animate-pulse text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-bold tracking-[0.2em] uppercase font-sans">
+                  <h3 className="font-sans text-xs font-bold tracking-[0.2em] uppercase">
                     AI Size Advisor
                   </h3>
-                  <p className="text-[10px] text-stone-400 mt-0.5 font-medium tracking-tight">
+                  <p className="mt-0.5 text-[10px] font-medium tracking-tight text-stone-400">
                     Custom stylist fit recommendations
                   </p>
                 </div>
@@ -251,16 +262,16 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
                 variant="none"
                 size="none"
                 onClick={onClose}
-                className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all border-none"
+                className="flex h-8 w-8 items-center justify-center rounded-full border-none bg-white/5 text-stone-400 transition-all hover:bg-white/10 hover:text-white"
               >
-                <X className="w-4.5 h-4.5" />
+                <X className="h-4.5 w-4.5" />
               </Button>
             </div>
 
             {/* Notification Badge */}
             {measurementsSaved && (
-              <div className="bg-emerald-50 border-b border-emerald-100 px-6 py-2.5 flex items-center gap-2 text-emerald-800 text-xs font-medium tracking-tight">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <div className="flex items-center gap-2 border-b border-emerald-100 bg-emerald-50 px-6 py-2.5 text-xs font-medium tracking-tight text-emerald-800">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
                 <span>Measurements updated & saved to profile dashboard.</span>
               </div>
             )}
@@ -268,7 +279,7 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
             {/* Chat Display */}
             <div
               ref={chatContainerRef}
-              className="flex-1 overflow-y-auto px-6 py-5 space-y-4 bg-stone-50/50"
+              className="flex-1 space-y-4 overflow-y-auto bg-stone-50/50 px-6 py-5"
             >
               {messages.map((msg) => {
                 // Do not render blank assistant placeholder bubbles
@@ -279,13 +290,13 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
                 return (
                   <div
                     key={msg.id}
-                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start animate-fade-in"}`}
+                    className={`flex ${msg.role === "user" ? "justify-end" : "animate-fade-in justify-start"}`}
                   >
                     <div
-                      className={`max-w-[85%] rounded-2xl px-4 py-3 text-[13px] leading-relaxed shadow-sm border ${
+                      className={`max-w-[85%] rounded-2xl border px-4 py-3 text-[13px] leading-relaxed shadow-sm ${
                         msg.role === "user"
-                          ? "bg-stone-900 border-stone-800 text-white rounded-br-none font-sans font-light"
-                          : "bg-white border-stone-200 text-on-surface rounded-bl-none font-sans font-light"
+                          ? "rounded-br-none border-stone-800 bg-stone-900 font-sans font-light text-white"
+                          : "rounded-bl-none border-stone-200 bg-white font-sans font-light text-on-surface"
                       }`}
                     >
                       {msg.role === "user" ? (
@@ -295,8 +306,14 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
                           className="space-y-2 whitespace-pre-line"
                           dangerouslySetInnerHTML={{
                             __html: msg.content
-                              .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-zinc-950">$1</strong>')
-                              .replace(/\*(.+)\*/g, '<em class="italic">$1</em>'),
+                              .replace(
+                                /\*\*([^*]+)\*\*/g,
+                                '<strong class="font-bold text-zinc-950">$1</strong>'
+                              )
+                              .replace(
+                                /\*(.+)\*/g,
+                                '<em class="italic">$1</em>'
+                              ),
                           }}
                         />
                       )}
@@ -307,11 +324,20 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
 
               {isLoading && messages[messages.length - 1]?.content === "" && (
                 <div className="flex justify-start">
-                  <div className="bg-white border border-stone-200 text-on-surface rounded-2xl rounded-bl-none px-4 py-3 shadow-sm">
+                  <div className="rounded-2xl rounded-bl-none border border-stone-200 bg-white px-4 py-3 text-on-surface shadow-sm">
                     <div className="flex items-center gap-1.5 py-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+                      <span
+                        className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/60"
+                        style={{ animationDelay: "0ms" }}
+                      />
+                      <span
+                        className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/60"
+                        style={{ animationDelay: "150ms" }}
+                      />
+                      <span
+                        className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/60"
+                        style={{ animationDelay: "300ms" }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -320,33 +346,38 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
             </div>
 
             {/* Input Footer */}
-            <div className="p-4 bg-white border-t border-stone-200/80 flex flex-col gap-3">
-              <div className="flex items-center gap-2 bg-stone-50 border border-stone-200 rounded-xl px-3 py-1 bg-clip-padding">
+            <div className="flex flex-col gap-3 border-t border-stone-200/80 bg-white p-4">
+              <div className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 bg-clip-padding px-3 py-1">
                 <input
                   type="text"
                   value={inputVal}
                   onChange={(e) => setInputVal(e.target.value)}
                   onKeyDown={handleKeyPress}
-                  placeholder={user ? `Height, weight, etc...` : "Reply to styling expert..."}
+                  placeholder={
+                    user
+                      ? `Height, weight, etc...`
+                      : "Reply to styling expert..."
+                  }
                   disabled={isLoading}
-                  className="flex-1 bg-transparent border-none text-[13px] focus:outline-none focus:ring-0 text-on-surface placeholder-on-surface/40 py-2.5 outline-none font-sans font-light"
+                  className="flex-1 border-none bg-transparent py-2.5 font-sans text-[13px] font-light text-on-surface placeholder-on-surface/40 outline-none focus:ring-0 focus:outline-none"
                 />
                 <Button
                   variant="none"
                   size="none"
                   onClick={() => handleSendMessage()}
                   disabled={!inputVal.trim() || isLoading}
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all border-none ${
+                  className={`flex h-8 w-8 items-center justify-center rounded-lg border-none transition-all ${
                     inputVal.trim() && !isLoading
                       ? "bg-primary text-on-primary hover:opacity-90"
-                      : "bg-stone-100 text-stone-400 pointer-events-none"
+                      : "pointer-events-none bg-stone-100 text-stone-400"
                   }`}
                 >
-                  <Send className="w-3.5 h-3.5" />
+                  <Send className="h-3.5 w-3.5" />
                 </Button>
               </div>
-              <p className="text-[10px] text-center text-stone-400 font-sans tracking-tight">
-                Recommended sizes are estimates based on standard measurements and fit notes.
+              <p className="text-center font-sans text-[10px] tracking-tight text-stone-400">
+                Recommended sizes are estimates based on standard measurements
+                and fit notes.
               </p>
             </div>
           </motion.div>

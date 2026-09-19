@@ -6,6 +6,9 @@ import { errorHandler } from "./middleware/errorHandler";
 import httpLogger from "./middleware/httpLogger";
 import { generalLimiter } from "./middleware/rateLimiter";
 import { env } from "./utils/validateEnv";
+import logger from "./utils/logger";
+import { prisma } from "./lib/prisma";
+import { sendResponse } from "./utils/apiResponse";
 
 // Import routes
 import authRoutes from "./routes/auth.routes";
@@ -40,7 +43,11 @@ app.use(
         "http://localhost:3000",
         "http://127.0.0.1:3000",
       ];
-      if (!origin || allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        /\.vercel\.app$/.test(origin)
+      ) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
@@ -59,10 +66,51 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 // Rate limiting
 app.use("/api", generalLimiter);
 
-// Health check
-app.get("/health", (req: Request, res: Response) => {
-  res.status(200).json({ success: true, message: "Server is healthy" });
-});
+// Deep Health check (checks database connectivity, latency, uptime, memory)
+const handleHealthCheck = async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    const latencyMs = Date.now() - startTime;
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Server and database are healthy",
+      data: {
+        status: "healthy",
+        uptimeSeconds: Math.floor(process.uptime()),
+        database: {
+          status: "connected",
+          latencyMs,
+        },
+        memoryUsage: process.memoryUsage(),
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    logger.error("Health check failed:", { error });
+    return sendResponse({
+      res,
+      status: 503,
+      success: false,
+      message: "Database connection failed",
+      data: {
+        status: "degraded",
+        uptimeSeconds: Math.floor(process.uptime()),
+        database: {
+          status: "disconnected",
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+};
+
+app.get("/health", handleHealthCheck);
+app.get("/api/health", handleHealthCheck);
 
 // Routes initialization
 app.use("/api/auth", authRoutes);
@@ -84,10 +132,10 @@ app.use("/api/admin/ai", adminAiRoutes);
 
 // Catch-all for unmatched routes
 app.use((req: Request, res: Response) => {
-  console.log(`[404] ${req.method} ${req.originalUrl}`);
+  logger.warn(`Route not found: ${req.method} ${req.originalUrl}`);
   res.status(404).json({
     success: false,
-    message: `Route ${req.method} ${req.originalUrl} not found`
+    message: `Route ${req.method} ${req.originalUrl} not found`,
   });
 });
 

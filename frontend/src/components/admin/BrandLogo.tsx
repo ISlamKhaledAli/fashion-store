@@ -42,22 +42,24 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   return (
     <div
       className={cn(
-        "shrink-0 rounded-full bg-stone-50 border border-outline-variant/10 flex items-center justify-center overflow-hidden transition-all duration-300",
+        "flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-outline-variant/10 bg-stone-50 transition-all duration-300",
         internalSize,
         containerClassName
       )}
     >
       {src ? (
-        <div className="w-full h-full p-2 flex items-center justify-center hover:scale-110 transition-transform duration-500">
+        <div className="flex h-full w-full items-center justify-center p-2 transition-transform duration-500 hover:scale-110">
           <img
             src={src}
             alt={`${name} logo`}
             className={cn(
-              "max-w-full max-h-full object-contain pointer-events-none",
+              "pointer-events-none max-h-full max-w-full object-contain",
               className
             )}
             onLoad={(e) => {
-              (e.currentTarget as HTMLImageElement).classList.add("opacity-100");
+              (e.currentTarget as HTMLImageElement).classList.add(
+                "opacity-100"
+              );
             }}
             onError={(e) => {
               // Hide broken image if it fails to load
@@ -67,7 +69,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
           />
         </div>
       ) : (
-        <span className="font-semibold text-zinc-400 tracking-tight tabular-nums select-none italic text-opacity-80">
+        <span className="text-opacity-80 font-semibold tracking-tight text-zinc-400 italic tabular-nums select-none">
           {initials}
         </span>
       )}

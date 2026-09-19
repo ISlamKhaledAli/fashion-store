@@ -63,7 +63,7 @@ export const AdminDrawer: React.FC<AdminDrawerProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
           />
 
           {/* Side Panel */}
@@ -74,19 +74,19 @@ export const AdminDrawer: React.FC<AdminDrawerProps> = ({
             transition={{ type: "spring", damping: 30, stiffness: 250 }}
             style={{ willChange: "transform", z: 50 }}
             className={cn(
-              "fixed top-0 right-0 h-screen w-full bg-white shadow-[0_10px_40px_rgba(0,0,0,0.2)] z-50 flex flex-col border-l border-zinc-100",
+              "fixed top-0 right-0 z-50 flex h-screen w-full flex-col border-l border-zinc-100 bg-white shadow-[0_10px_40px_rgba(0,0,0,0.2)]",
               width,
               className
             )}
           >
             {/* Header */}
-            <header className="px-8 py-8 border-b border-zinc-100 flex justify-between items-center sticky top-0 bg-white/80 backdrop-blur-xl z-20">
+            <header className="sticky top-0 z-20 flex items-center justify-between border-b border-zinc-100 bg-white/80 px-8 py-8 backdrop-blur-xl">
               <div className="space-y-1">
                 <h3 className="text-2xl font-bold tracking-tight text-zinc-950">
                   {title}
                 </h3>
                 {subtitle && (
-                  <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.2em]">
+                  <p className="text-[10px] font-bold tracking-[0.2em] text-zinc-400 uppercase">
                     {subtitle}
                   </p>
                 )}
@@ -95,13 +95,13 @@ export const AdminDrawer: React.FC<AdminDrawerProps> = ({
             </header>
 
             {/* Scrollable Content */}
-            <main className="flex-1 overflow-y-auto no-scrollbar px-8 py-10">
+            <main className="no-scrollbar flex-1 overflow-y-auto px-8 py-10">
               {children}
             </main>
 
             {/* Footer */}
             {footer && (
-              <footer className="px-8 py-8 border-t border-zinc-100 bg-white sticky bottom-0 flex gap-4 shadow-[0_-20px_60px_rgba(0,0,0,0.02)] z-20">
+              <footer className="sticky bottom-0 z-20 flex gap-4 border-t border-zinc-100 bg-white px-8 py-8 shadow-[0_-20px_60px_rgba(0,0,0,0.02)]">
                 {footer}
               </footer>
             )}

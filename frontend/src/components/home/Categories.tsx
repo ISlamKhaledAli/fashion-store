@@ -5,44 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { categoryApi } from "@/lib/api";
-import { Category } from "@/types";
+import type { Category } from "@/types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-// Fallback data matching the HTML design exactly
-const FALLBACK_CATEGORIES = [
-  {
-    id: "1",
-    name: "Outerwear",
-    slug: "outerwear",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCWp6ag_u4U7ifPV37hyc561tjKHwLF87yXobNKu5L6bEeMkNDVlJMG-aDDIpkT_T7FaRDP6PbcL0qPKjbCUL1UpfBAMYGhkaOAvVV9Osuo6ghbQk2ME2YU5IALmmvzEyV93zT-R2o96uBWPwxuiaf4nO46bZdAnc19ugzEKFUWEmkjd2_yOYnbtDZdou8RXGoWwc5kCp4_ZR-PpS6-8vdddMFXGxHxupqD-dqPalnlDJc9pmJLImBM6JYLjC0YRJBCUHf-3Krnhvg",
-    _count: { products: 8 },
-  },
-  {
-    id: "2",
-    name: "Essential",
-    slug: "essential",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCuGRXRxJYti36qxDXLQRoT0aK_Z0MODRf_M8Puoqr-vFJEcXI20oQ3QbAW94xfeLWKRGzps8wq9YTtz1MKX2jjVnGrlTM5C1sS7JSWUtUJKuawhlKEeR0yiWX5T8XrlJ2L6pL9aD18Iw25XzTiIyAyZ8HAZp5AtMLG-FHnMAz4UpaoU2W_XCvhMAnTHuoxWfsDcy6dRVKuezl5TKqEWbfv9wcK-E24pYCWjaEKre6gSRWi8u8RYZiUmaEL0YkU2BVAB80gcKHO-DI",
-    _count: { products: 14 },
-  },
-  {
-    id: "3",
-    name: "Objects",
-    slug: "objects",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDmF_-RHH9V_gTgurlKrTmyALRE2G3frBMbIT1E3uv-39xNMGNVzJz3U_cZNRXkrvRp6rdhYQPgLEdLTZcnUphp_4BcbVdbfMXB9DgOfSFdClJc1GdUVilgeePNYEul3smGRHqZxjte8ErHnhd9vMlzzKMD9WrAsgraP0pnxv0CVMyAU4OWUQNkiNydQlRHGwEKCa5ngZeM9Yh_XOd3zDf4zLYFv8qok3_HPY7EJTapp680NpzKgTmxNMPV_alLjeFw8Jb0BgzwHMQ",
-    _count: { products: 22 },
-  },
-  {
-    id: "4",
-    name: "Footwear",
-    slug: "footwear",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCXGSyEG4zwyIT6Us8WqFZzaT3WGB3QMZ8QZfuakhjBeU_CQ9NBVD7g4cd0EDdXbvo12NVee4hYbf2oiB9EoL9Rbdi0EQRVOsnXWGX23NVaB95JwQxmmKY9gNm3X03xWUs7wIWehfeuW7cApgZ6u03XA_opLlFuzHkhLmebOxHA5W6ojeVwgQ8Ygy7eyQF6xw53C-vSMh0pxLZZ1eBA5VkOKlUFray6D7XKp_nhHZkthZUVAqQAWIC6zJK2u5OkmxP7T-35DVjvej8",
-    _count: { products: 11 },
-  },
-];
 
 export const Categories = () => {
-  const [categories, setCategories] = useState<Category[]>(FALLBACK_CATEGORIES);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -50,12 +18,15 @@ export const Categories = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
+        setIsLoading(true);
         const response = await categoryApi.getAll();
-        if (response.data.success && response.data.data.length > 0) {
+        if (response.data.success && Array.isArray(response.data.data)) {
           setCategories(response.data.data);
         }
-      } catch {
-        // Fallback already set
+      } catch (err) {
+        // Handled silently
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchCategories();
@@ -80,28 +51,28 @@ export const Categories = () => {
   };
 
   return (
-    <section className="py-32 px-8 bg-surface overflow-hidden">
-      <div className="max-w-[1600px] mx-auto relative group">
-        <motion.div 
+    <section className="overflow-hidden bg-surface px-8 py-32">
+      <div className="group relative mx-auto max-w-[1600px]">
+        <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-15% 0px" }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] as const }}
           className="mb-16"
         >
-          <p className="text-on-surface-variant font-label text-xs tracking-[0.2em] uppercase mb-4">
+          <p className="mb-4 font-label text-xs tracking-[0.2em] text-on-surface-variant uppercase">
             Curated Selects
           </p>
-          <h2 className="text-4xl md:text-5xl font-medium tracking-tight text-on-surface">
+          <h2 className="text-4xl font-medium tracking-tight text-on-surface md:text-5xl">
             The Architecture of Wear
           </h2>
         </motion.div>
 
         <div className="relative">
           {/* Overlay Layer - Cinematic Depth */}
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-surface to-transparent transition-opacity duration-700 opacity-60 group-hover:opacity-100" />
-            <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-surface to-transparent transition-opacity duration-700 opacity-60 group-hover:opacity-100" />
+          <div className="pointer-events-none absolute inset-0 z-10">
+            <div className="absolute top-0 bottom-0 left-0 w-32 bg-gradient-to-r from-surface to-transparent opacity-60 transition-opacity duration-700 group-hover:opacity-100" />
+            <div className="absolute top-0 right-0 bottom-0 w-32 bg-gradient-to-l from-surface to-transparent opacity-60 transition-opacity duration-700 group-hover:opacity-100" />
           </div>
 
           {/* Navigation Arrows */}
@@ -113,9 +84,9 @@ export const Categories = () => {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
                 onClick={() => scroll("left")}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 bg-white/80 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center shadow-xl shadow-black/5 hover:scale-110 cursor-pointer pointer-events-auto transition-transform cinematic-ease"
+                className="cinematic-ease pointer-events-auto absolute top-1/2 left-4 z-50 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-white/80 shadow-xl shadow-black/5 backdrop-blur-xl transition-transform hover:scale-110"
               >
-                <ChevronLeft className="w-6 h-6 text-primary" />
+                <ChevronLeft className="h-6 w-6 text-primary" />
               </motion.button>
             )}
             {canScrollRight && (
@@ -125,69 +96,86 @@ export const Categories = () => {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 onClick={() => scroll("right")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-50 w-12 h-12 bg-white/80 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center shadow-xl shadow-black/5 hover:scale-110 cursor-pointer pointer-events-auto transition-transform cinematic-ease"
+                className="cinematic-ease pointer-events-auto absolute top-1/2 right-4 z-50 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-white/80 shadow-xl shadow-black/5 backdrop-blur-xl transition-transform hover:scale-110"
               >
-                <ChevronRight className="w-6 h-6 text-primary" />
+                <ChevronRight className="h-6 w-6 text-primary" />
               </motion.button>
             )}
           </AnimatePresence>
 
           {/* Categories Horizontal Container */}
-          <div 
+          <div
             ref={scrollRef}
             onScroll={checkScroll}
-            className="flex gap-6 overflow-x-auto no-scrollbar snap-x snap-mandatory py-4 relative z-0 scroll-smooth"
+            className="no-scrollbar relative z-0 flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth py-4"
           >
-            {categories.map((category, index) => {
-              const fallbackImage = FALLBACK_CATEGORIES.find((c) => c.slug === category.slug)?.image;
-              const imageSrc = category.image && typeof category.image === "string" && category.image.trim() !== ""
-                ? category.image
-                : fallbackImage;
+            {isLoading
+              ? [1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="aspect-3/4 w-[280px] flex-shrink-0 animate-pulse rounded-xs bg-surface-container-high sm:w-[350px] md:w-[400px]"
+                  />
+                ))
+              : categories.map((category, index) => {
+                  const imageSrc =
+                    category.image &&
+                    typeof category.image === "string" &&
+                    category.image.trim() !== ""
+                      ? category.image
+                      : null;
 
-              return (
-                <motion.div
-                  key={category.id}
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-15% 0px" }}
-                  transition={{ duration: 0.8, delay: index * 0.1, ease: [0.16, 1, 0.3, 1] as const }}
-                  className="flex-shrink-0 w-[280px] sm:w-[350px] md:w-[400px] snap-start"
-                >
-                  <Link
-                    href={`/products?category=${category.slug}`}
-                    className="group/card relative block aspect-3/4 overflow-hidden bg-surface-container-high transition-opacity duration-700 opacity-90 hover:opacity-100"
-                  >
-                    {imageSrc ? (
-                      <Image
-                        src={imageSrc}
-                        alt={category.name}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                        priority={index === 0}
-                        className="object-cover transition-transform duration-[0.6s] cinematic-ease group-hover/card:scale-105"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 bg-gradient-to-tr from-surface-container-high to-surface-container flex items-center justify-center">
-                        <span className="text-on-surface-variant font-medium text-lg tracking-wider uppercase">
-                          {category.name}
-                        </span>
-                      </div>
-                    )}
-                    {/* Card Overlay from HTML Design */}
-                  <div className="absolute inset-0 bg-black/5 opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 border-[1px] border-white/20" />
-                  
-                  <div className="absolute bottom-8 left-8 z-10 transition-transform duration-500 group-hover/card:-translate-y-2">
-                    <h3 className="text-white text-2xl font-medium tracking-tight">
-                      {category.name}
-                    </h3>
-                    <p className="text-white/70 text-sm tracking-wide">
-                      {String(category._count?.products || 0).padStart(2, "0")} Artifacts
-                    </p>
-                  </div>
-                </Link>
-              </motion.div>
-            );
-          })}
+                  return (
+                    <motion.div
+                      key={category.id}
+                      initial={{ opacity: 0, y: 40 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: "-15% 0px" }}
+                      transition={{
+                        duration: 0.8,
+                        delay: index * 0.1,
+                        ease: [0.16, 1, 0.3, 1] as const,
+                      }}
+                      className="w-[280px] flex-shrink-0 snap-start sm:w-[350px] md:w-[400px]"
+                    >
+                      <Link
+                        href={`/products?category=${category.slug}`}
+                        className="group/card relative block aspect-3/4 overflow-hidden bg-surface-container-high opacity-90 transition-opacity duration-700 hover:opacity-100"
+                      >
+                        {imageSrc ? (
+                          <Image
+                            src={imageSrc}
+                            alt={category.name}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 33vw"
+                            priority={index === 0}
+                            className="cinematic-ease object-cover transition-transform duration-[0.6s] group-hover/card:scale-105"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-tr from-surface-container-high to-surface-container">
+                            <span className="text-lg font-medium tracking-wider text-on-surface-variant uppercase">
+                              {category.name}
+                            </span>
+                          </div>
+                        )}
+                        {/* Card Overlay from HTML Design */}
+                        <div className="absolute inset-0 border-[1px] border-white/20 bg-black/5 opacity-0 transition-opacity duration-500 group-hover/card:opacity-100" />
+
+                        <div className="absolute bottom-8 left-8 z-10 transition-transform duration-500 group-hover/card:-translate-y-2">
+                          <h3 className="text-2xl font-medium tracking-tight text-white">
+                            {category.name}
+                          </h3>
+                          <p className="text-sm tracking-wide text-white/70">
+                            {String(category._count?.products || 0).padStart(
+                              2,
+                              "0"
+                            )}{" "}
+                            Artifacts
+                          </p>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  );
+                })}
           </div>
         </div>
       </div>

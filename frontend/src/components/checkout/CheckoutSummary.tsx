@@ -18,9 +18,22 @@ interface Totals {
   total: number;
 }
 
-export const CheckoutSummary = ({ shippingMethod = "standard" }: { shippingMethod?: string }) => {
-  const { items, getTotalPrice, getTotalItems, promoCode, discountAmount, setPromo } = useCartStore();
-  const [promoStatus, setPromoStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+export const CheckoutSummary = ({
+  shippingMethod = "standard",
+}: {
+  shippingMethod?: string;
+}) => {
+  const {
+    items,
+    getTotalPrice,
+    getTotalItems,
+    promoCode,
+    discountAmount,
+    setPromo,
+  } = useCartStore();
+  const [promoStatus, setPromoStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
   const [localPromo, setLocalPromo] = useState(promoCode || "");
   const [totals, setTotals] = useState<Totals | null>(null);
   const [calculating, setCalculating] = useState(false);
@@ -31,7 +44,10 @@ export const CheckoutSummary = ({ shippingMethod = "standard" }: { shippingMetho
   const fetchTotals = useCallback(async () => {
     setCalculating(true);
     try {
-      const res = await cartApi.calculateTotals(shippingMethod, promoCode || undefined);
+      const res = await cartApi.calculateTotals(
+        shippingMethod,
+        promoCode || undefined
+      );
       if (res.data.success && res.data.data) {
         setTotals(res.data.data);
       }
@@ -39,7 +55,7 @@ export const CheckoutSummary = ({ shippingMethod = "standard" }: { shippingMetho
       // Fallback: show minimal client-side estimate if API fails
       // Note: We do NOT hardcode shipping rates here anymore.
       const discounted = Math.max(0, subtotal - discountAmount);
-      const tax = Math.round(discounted * 0.10 * 100) / 100;
+      const tax = Math.round(discounted * 0.1 * 100) / 100;
       setTotals({
         subtotal,
         discountAmount,
@@ -77,106 +93,159 @@ export const CheckoutSummary = ({ shippingMethod = "standard" }: { shippingMetho
   };
 
   return (
-    <aside className="lg:sticky lg:top-32 space-y-8">
-      <div className="bg-surface-container-low p-8 rounded-xl shadow-[0_20px_50px_rgba(26,28,29,0.03)] border border-white/40">
-        <h2 className="text-lg font-medium tracking-tight mb-8">Order Summary ({getTotalItems()})</h2>
-        
-        <ul className="space-y-6 mb-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar no-scrollbar">
+    <aside className="space-y-8 lg:sticky lg:top-32">
+      <div className="rounded-xl border border-white/40 bg-surface-container-low p-8 shadow-[0_20px_50px_rgba(26,28,29,0.03)]">
+        <h2 className="mb-8 text-lg font-medium tracking-tight">
+          Order Summary ({getTotalItems()})
+        </h2>
+
+        <ul className="custom-scrollbar no-scrollbar mb-8 max-h-[400px] space-y-6 overflow-y-auto pr-2">
           {items.map((item) => (
-            <li key={item.id} className="flex gap-4 group">
-              <Link href={`/products/${item.productId}`} className="w-20 h-24 bg-surface-container-high relative overflow-hidden flex-shrink-0 cursor-pointer">
-                <Image
-                  src={item.image}
-                  alt={item.name}
-                  fill
-                  sizes="80px"
-                  className="object-cover grayscale transition-transform duration-700 group-hover:scale-110"
-                />
+            <li key={item.id} className="group flex gap-4">
+              <Link
+                href={`/products/${item.productId}`}
+                className="relative flex h-24 w-20 flex-shrink-0 cursor-pointer items-center justify-center overflow-hidden bg-surface-container-high"
+              >
+                {item.image ? (
+                  <Image
+                    src={item.image}
+                    alt={item.name}
+                    fill
+                    sizes="80px"
+                    className="object-cover grayscale transition-transform duration-700 group-hover:scale-110"
+                  />
+                ) : (
+                  <span className="material-symbols-outlined text-2xl text-zinc-400">
+                    checkroom
+                  </span>
+                )}
               </Link>
-              <div className="flex flex-col justify-between py-1 flex-1">
+              <div className="flex flex-1 flex-col justify-between py-1">
                 <div>
                   <Link href={`/products/${item.productId}`}>
-                    <h4 className="text-sm font-medium leading-snug hover:text-primary transition-colors cursor-pointer">{item.name}</h4>
+                    <h4 className="cursor-pointer text-sm leading-snug font-medium transition-colors hover:text-primary">
+                      {item.name}
+                    </h4>
                   </Link>
-                  <p className="text-[10px] uppercase tracking-wider text-on-surface-variant mt-1">
+                  <p className="mt-1 text-[10px] tracking-wider text-on-surface-variant uppercase">
                     {item.color} / {item.size} × {item.quantity}
                   </p>
                 </div>
-                <span className="text-sm font-medium">{formatCurrency(item.price * item.quantity)}</span>
+                <span className="text-sm font-medium">
+                  {formatCurrency(item.price * item.quantity)}
+                </span>
               </div>
             </li>
           ))}
         </ul>
 
         {/* Promo Code */}
-        <div className="space-y-4 mb-8 pt-6 border-t border-outline-variant/10">
+        <div className="mb-8 space-y-4 border-t border-outline-variant/10 pt-6">
           <div className="flex gap-2">
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={localPromo}
               onChange={(e) => setLocalPromo(e.target.value)}
               placeholder="Promo code"
-              className="flex-1 bg-surface-container-high border-0 rounded-md focus:ring-1 focus:ring-primary px-4 py-3 text-xs uppercase tracking-widest placeholder:text-outline-variant/60 outline-none transition-all"
+              className="flex-1 rounded-md border-0 bg-surface-container-high px-4 py-3 text-xs tracking-widest uppercase transition-all outline-none placeholder:text-outline-variant/60 focus:ring-1 focus:ring-primary"
             />
-            <Button 
-              variant="outline" 
-              size="none" 
+            <Button
+              variant="outline"
+              size="none"
               onClick={handleApplyPromo}
               isLoading={promoStatus === "loading"}
-              className="px-6 py-3 border-primary text-primary hover:bg-primary hover:text-white transition-all scale-100"
+              className="scale-100 border-primary px-6 py-3 text-primary transition-all hover:bg-primary hover:text-white"
             >
               Apply
             </Button>
           </div>
           <AnimatePresence>
             {promoStatus === "success" && (
-              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] text-green-600 uppercase tracking-widest flex items-center">
-                <span className="material-symbols-outlined text-xs mr-1">check_circle</span> Code Applied
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center text-[10px] tracking-widest text-green-600 uppercase"
+              >
+                <span className="material-symbols-outlined mr-1 text-xs">
+                  check_circle
+                </span>{" "}
+                Code Applied
               </motion.p>
             )}
             {promoStatus === "error" && (
-              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] text-error uppercase tracking-widest flex items-center">
-                <span className="material-symbols-outlined text-xs mr-1">error</span> Invalid Code
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center text-[10px] tracking-widest text-error uppercase"
+              >
+                <span className="material-symbols-outlined mr-1 text-xs">
+                  error
+                </span>{" "}
+                Invalid Code
               </motion.p>
             )}
           </AnimatePresence>
         </div>
 
         {/* Totals */}
-        <div className="space-y-3 pt-6 border-t border-outline-variant/10">
+        <div className="space-y-3 border-t border-outline-variant/10 pt-6">
           {calculating ? (
             <div className="flex items-center justify-center py-4">
-              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <span className="ml-3 text-[10px] uppercase tracking-widest text-on-surface-variant">Calculating...</span>
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <span className="ml-3 text-[10px] tracking-widest text-on-surface-variant uppercase">
+                Calculating...
+              </span>
             </div>
           ) : totals ? (
             <>
               <div className="flex justify-between text-sm">
-                <span className="text-on-surface-variant font-label uppercase tracking-widest text-[10px]">Subtotal</span>
-                <span className="font-medium">{formatCurrency(totals.subtotal)}</span>
+                <span className="font-label text-[10px] tracking-widest text-on-surface-variant uppercase">
+                  Subtotal
+                </span>
+                <span className="font-medium">
+                  {formatCurrency(totals.subtotal)}
+                </span>
               </div>
               {totals.discountAmount > 0 && (
                 <div className="flex justify-between text-sm text-green-600">
-                  <span className="font-label uppercase tracking-widest text-[10px]">Discount</span>
-                  <span className="font-medium">-{formatCurrency(totals.discountAmount)}</span>
+                  <span className="font-label text-[10px] tracking-widest uppercase">
+                    Discount
+                  </span>
+                  <span className="font-medium">
+                    -{formatCurrency(totals.discountAmount)}
+                  </span>
                 </div>
               )}
               <div className="flex justify-between text-sm">
-                <span className="text-on-surface-variant font-label uppercase tracking-widest text-[10px]">Shipping</span>
-                <span className="font-medium text-primary">{totals.shippingCost > 0 ? formatCurrency(totals.shippingCost) : "Free"}</span>
+                <span className="font-label text-[10px] tracking-widest text-on-surface-variant uppercase">
+                  Shipping
+                </span>
+                <span className="font-medium text-primary">
+                  {totals.shippingCost > 0
+                    ? formatCurrency(totals.shippingCost)
+                    : "Free"}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-on-surface-variant font-label uppercase tracking-widest text-[10px]">Estimated Tax</span>
-                <span className="font-medium">{formatCurrency(totals.tax)}</span>
+                <span className="font-label text-[10px] tracking-widest text-on-surface-variant uppercase">
+                  Estimated Tax
+                </span>
+                <span className="font-medium">
+                  {formatCurrency(totals.tax)}
+                </span>
               </div>
-              <div className="flex justify-between text-xl font-medium pt-4 border-t border-outline-variant/10 mt-4 tracking-tighter">
+              <div className="mt-4 flex justify-between border-t border-outline-variant/10 pt-4 text-xl font-medium tracking-tighter">
                 <span>Total</span>
-                <span className="text-primary">{formatCurrency(totals.total)}</span>
+                <span className="text-primary">
+                  {formatCurrency(totals.total)}
+                </span>
               </div>
             </>
           ) : (
             <div className="flex justify-between text-sm">
-              <span className="text-on-surface-variant font-label uppercase tracking-widest text-[10px]">Subtotal</span>
+              <span className="font-label text-[10px] tracking-widest text-on-surface-variant uppercase">
+                Subtotal
+              </span>
               <span className="font-medium">{formatCurrency(subtotal)}</span>
             </div>
           )}
@@ -186,7 +255,9 @@ export const CheckoutSummary = ({ shippingMethod = "standard" }: { shippingMetho
       {/* Secure Checkout Badge */}
       <div className="flex items-center justify-center gap-3 text-on-surface-variant/40">
         <span className="material-symbols-outlined text-lg">lock</span>
-        <span className="text-[10px] font-bold tracking-[0.2em] uppercase">Secure Encrypted Payment</span>
+        <span className="text-[10px] font-bold tracking-[0.2em] uppercase">
+          Secure Encrypted Payment
+        </span>
       </div>
     </aside>
   );

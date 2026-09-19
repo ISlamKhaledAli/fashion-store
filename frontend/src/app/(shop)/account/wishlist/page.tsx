@@ -3,11 +3,10 @@
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/cartStore";
 import { AccountSidebar } from "@/components/account/AccountSidebar";
 import { wishlistApi } from "@/lib/api";
-import { WishlistItem } from "@/types";
+import type { WishlistItem } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,9 +15,13 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { Check } from "lucide-react";
 import { flyToCart } from "@/lib/animations";
 
-
-
-const WishlistItemCard = ({ item, onRemove }: { item: WishlistItem; onRemove: (id: string) => void }) => {
+const WishlistItemCard = ({
+  item,
+  onRemove,
+}: {
+  item: WishlistItem;
+  onRemove: (id: string) => void;
+}) => {
   const { addItem, toggleDrawer } = useCartStore();
   const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
   const isAnimating = useRef(false);
@@ -27,41 +30,43 @@ const WishlistItemCard = ({ item, onRemove }: { item: WishlistItem; onRemove: (i
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (isAnimating.current) return;
     isAnimating.current = true;
-    
+
     const variant = item.product.variants?.[0];
     if (!variant) return;
-    
+
     const start = Date.now();
     setStatus("loading");
     flyToCart(imageRef);
-    
+
     await addItem({
-      id: '', // Will be assigned by server
-      cartItemId: '',
+      id: "", // Will be assigned by server
+      cartItemId: "",
       productId: item.productId,
       variantId: variant.id,
       name: item.product.name,
-      image: item.product.images?.find((img) => img.isMain)?.url || item.product.images?.[0]?.url || "",
+      image:
+        item.product.images?.find((img) => img.isMain)?.url ||
+        item.product.images?.[0]?.url ||
+        "",
       price: item.product.price,
       size: variant.size,
       color: variant.color,
       quantity: 1,
-      stock: variant.stock || 10
+      stock: variant.stock || 10,
     });
-    
+
     // Ensure minimum 600ms loading state
     const elapsed = Date.now() - start;
     if (elapsed < 600) {
-      await new Promise(r => setTimeout(r, 600 - elapsed));
+      await new Promise((r) => setTimeout(r, 600 - elapsed));
     }
-    
-    
+
     setStatus("success");
     flyToCart(imageRef);
-    
+
     setTimeout(() => {
       toggleDrawer(true);
       setStatus("idle");
@@ -78,8 +83,11 @@ const WishlistItemCard = ({ item, onRemove }: { item: WishlistItem; onRemove: (i
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       className="group relative flex flex-col"
     >
-      <Link href={`/products/${item.product.slug}`} className="block flex-1 flex flex-col">
-        <Button 
+      <Link
+        href={`/products/${item.product.slug}`}
+        className="block flex flex-1 flex-col"
+      >
+        <Button
           variant="none"
           size="none"
           onClick={(e) => {
@@ -87,37 +95,46 @@ const WishlistItemCard = ({ item, onRemove }: { item: WishlistItem; onRemove: (i
             e.stopPropagation();
             onRemove(item.productId);
           }}
-          className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center bg-surface-container-lowest/80 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-error hover:text-white"
+          className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-surface-container-lowest/80 opacity-0 backdrop-blur-sm transition-all duration-300 group-hover:opacity-100 hover:bg-error hover:text-white"
         >
           <span className="material-symbols-outlined text-xs">close</span>
         </Button>
-        
-        <div className="aspect-[3/4] overflow-hidden bg-surface-container-low mb-6 ring-1 ring-outline-variant/5">
+
+        <div className="mb-6 aspect-[3/4] overflow-hidden bg-surface-container-low ring-1 ring-outline-variant/5">
           {item?.product?.images?.[0]?.url ? (
-            <img 
+            <img
               ref={imageRef}
-              src={item.product.images.find(img => img.isMain)?.url || item.product.images[0].url} 
-              alt={item?.product?.name || "Product"} 
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
+              src={
+                item.product.images.find((img) => img.isMain)?.url ||
+                item.product.images[0].url
+              }
+              alt={item?.product?.name || "Product"}
+              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-outline-variant bg-surface-container hover:scale-105 transition-transform duration-700 ease-out">
+            <div className="flex h-full w-full flex-col items-center justify-center bg-surface-container text-outline-variant transition-transform duration-700 ease-out hover:scale-105">
               <span className="material-symbols-outlined mb-2">image</span>
             </div>
           )}
         </div>
-        
-        <div className="space-y-1 mb-6 flex-1">
-          <span className="text-[10px] tracking-[0.2em] font-bold uppercase text-on-surface-variant">THE CURATOR</span>
-          <h3 className="text-lg font-medium tracking-tight text-on-surface">{item.product.name}</h3>
-          <p className="text-on-surface-variant text-sm font-medium">{formatCurrency(item.product.price)}</p>
+
+        <div className="mb-6 flex-1 space-y-1">
+          <span className="text-[10px] font-bold tracking-[0.2em] text-on-surface-variant uppercase">
+            THE CURATOR
+          </span>
+          <h3 className="text-lg font-medium tracking-tight text-on-surface">
+            {item.product.name}
+          </h3>
+          <p className="text-sm font-medium text-on-surface-variant">
+            {formatCurrency(item.product.price)}
+          </p>
         </div>
-        
-        <Button 
+
+        <Button
           variant={status === "success" ? "success" : "primary"}
           onClick={handleAddToCart}
           disabled={status !== "idle"}
-          className="w-full py-4 uppercase tracking-[0.2em] text-xs font-bold"
+          className="w-full py-4 text-xs font-bold tracking-[0.2em] uppercase"
         >
           <AnimatePresence mode="wait">
             {status === "idle" && (
@@ -186,7 +203,7 @@ export default function WishlistPage() {
     try {
       const res = await wishlistApi.remove(productId);
       if (res.data.success) {
-        setItems(items.filter(item => item.productId !== productId));
+        setItems(items.filter((item) => item.productId !== productId));
       }
     } catch (err) {
       console.error("Failed to remove from wishlist", err);
@@ -195,59 +212,66 @@ export default function WishlistPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex bg-surface min-h-screen">
+      <div className="flex min-h-screen bg-surface">
         <AccountSidebar />
-        
-        <main className="flex-1 px-16 py-12">
-        <header className="mb-16">
-          <h1 className="text-4xl font-medium text-on-surface tracking-tighter mb-4">
-            My Wishlist {!loading && `(${items.length} items)`}
-          </h1>
-          <div className="h-px w-full bg-outline-variant opacity-15" />
-        </header>
 
-        {loading ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-16">
-            {Array(6).fill(0).map((_, i) => (
-              <div key={i} className="space-y-4">
-                <Skeleton className="aspect-[3/4] w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/4" />
-                <Skeleton className="h-12 w-full" />
+        <main className="flex-1 px-16 py-12">
+          <header className="mb-16">
+            <h1 className="mb-4 text-4xl font-medium tracking-tighter text-on-surface">
+              My Wishlist {!loading && `(${items.length} items)`}
+            </h1>
+            <div className="h-px w-full bg-outline-variant opacity-15" />
+          </header>
+
+          {loading ? (
+            <div className="grid grid-cols-1 gap-x-8 gap-y-16 lg:grid-cols-2 xl:grid-cols-3">
+              {Array(6)
+                .fill(0)
+                .map((_, i) => (
+                  <div key={i} className="space-y-4">
+                    <Skeleton className="aspect-[3/4] w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                ))}
+            </div>
+          ) : items.length > 0 ? (
+            <div className="grid grid-cols-1 gap-x-8 gap-y-16 lg:grid-cols-2 xl:grid-cols-3">
+              <AnimatePresence mode="popLayout">
+                {items.map((item) => (
+                  <WishlistItemCard
+                    key={item.productId}
+                    item={item}
+                    onRemove={handleRemove}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center space-y-6 py-32 text-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-surface-container">
+                <span className="material-symbols-outlined text-4xl text-outline-variant">
+                  favorite
+                </span>
               </div>
-            ))}
-          </div>
-        ) : items.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-16">
-            <AnimatePresence mode="popLayout">
-              {items.map((item) => (
-                <WishlistItemCard 
-                  key={item.productId} 
-                  item={item} 
-                  onRemove={handleRemove} 
-                />
-              ))}
-            </AnimatePresence>
-          </div>
-        ) : (
-          <div className="py-32 flex flex-col items-center justify-center text-center space-y-6">
-            <div className="w-20 h-20 rounded-full bg-surface-container flex items-center justify-center">
-              <span className="material-symbols-outlined text-4xl text-outline-variant">favorite</span>
+              <div className="space-y-2">
+                <h3 className="text-xl font-medium">Your wishlist is empty</h3>
+                <p className="mx-auto max-w-xs text-on-surface-variant">
+                  Explore our collections and save your favorite pieces here.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => router.push("/products")}
+                className="px-10"
+              >
+                Continue Shopping
+              </Button>
             </div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-medium">Your wishlist is empty</h3>
-              <p className="text-on-surface-variant max-w-xs mx-auto">
-                Explore our collections and save your favorite pieces here.
-              </p>
-            </div>
-            <Button variant="outline" onClick={() => router.push("/products")} className="px-10">
-              Continue Shopping
-            </Button>
-          </div>
-        )}
-      </main>
-    </div>
+          )}
+        </main>
+      </div>
     </ProtectedRoute>
   );
 }
-

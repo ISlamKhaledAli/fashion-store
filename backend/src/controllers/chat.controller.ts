@@ -1,22 +1,32 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
-import { env } from "../utils/validateEnv";
 import { tools, executeTool } from "../lib/tools";
+import {
+  callOpenRouter,
+  pipeSseStream,
+  AI_MODELS,
+} from "../services/ai.service";
+import logger from "../utils/logger";
 
 export function buildSystemPrompt(user: any | null, cart: any | null) {
-  const userContext = user ? `
+  const userContext = user
+    ? `
 USER CONTEXT:
 - Name: ${user.name}
-- Past purchases: ${user.purchases?.join(', ') || 'None'}
-- Wishlist: ${user.wishlist?.join(', ') || 'Empty'}
-- Saved sizes: ${user.sizes ? JSON.stringify(user.sizes) : 'Not provided'}
-` : 'USER CONTEXT: Guest user, not logged in';
+- Past purchases: ${user.purchases?.join(", ") || "None"}
+- Wishlist: ${user.wishlist?.join(", ") || "Empty"}
+- Saved sizes: ${user.sizes ? JSON.stringify(user.sizes) : "Not provided"}
+`
+    : "USER CONTEXT: Guest user, not logged in";
 
-  const cartContext = (cart && cart.items && cart.items.length > 0) ? `
+  const cartContext =
+    cart && cart.items && cart.items.length > 0
+      ? `
 CART:
-${cart.items.map((i: any) => `- ${i.name} (${i.size}, ${i.color}) x${i.qty} = $${i.price}`).join('\n')}
+${cart.items.map((i: any) => `- ${i.name} (${i.size}, ${i.color}) x${i.qty} = $${i.price}`).join("\n")}
 Cart total: $${cart.total}
-` : 'CART: Empty';
+`
+      : "CART: Empty";
 
   return `You are an expert AI shopping assistant for The Curator, a premium fashion e-commerce store.
 Your goal is to help customers find exactly what they need, increase satisfaction, and drive sales naturally.
@@ -53,12 +63,18 @@ ${cartContext}
 `;
 }
 
-export const handleChat = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const handleChat = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { messages, guestCart } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
-      res.status(400).json({ success: false, message: "Messages array is required" });
+      res
+        .status(400)
+        .json({ success: false, message: "Messages array is required" });
       return;
     }
 
@@ -128,7 +144,8 @@ export const handleChat = async (req: Request, res: Response, next: NextFunction
           name: user.name,
           purchases: Array.from(purchases),
           wishlist,
-          sizes: sizesPurchased.size > 0 ? Array.from(sizesPurchased) : undefined,
+          sizes:
+            sizesPurchased.size > 0 ? Array.from(sizesPurchased) : undefined,
         };
 
         // Formulate cart context from server cart
@@ -148,7 +165,12 @@ export const handleChat = async (req: Request, res: Response, next: NextFunction
     }
 
     // Fallback: If not authenticated but a guest cart is passed from the client, use it!
-    if (!cartContext && guestCart && guestCart.items && Array.isArray(guestCart.items)) {
+    if (
+      !cartContext &&
+      guestCart &&
+      guestCart.items &&
+      Array.isArray(guestCart.items)
+    ) {
       const items = guestCart.items.map((i: any) => ({
         name: i.name || "Product",
         size: i.size || "Unknown",
@@ -157,21 +179,15 @@ export const handleChat = async (req: Request, res: Response, next: NextFunction
         price: i.price || 0,
       }));
 
-      const total = items.reduce((acc: number, i: any) => acc + i.price * i.qty, 0);
+      const total = items.reduce(
+        (acc: number, i: any) => acc + i.price * i.qty,
+        0
+      );
       cartContext = { items, total };
     }
 
     // 2. Assemble the dynamic system prompt (without catalog!)
     const systemPrompt = buildSystemPrompt(userContext, cartContext);
-
-    // 3. Setup OpenRouter Configuration
-    const openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
-    const requestHeaders: Record<string, string> = {
-      "Authorization": `Bearer ${env.OPENROUTER_API_KEY}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": env.CLIENT_URL || "http://localhost:3000",
-      "X-Title": "The Curator Shopping Assistant",
-    };
 
     // Filter messages to avoid sending internal tool representation if client sent unexpected formats
     const apiMessages: any[] = [
@@ -188,26 +204,35 @@ export const handleChat = async (req: Request, res: Response, next: NextFunction
 
     // Agentic tool-calling loop (limit 3 steps)
     while (hasToolCalls && loopCount < maxLoops) {
-      console.log(`[DEBUG] Dispatching chat query to OpenRouter (Loop ${loopCount + 1})...`);
+      logger.debug(
+        `Dispatching chat query to OpenRouter (Loop ${loopCount + 1})...`
+      );
 
-      const response = await fetch(openRouterUrl, {
-        method: "POST",
-        headers: requestHeaders,
-        body: JSON.stringify({
-          model: "anthropic/claude-3-haiku",
+      const response = await callOpenRouter(
+        {
+          model: AI_MODELS.HAIKU_3,
           messages: apiMessages,
           tools: tools,
           tool_choice: "auto",
           stream: false,
           max_tokens: 1000,
           temperature: 0.7,
-        }),
-      });
+        },
+        { title: "The Curator Shopping Assistant" }
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("[ERROR] OpenRouter request failed:", { status: response.status, errorText });
-        res.status(500).json({ success: false, message: "Failed to connect to OpenRouter service" });
+        logger.error("OpenRouter request failed", {
+          status: response.status,
+          errorText,
+        });
+        res
+          .status(500)
+          .json({
+            success: false,
+            message: "Failed to connect to OpenRouter service",
+          });
         return;
       }
 
@@ -217,8 +242,8 @@ export const handleChat = async (req: Request, res: Response, next: NextFunction
       const toolCalls = responseMessage?.tool_calls;
 
       if (toolCalls && toolCalls.length > 0) {
-        console.log(`[DEBUG] Tool calls requested:`, toolCalls);
-        
+        logger.debug("Tool calls requested", { toolCalls });
+
         // Push the assistant tool_calls message
         apiMessages.push(responseMessage);
 
@@ -228,10 +253,10 @@ export const handleChat = async (req: Request, res: Response, next: NextFunction
           try {
             args = JSON.parse(toolCall.function.arguments || "{}");
           } catch (err) {
-            console.error("[ERROR] Failed to parse tool arguments:", err);
+            logger.error("Failed to parse tool arguments", { error: err });
           }
 
-          console.log(`[DEBUG] Executing tool: ${functionName} with args:`, args);
+          logger.debug(`Executing tool: ${functionName}`, { args });
           const result = await executeTool(functionName, args);
 
           apiMessages.push({
@@ -249,59 +274,46 @@ export const handleChat = async (req: Request, res: Response, next: NextFunction
     }
 
     // Now call OpenRouter for the final streaming text generation
-    console.log("[DEBUG] Dispatching final stream query to OpenRouter...");
-    const streamResponse = await fetch(openRouterUrl, {
-      method: "POST",
-      headers: requestHeaders,
-      body: JSON.stringify({
-        model: "anthropic/claude-3-haiku",
+    logger.debug("Dispatching final stream query to OpenRouter...");
+    const streamResponse = await callOpenRouter(
+      {
+        model: AI_MODELS.HAIKU_3,
         messages: apiMessages,
         stream: true,
         max_tokens: 600,
         temperature: 0.7,
-      }),
-    });
+      },
+      { title: "The Curator Shopping Assistant" }
+    );
 
     if (!streamResponse.ok) {
       const errorText = await streamResponse.text();
-      console.error("[ERROR] OpenRouter final stream failed:", { status: streamResponse.status, errorText });
-      res.status(500).json({ success: false, message: "Failed to stream final response from OpenRouter" });
+      logger.error("OpenRouter final stream failed", {
+        status: streamResponse.status,
+        errorText,
+      });
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to stream final response from OpenRouter",
+        });
       return;
     }
 
     if (!streamResponse.body) {
-      res.status(500).json({ success: false, message: "Empty final stream response from completions provider" });
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Empty final stream response from completions provider",
+        });
       return;
     }
 
-    // Set streaming headers
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-
-    // Process chunk stream
-    try {
-      if (streamResponse.body) {
-        if (typeof (streamResponse.body as any).getReader === "function") {
-          const reader = (streamResponse.body as any).getReader();
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            res.write(value);
-          }
-        } else {
-          for await (const chunk of streamResponse.body as any) {
-            res.write(chunk);
-          }
-        }
-      }
-    } catch (streamError) {
-      console.error("[ERROR] Error in OpenRouter connection stream:", streamError);
-    } finally {
-      res.end();
-    }
+    await pipeSseStream(streamResponse.body, res);
   } catch (error) {
-    console.error("[ERROR] Shopping Assistant Controller failed:", error);
+    logger.error("Shopping Assistant Controller failed", { error });
     next(error);
   }
 };

@@ -1,16 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAuthStore } from "@/store/authStore";
 import { useCartStore } from "@/store/cartStore";
 import { StepProgress } from "@/components/checkout/StepProgress";
 import { ShippingStep } from "@/components/checkout/ShippingStep";
 import { PaymentStep } from "@/components/checkout/PaymentStep";
 import { ReviewStep } from "@/components/checkout/ReviewStep";
 import { CheckoutSummary } from "@/components/checkout/CheckoutSummary";
-import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
@@ -18,7 +16,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || "");
 
-import { orderApi, addressApi } from "@/lib/api";
+import { addressApi } from "@/lib/api";
 
 export interface ShippingFormData {
   firstName: string;
@@ -41,14 +39,24 @@ function CheckoutPageContent() {
   const orderIdParam = searchParams.get("order_id");
 
   const [currentStep, setCurrentStep] = useState(1);
-  const [shippingData, setShippingData] = useState<ShippingFormData | null>(null);
+  const [shippingData, setShippingData] = useState<ShippingFormData | null>(
+    null
+  );
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<{ id: string } | null>(null);
 
   const { items: cartItems, discountAmount: storeDiscount } = useCartStore();
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const shipping = shippingData?.shippingMethod === 'overnight' ? 24.99 : (shippingData?.shippingMethod === 'express' ? 9.99 : 10);
+  const subtotal = cartItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+  const shipping =
+    shippingData?.shippingMethod === "overnight"
+      ? 24.99
+      : shippingData?.shippingMethod === "express"
+        ? 9.99
+        : 10;
   const discountedSubtotal = Math.max(0, subtotal - storeDiscount);
   const tax = Math.round(discountedSubtotal * 0.1 * 100) / 100;
   const discountAmount = storeDiscount;
@@ -65,20 +73,25 @@ function CheckoutPageContent() {
     }
 
     // 2. Handle Stripe redirect
-    if (stepParam === "review" && (returnFromStripe === "true" || paymentIntentParam)) {
+    if (
+      stepParam === "review" &&
+      (returnFromStripe === "true" || paymentIntentParam)
+    ) {
       if (!clientSecretParam) return;
 
       const validatePayment = async () => {
         const stripe = await stripePromise;
         if (!stripe) return;
 
-        const { paymentIntent } = await stripe.retrievePaymentIntent(clientSecretParam);
+        const { paymentIntent } =
+          await stripe.retrievePaymentIntent(clientSecretParam);
 
-        if (paymentIntent && (
-          paymentIntent.status === "succeeded" || 
-          paymentIntent.status === "processing" || 
-          paymentIntent.status === "requires_capture"
-        )) {
+        if (
+          paymentIntent &&
+          (paymentIntent.status === "succeeded" ||
+            paymentIntent.status === "processing" ||
+            paymentIntent.status === "requires_capture")
+        ) {
           setClientSecret(clientSecretParam);
           setPaymentIntentId(orderIdParam || paymentIntent.id);
           setCurrentStep(3);
@@ -90,7 +103,13 @@ function CheckoutPageContent() {
 
       validatePayment();
     }
-  }, [stepParam, returnFromStripe, clientSecretParam, paymentIntentParam, orderIdParam]);
+  }, [
+    stepParam,
+    returnFromStripe,
+    clientSecretParam,
+    paymentIntentParam,
+    orderIdParam,
+  ]);
 
   const handleShippingNext = async (data: ShippingFormData) => {
     try {
@@ -103,14 +122,17 @@ function CheckoutPageContent() {
         state: data.state,
         zip: data.zipCode,
         country: "US",
-        label: "Shipping Address"
+        label: "Shipping Address",
       });
 
       if (addressRes.data.success) {
         const addressData = addressRes.data.data as { id: string };
         const newData = { ...data, addressId: addressData.id };
         setShippingData(newData);
-        sessionStorage.setItem("checkout_shipping_data", JSON.stringify(newData));
+        sessionStorage.setItem(
+          "checkout_shipping_data",
+          JSON.stringify(newData)
+        );
         setCurrentStep(2);
       }
     } catch (error) {
@@ -136,9 +158,9 @@ function CheckoutPageContent() {
             exit={{ opacity: 0, x: -20 }}
             className="lg:col-span-2"
           >
-            <ShippingStep 
-              onNext={handleShippingNext} 
-              initialData={shippingData || undefined} 
+            <ShippingStep
+              onNext={handleShippingNext}
+              initialData={shippingData || undefined}
             />
           </motion.div>
         );
@@ -151,8 +173,8 @@ function CheckoutPageContent() {
             exit={{ opacity: 0, x: -20 }}
             className="lg:col-span-2"
           >
-            <PaymentStep 
-              onNext={handlePaymentNext} 
+            <PaymentStep
+              onNext={handlePaymentNext}
               onBack={() => setCurrentStep(1)}
               shippingMethod={shippingData?.shippingMethod || "standard"}
               total={total}
@@ -172,16 +194,18 @@ function CheckoutPageContent() {
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           >
             {clientSecret && paymentIntentId && shippingData ? (
-              <ReviewStep 
-                shippingData={shippingData} 
+              <ReviewStep
+                shippingData={shippingData}
                 paymentIntentId={paymentIntentId}
                 onSuccess={(id) => setOrderSuccess({ id })}
                 onBack={() => setCurrentStep(2)}
               />
             ) : (
-              <div className="text-center py-20">
+              <div className="py-20 text-center">
                 <p>Payment information missing. Please go back.</p>
-                <Button variant="outline" onClick={() => setCurrentStep(2)}>Back to Payment</Button>
+                <Button variant="outline" onClick={() => setCurrentStep(2)}>
+                  Back to Payment
+                </Button>
               </div>
             )}
           </motion.div>
@@ -193,109 +217,140 @@ function CheckoutPageContent() {
 
   return (
     <ProtectedRoute>
-      <div className="bg-surface min-h-screen">
-      {/* Header */}
-      <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl border-b border-outline-variant/10">
-        <div className="flex justify-between items-center h-20 px-8 max-w-[1440px] mx-auto">
-          <Link href="/" className="text-xl font-medium tracking-tighter">THE EDITORIAL</Link>
-          <div className="flex items-center gap-4">
-             <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-medium">Checkout Experience</span>
-          </div>
-        </div>
-      </header>
-
-      <main className="pt-32 pb-24 max-w-[1440px] mx-auto px-6 lg:px-12">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-16 xl:gap-32 items-start">
-          
-          <div className="space-y-12">
-            <StepProgress currentStep={currentStep} />
-            
-            <AnimatePresence mode="wait">
-              {renderCurrentStep()}
-            </AnimatePresence>
-          </div>
-
-          <CheckoutSummary shippingMethod={shippingData?.shippingMethod || "standard"} />
-        </div>
-      </main>
-
-      {/* Success Overlay */}
-      <AnimatePresence>
-        {orderSuccess && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 text-center"
-          >
-            <div className="w-24 h-24 mb-8">
-              <svg className="w-full h-full" viewBox="0 0 52 52">
-                <motion.circle 
-                  cx="26" cy="26" r="25" 
-                  fill="none" 
-                  stroke="#030304" 
-                  strokeWidth="2" 
-                  initial={{ pathLength: 0 }}
-                  animate={{ pathLength: 1 }}
-                  transition={{ duration: 0.5, ease: "easeInOut" }}
-                />
-                <motion.path 
-                  fill="none" 
-                  stroke="#030304" 
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M14.1 27.2l7.1 7.2 16.7-16.8" 
-                  initial={{ pathLength: 0 }}
-                  animate={{ pathLength: 1 }}
-                  transition={{ duration: 0.5, delay: 0.5, ease: "easeInOut" }}
-                />
-              </svg>
+      <div className="min-h-screen bg-surface">
+        {/* Header */}
+        <header className="fixed top-0 z-50 w-full border-b border-outline-variant/10 bg-white/80 backdrop-blur-xl">
+          <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-8">
+            <Link href="/" className="text-xl font-medium tracking-tighter">
+              THE EDITORIAL
+            </Link>
+            <div className="flex items-center gap-4">
+              <span className="text-[10px] font-medium tracking-widest text-on-surface-variant uppercase">
+                Checkout Experience
+              </span>
             </div>
-            
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1 }}
-              className="space-y-6 max-w-sm"
-            >
-              <h2 className="text-4xl font-medium tracking-tight">Order Confirmed!</h2>
-              <p className="text-on-surface-variant leading-relaxed">
-                Thank you for your purchase. Your order <span className="text-primary font-medium">#{orderSuccess.id.slice(-8).toUpperCase()}</span> has been placed successfully.
-              </p>
-              <div className="pt-8">
-                <Link href="/products">
-                  <Button variant="primary" className="w-full py-5">
-                    Continue Shopping
-                  </Button>
-                </Link>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Footer */}
-      <footer className="w-full py-12 px-12 border-t border-outline-variant/10">
-        <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-          <span className="text-[10px] font-medium tracking-widest uppercase text-zinc-400">© 2024 THE EDITORIAL. ALL RIGHTS RESERVED.</span>
-          <div className="flex gap-8">
-            <Link href="/" className="text-[10px] font-medium tracking-widest uppercase text-zinc-400 hover:text-primary transition-colors">Privacy</Link>
-            <Link href="/" className="text-[10px] font-medium tracking-widest uppercase text-zinc-400 hover:text-primary transition-colors">Terms</Link>
           </div>
-        </div>
-      </footer>
-    </div>
+        </header>
+
+        <main className="mx-auto max-w-[1440px] px-6 pt-32 pb-24 lg:px-12">
+          <div className="grid grid-cols-1 items-start gap-16 lg:grid-cols-[1fr_400px] xl:gap-32">
+            <div className="space-y-12">
+              <StepProgress currentStep={currentStep} />
+
+              <AnimatePresence mode="wait">
+                {renderCurrentStep()}
+              </AnimatePresence>
+            </div>
+
+            <CheckoutSummary
+              shippingMethod={shippingData?.shippingMethod || "standard"}
+            />
+          </div>
+        </main>
+
+        {/* Success Overlay */}
+        <AnimatePresence>
+          {orderSuccess && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white p-6 text-center"
+            >
+              <div className="mb-8 h-24 w-24">
+                <svg className="h-full w-full" viewBox="0 0 52 52">
+                  <motion.circle
+                    cx="26"
+                    cy="26"
+                    r="25"
+                    fill="none"
+                    stroke="#030304"
+                    strokeWidth="2"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                  />
+                  <motion.path
+                    fill="none"
+                    stroke="#030304"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M14.1 27.2l7.1 7.2 16.7-16.8"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{
+                      duration: 0.5,
+                      delay: 0.5,
+                      ease: "easeInOut",
+                    }}
+                  />
+                </svg>
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1 }}
+                className="max-w-sm space-y-6"
+              >
+                <h2 className="text-4xl font-medium tracking-tight">
+                  Order Confirmed!
+                </h2>
+                <p className="leading-relaxed text-on-surface-variant">
+                  Thank you for your purchase. Your order{" "}
+                  <span className="font-medium text-primary">
+                    #{orderSuccess.id.slice(-8).toUpperCase()}
+                  </span>{" "}
+                  has been placed successfully.
+                </p>
+                <div className="pt-8">
+                  <Link href="/products">
+                    <Button variant="primary" className="w-full py-5">
+                      Continue Shopping
+                    </Button>
+                  </Link>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Footer */}
+        <footer className="w-full border-t border-outline-variant/10 px-12 py-12">
+          <div className="mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-8 md:flex-row">
+            <span className="text-[10px] font-medium tracking-widest text-zinc-400 uppercase">
+              © 2024 THE EDITORIAL. ALL RIGHTS RESERVED.
+            </span>
+            <div className="flex gap-8">
+              <Link
+                href="/"
+                className="text-[10px] font-medium tracking-widest text-zinc-400 uppercase transition-colors hover:text-primary"
+              >
+                Privacy
+              </Link>
+              <Link
+                href="/"
+                className="text-[10px] font-medium tracking-widest text-zinc-400 uppercase transition-colors hover:text-primary"
+              >
+                Terms
+              </Link>
+            </div>
+          </div>
+        </footer>
+      </div>
     </ProtectedRoute>
   );
 }
 
 export default function CheckoutPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-surface flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-surface">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      }
+    >
       <CheckoutPageContent />
     </Suspense>
   );

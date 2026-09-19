@@ -13,26 +13,31 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="w-full space-y-2">
         {label && (
-          <label className="text-xs font-bold uppercase tracking-widest text-on-surface-variant" htmlFor={id}>
+          <label
+            className="text-xs font-bold tracking-widest text-on-surface-variant uppercase"
+            htmlFor={id}
+          >
             {label}
           </label>
         )}
-        <div className="relative group/textarea">
+        <div className="group/textarea relative">
           <textarea
             id={id}
             ref={ref}
             placeholder={placeholder}
             className={cn(
-              "w-full bg-surface-container-lowest border border-outline-variant/30 rounded-md py-3 px-4 focus:ring-0 focus:border-primary transition-all text-sm placeholder:text-outline-variant placeholder:font-light resize-none",
+              "w-full resize-none rounded-md border border-outline-variant/30 bg-surface-container-lowest px-4 py-3 text-sm transition-all placeholder:font-light placeholder:text-outline-variant focus:border-primary focus:ring-0",
               error && "border-error",
               className
             )}
             {...props}
           />
-          <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-primary transition-all duration-500 group-focus-within/textarea:w-full rounded-b-md" />
+          <div className="absolute bottom-0 left-0 h-[2px] w-0 rounded-b-md bg-primary transition-all duration-500 group-focus-within/textarea:w-full" />
         </div>
         {error && (
-          <p className="text-[10px] text-error font-medium uppercase tracking-wider">{error}</p>
+          <p className="text-[10px] font-medium tracking-wider text-error uppercase">
+            {error}
+          </p>
         )}
       </div>
     );

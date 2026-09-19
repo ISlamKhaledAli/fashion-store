@@ -1,17 +1,25 @@
 "use client";
 
-import React, { useReducer, useEffect, useState, Suspense, useMemo, useCallback, useRef } from "react";
+import React, {
+  useReducer,
+  useEffect,
+  useState,
+  Suspense,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDebounce } from "@/hooks/useDebounce";
 import { ProductCard } from "@/components/shop/ProductCard";
-import { FilterSidebar, FilterState } from "@/components/shop/FilterSidebar";
+import type { FilterState } from "@/components/shop/FilterSidebar";
+import { FilterSidebar } from "@/components/shop/FilterSidebar";
 import { ProductGrid } from "@/components/shop/ProductGrid";
 import { ActiveFilters } from "@/components/shop/ActiveFilters";
 import { Button } from "@/components/ui/Button";
 import { ProductSkeleton } from "@/components/shop/ProductSkeleton";
 import { productApi } from "@/lib/api";
-import { Product } from "@/types";
-import { cn } from "@/lib/utils";
+import type { Product } from "@/types";
 import { Filter, LayoutGrid, List, Loader2 } from "lucide-react";
 import { Select } from "@/components/ui/Select";
 
@@ -57,9 +65,13 @@ function filterReducer(state: FilterState, action: Action): FilterState {
     }
     case "toggle_color": {
       const normalizedPayload = action.payload.toLowerCase().trim();
-      const isSelected = state.color.some(c => c.toLowerCase().trim() === normalizedPayload);
+      const isSelected = state.color.some(
+        (c) => c.toLowerCase().trim() === normalizedPayload
+      );
       const color = isSelected
-        ? state.color.filter(c => c.toLowerCase().trim() !== normalizedPayload)
+        ? state.color.filter(
+            (c) => c.toLowerCase().trim() !== normalizedPayload
+          )
         : [...state.color, normalizedPayload];
       return { ...state, color };
     }
@@ -72,7 +84,9 @@ function filterReducer(state: FilterState, action: Action): FilterState {
     case "reset":
       return initialState;
     case "sync_from_url": {
-      const isDifferent = JSON.stringify(state) !== JSON.stringify({ ...state, ...action.payload });
+      const isDifferent =
+        JSON.stringify(state) !==
+        JSON.stringify({ ...state, ...action.payload });
       return isDifferent ? { ...state, ...action.payload } : state;
     }
     default:
@@ -95,28 +109,34 @@ function ProductsContent() {
   const isInitialMount = React.useRef(true);
   const observer = useRef<IntersectionObserver | null>(null);
 
-  const lastItemRef = useCallback((node: HTMLDivElement | null) => {
-    if (isLoading || isFetchingMore) return;
-    if (observer.current) observer.current.disconnect();
+  const lastItemRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (isLoading || isFetchingMore) return;
+      if (observer.current) observer.current.disconnect();
 
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && page < totalPages) {
-        setPage(prevPage => prevPage + 1);
-      }
-    });
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && page < totalPages) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      });
 
-    if (node) observer.current.observe(node);
-  }, [isLoading, isFetchingMore, page, totalPages]);
+      if (node) observer.current.observe(node);
+    },
+    [isLoading, isFetchingMore, page, totalPages]
+  );
 
   // ... (maintain useEffects logic)
   // Memoize stable filters to prevent unnecessary re-renders
-  const stableFilters = useMemo(() => ({
-    category: state.category,
-    brand: state.brand,
-    color: state.color,
-    maxPrice: state.maxPrice,
-    sort: state.sort
-  }), [state.category, state.brand, state.color, state.maxPrice, state.sort]);
+  const stableFilters = useMemo(
+    () => ({
+      category: state.category,
+      brand: state.brand,
+      color: state.color,
+      maxPrice: state.maxPrice,
+      sort: state.sort,
+    }),
+    [state.category, state.brand, state.color, state.maxPrice, state.sort]
+  );
 
   const debouncedFilters = useDebounce(stableFilters, 300);
 
@@ -151,7 +171,7 @@ function ProductsContent() {
     const fetchProducts = async () => {
       if (page === 1) setIsLoading(true);
       else setIsFetchingMore(true);
-      
+
       try {
         const res = await productApi.getAll({
           category: debouncedFilters.category.join(","),
@@ -167,7 +187,7 @@ function ProductsContent() {
           if (page === 1) {
             setProducts(res.data.data as Product[]);
           } else {
-            setProducts(prev => [...prev, ...res.data.data as Product[]]);
+            setProducts((prev) => [...prev, ...(res.data.data as Product[])]);
           }
           setTotalPages(res.data.pagination?.totalPages || 1);
           setTotalProducts(res.data.pagination?.total || 0);
@@ -183,50 +203,56 @@ function ProductsContent() {
     };
 
     fetchProducts();
-    
+
     // Update URL to match state (Side Effect of state change)
     if (!isInitialMount.current) {
       const params = new URLSearchParams();
-      if (debouncedFilters.category.length) params.set("category", debouncedFilters.category.join(","));
-      if (debouncedFilters.brand.length) params.set("brand", debouncedFilters.brand.join(","));
-      if (debouncedFilters.color.length) params.set("color", debouncedFilters.color.join(","));
-      if (debouncedFilters.maxPrice < 2000) params.set("maxPrice", debouncedFilters.maxPrice.toString());
+      if (debouncedFilters.category.length)
+        params.set("category", debouncedFilters.category.join(","));
+      if (debouncedFilters.brand.length)
+        params.set("brand", debouncedFilters.brand.join(","));
+      if (debouncedFilters.color.length)
+        params.set("color", debouncedFilters.color.join(","));
+      if (debouncedFilters.maxPrice < 2000)
+        params.set("maxPrice", debouncedFilters.maxPrice.toString());
       params.set("sort", debouncedFilters.sort);
-      
+
       const newUrl = `/products?${params.toString()}`;
       if (window.location.search !== `?${params.toString()}`) {
         router.replace(newUrl, { scroll: false });
       }
     }
-    
+
     isInitialMount.current = false;
   }, [debouncedFilters, page, router]);
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen">
+    <div className="flex min-h-screen flex-col lg:flex-row">
       <FilterSidebar state={state} dispatch={dispatch} />
-      <FilterSidebar 
-        state={state} 
-        dispatch={dispatch} 
-        isMobile 
-        isOpen={isSidebarOpen} 
-        onClose={() => setIsSidebarOpen(false)} 
+      <FilterSidebar
+        state={state}
+        dispatch={dispatch}
+        isMobile
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
       />
 
       <section className="flex-1 p-8 lg:p-12">
-        <header className="flex flex-col md:flex-row justify-between items-end gap-6 mb-12">
-          <div className="space-y-4 w-full">
-            <h1 className="text-4xl lg:text-6xl font-medium tracking-tighter">
+        <header className="mb-12 flex flex-col items-end justify-between gap-6 md:flex-row">
+          <div className="w-full space-y-4">
+            <h1 className="text-4xl font-medium tracking-tighter lg:text-6xl">
               Collections
             </h1>
-            <div className="flex items-center gap-4 text-xs uppercase tracking-widest text-on-surface-variant">
-              <span className="font-bold text-on-surface">{totalProducts} Products</span>
-              <span className="w-8 h-1px bg-outline-variant"></span>
-              <Button 
+            <div className="flex items-center gap-4 text-xs tracking-widest text-on-surface-variant uppercase">
+              <span className="font-bold text-on-surface">
+                {totalProducts} Products
+              </span>
+              <span className="h-1px w-8 bg-outline-variant"></span>
+              <Button
                 variant="none"
                 size="none"
                 onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden flex items-center gap-2 font-bold text-primary"
+                className="flex items-center gap-2 font-bold text-primary lg:hidden"
                 aria-label="Open filters"
                 icon={<Filter size={14} strokeWidth={2} />}
               >
@@ -234,16 +260,16 @@ function ProductsContent() {
               </Button>
             </div>
           </div>
-          
-          <div className="flex flex-wrap items-center justify-between md:justify-end gap-x-8 gap-y-4 border-b border-outline-variant/30 pb-2 w-full md:w-auto">
-            <Select 
+
+          <div className="flex w-full flex-wrap items-center justify-between gap-x-8 gap-y-4 border-b border-outline-variant/30 pb-2 md:w-auto md:justify-end">
+            <Select
               labelPrefix="Sort:"
               options={SORT_OPTIONS}
               value={state.sort}
               onChange={(val) => dispatch({ type: "set_sort", payload: val })}
             />
-            <div className="flex items-center gap-4 shrink-0">
-              <Button 
+            <div className="flex shrink-0 items-center gap-4">
+              <Button
                 variant="icon"
                 size="icon"
                 onClick={() => setViewMode("grid")}
@@ -252,7 +278,7 @@ function ProductsContent() {
               >
                 <LayoutGrid size={20} strokeWidth={1.5} />
               </Button>
-              <Button 
+              <Button
                 variant="icon"
                 size="icon"
                 onClick={() => setViewMode("list")}
@@ -269,25 +295,25 @@ function ProductsContent() {
 
         <ProductGrid isLoading={isLoading} viewMode={viewMode}>
           {isLoading ? (
-            Array(6).fill(0).map((_, i) => (
-              <ProductSkeleton key={i} />
-            ))
+            Array(6)
+              .fill(0)
+              .map((_, i) => <ProductSkeleton key={i} />)
           ) : products.length > 0 ? (
             <>
               {products.map((product, index) => (
-                <ProductCard 
+                <ProductCard
                   key={`${product.id}-${index}`} // Use combination for stability with appending
-                  product={product} 
-                  variant="editorial" 
+                  product={product}
+                  variant="editorial"
                   isListView={viewMode === "list"}
-                  delay={index % 12 * 0.06} // Reset animation delay per page load
+                  delay={(index % 12) * 0.06} // Reset animation delay per page load
                 />
               ))}
               {/* Sentinel for Infinite Scroll */}
-              <div ref={lastItemRef} className="col-span-full h-10 invisible" />
+              <div ref={lastItemRef} className="invisible col-span-full h-10" />
             </>
           ) : (
-            <div className="col-span-full py-32 text-center text-stone-400 font-medium tracking-wide">
+            <div className="col-span-full py-32 text-center font-medium tracking-wide text-stone-400">
               No pieces found matching your criteria.
             </div>
           )}
@@ -295,8 +321,8 @@ function ProductsContent() {
 
         {/* Loading Indicator for Infinite Scroll */}
         {isFetchingMore && (
-          <div className="py-12 flex justify-center">
-            <Loader2 className="w-6 h-6 animate-spin text-stone-400" />
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
           </div>
         )}
       </section>

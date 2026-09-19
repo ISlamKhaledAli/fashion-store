@@ -3,13 +3,18 @@ import { prisma } from "../lib/prisma";
 import { sendResponse } from "../utils/apiResponse";
 import { brandSchema } from "../validators/common.validator";
 import { NotFoundError } from "../utils/AppError";
+import { isNotFoundError } from "../utils/prismaErrors";
 
-export const getBrands = async (req: Request, res: Response, next: NextFunction) => {
+export const getBrands = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const brands = await prisma.brand.findMany({
       include: {
-        _count: { select: { products: true } }
-      }
+        _count: { select: { products: true } },
+      },
     });
     return sendResponse({ res, status: 200, success: true, data: brands });
   } catch (error) {
@@ -17,7 +22,11 @@ export const getBrands = async (req: Request, res: Response, next: NextFunction)
   }
 };
 
-export const createBrand = async (req: Request, res: Response, next: NextFunction) => {
+export const createBrand = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const validatedData = brandSchema.parse(req.body);
     const brand = await prisma.brand.create({ data: validatedData });
@@ -27,7 +36,11 @@ export const createBrand = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const updateBrand = async (req: Request, res: Response, next: NextFunction) => {
+export const updateBrand = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { id } = req.params;
     const validatedData = brandSchema.partial().parse(req.body);
@@ -38,21 +51,30 @@ export const updateBrand = async (req: Request, res: Response, next: NextFunctio
     });
     return sendResponse({ res, status: 200, success: true, data: brand });
   } catch (error) {
-    if (error instanceof Error && (error as any).code === "P2025") {
-      throw new NotFoundError("Brand not found");
+    if (isNotFoundError(error)) {
+      return next(new NotFoundError("Brand not found"));
     }
     next(error);
   }
 };
 
-export const deleteBrand = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteBrand = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { id } = req.params;
     await prisma.brand.delete({ where: { id: String(id) } });
-    return sendResponse({ res, status: 200, success: true, message: "Brand deleted" });
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Brand deleted",
+    });
   } catch (error) {
-    if (error instanceof Error && (error as any).code === "P2025") {
-      throw new NotFoundError("Brand not found");
+    if (isNotFoundError(error)) {
+      return next(new NotFoundError("Brand not found"));
     }
     next(error);
   }

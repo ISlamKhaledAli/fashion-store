@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { CartItem } from "@/types";
+import type { CartItem } from "@/types";
 import { cartApi } from "@/lib/api";
 import { useAuthStore } from "./authStore";
 import { toast } from "sonner";
@@ -31,14 +31,17 @@ export const useCartStore = create<CartState>()(
       promoCode: null,
       discountAmount: 0,
       syncingIds: [],
-      setPromo: (code, amount) => set({ promoCode: code, discountAmount: amount }),
+      setPromo: (code, amount) =>
+        set({ promoCode: code, discountAmount: amount }),
       addItem: async (newItem) => {
         const { items, syncingIds } = get();
         const { isAuthenticated } = useAuthStore.getState();
-        
-        const existingItem = items.find((item) => item.variantId === newItem.variantId);
+
+        const existingItem = items.find(
+          (item) => item.variantId === newItem.variantId
+        );
         const tempId = newItem.id || `temp-${Date.now()}`;
-        
+
         const previousItems = items;
         let updatedItems;
 
@@ -51,7 +54,7 @@ export const useCartStore = create<CartState>()(
         } else {
           updatedItems = [...items, { ...newItem, id: tempId }];
         }
-        
+
         set({ items: updatedItems, syncingIds: [...syncingIds, tempId] });
 
         if (isAuthenticated) {
@@ -65,10 +68,14 @@ export const useCartStore = create<CartState>()(
             set({ items: previousItems });
             toast.error("Failed to add item to cart. Please try again.");
           } finally {
-            set((state) => ({ syncingIds: state.syncingIds.filter(id => id !== tempId) }));
+            set((state) => ({
+              syncingIds: state.syncingIds.filter((id) => id !== tempId),
+            }));
           }
         } else {
-          set((state) => ({ syncingIds: state.syncingIds.filter(id => id !== tempId) }));
+          set((state) => ({
+            syncingIds: state.syncingIds.filter((id) => id !== tempId),
+          }));
         }
       },
       setItems: (items) => set({ items }),
@@ -91,7 +98,7 @@ export const useCartStore = create<CartState>()(
         };
         const data = serverData as { items?: ServerCartItem[] };
         if (!data?.items) return;
-        
+
         const mappedItems = data.items.map((i) => ({
           id: i.id,
           cartItemId: i.id,
@@ -105,21 +112,21 @@ export const useCartStore = create<CartState>()(
           quantity: i.quantity,
           stock: i.variant.stock || 10,
         }));
-        
+
         set({ items: mappedItems });
       },
       removeItem: async (id) => {
         const { isAuthenticated } = useAuthStore.getState();
         const { items, syncingIds } = get();
-        const item = items.find(i => i.id === id);
+        const item = items.find((i) => i.id === id);
         const previousItems = items;
-        
+
         // Update locally
-        set({ 
+        set({
           items: items.filter((i) => i.id !== id),
-          syncingIds: [...syncingIds, id]
+          syncingIds: [...syncingIds, id],
         });
-        
+
         // Sync server
         if (isAuthenticated && item?.cartItemId) {
           try {
@@ -128,28 +135,30 @@ export const useCartStore = create<CartState>()(
             set({ items: previousItems });
             toast.error("Failed to remove item. Please try again.");
           } finally {
-            set((state) => ({ syncingIds: state.syncingIds.filter(sid => sid !== id) }));
+            set((state) => ({
+              syncingIds: state.syncingIds.filter((sid) => sid !== id),
+            }));
           }
         } else {
-          set((state) => ({ syncingIds: state.syncingIds.filter(sid => sid !== id) }));
+          set((state) => ({
+            syncingIds: state.syncingIds.filter((sid) => sid !== id),
+          }));
         }
       },
       updateQuantity: async (id, quantity) => {
         const { isAuthenticated } = useAuthStore.getState();
         const { items, syncingIds } = get();
-        const item = items.find(i => i.id === id);
+        const item = items.find((i) => i.id === id);
         const previousItems = items;
-        
+
         if (!item) return;
 
         // Update locally
         set({
-          items: items.map((i) =>
-            i.id === id ? { ...i, quantity } : i
-          ),
-          syncingIds: [...syncingIds, id]
+          items: items.map((i) => (i.id === id ? { ...i, quantity } : i)),
+          syncingIds: [...syncingIds, id],
         });
-        
+
         // Sync server
         if (isAuthenticated && item.cartItemId) {
           try {
@@ -158,18 +167,26 @@ export const useCartStore = create<CartState>()(
             set({ items: previousItems });
             toast.error("Failed to update quantity. Please try again.");
           } finally {
-            set((state) => ({ syncingIds: state.syncingIds.filter(sid => sid !== id) }));
+            set((state) => ({
+              syncingIds: state.syncingIds.filter((sid) => sid !== id),
+            }));
           }
         } else {
-          set((state) => ({ syncingIds: state.syncingIds.filter(sid => sid !== id) }));
+          set((state) => ({
+            syncingIds: state.syncingIds.filter((sid) => sid !== id),
+          }));
         }
       },
       clearCart: () => set({ items: [] }),
       toggleDrawer: (open) =>
         set((state) => ({ isOpen: open !== undefined ? open : !state.isOpen })),
-      getTotalItems: () => get().items.reduce((total, item) => total + item.quantity, 0),
+      getTotalItems: () =>
+        get().items.reduce((total, item) => total + item.quantity, 0),
       getTotalPrice: () =>
-        get().items.reduce((total, item) => total + item.price * item.quantity, 0),
+        get().items.reduce(
+          (total, item) => total + item.price * item.quantity,
+          0
+        ),
     }),
     {
       name: "cart-storage",

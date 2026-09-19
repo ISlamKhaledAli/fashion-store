@@ -6,7 +6,11 @@ import logger from "../utils/logger";
 import { ValidationError, NotFoundError } from "../utils/AppError";
 import { sendResponse } from "../utils/apiResponse";
 
-export const stripeWebhook = async (req: Request, res: Response, next: NextFunction) => {
+export const stripeWebhook = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const sig = req.headers["stripe-signature"] as string;
 
   let event;
@@ -14,15 +18,20 @@ export const stripeWebhook = async (req: Request, res: Response, next: NextFunct
   try {
     event = verifyStripeWebhook(req.body, sig);
   } catch (err: any) {
-    logger.error("Webhook signature verification failed:", { message: err.message });
+    logger.error("Webhook signature verification failed:", {
+      message: err.message,
+    });
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
   try {
-    // @ts-ignore - Bypass frozen TS dev cache; the schema migration definitely created this model
-    const existingEvent = await prisma.webhookEvent.findUnique({ where: { id: event.id } });
+    const existingEvent = await prisma.webhookEvent.findUnique({
+      where: { id: event.id },
+    });
     if (existingEvent) {
-      return res.status(200).json({ success: true, received: true, message: "Duplicate Event" });
+      return res
+        .status(200)
+        .json({ success: true, received: true, message: "Duplicate Event" });
     }
 
     // Handle the event
@@ -61,8 +70,9 @@ export const stripeWebhook = async (req: Request, res: Response, next: NextFunct
         logger.info(`Unhandled event type ${event.type}`);
     }
 
-    // @ts-ignore - Bypass frozen TS dev cache
-    await prisma.webhookEvent.create({ data: { id: event.id, type: event.type } });
+    await prisma.webhookEvent.create({
+      data: { id: event.id, type: event.type },
+    });
     return res.status(200).json({ success: true, received: true });
   } catch (err: any) {
     logger.error("Webhook processing failed:", { message: err.message });
@@ -70,7 +80,11 @@ export const stripeWebhook = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-export const createIntent = async (req: Request, res: Response, next: NextFunction) => {
+export const createIntent = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const userId = req.user?.id as string;
     const { shippingMethod, promoCode } = req.body || {};
@@ -103,7 +117,9 @@ export const createIntent = async (req: Request, res: Response, next: NextFuncti
     // 2. Validate discount if provided
     let rawDiscountAmount = 0;
     if (promoCode) {
-      const discountRecord = await prisma.discount.findUnique({ where: { code: promoCode } });
+      const discountRecord = await prisma.discount.findUnique({
+        where: { code: promoCode },
+      });
       if (discountRecord) {
         const result = calculateDiscount(subtotal, discountRecord);
         if (result.isValid) {
@@ -115,14 +131,14 @@ export const createIntent = async (req: Request, res: Response, next: NextFuncti
     const totals = calculateOrderTotals({
       subtotal,
       discountAmount: rawDiscountAmount,
-      shippingMethod
+      shippingMethod,
     });
 
     // 3. Create Stripe payment intent
     const amountInCents = Math.round(totals.total * 100);
-    const paymentIntent = await createPaymentIntent(amountInCents, "usd", { 
+    const paymentIntent = await createPaymentIntent(amountInCents, "usd", {
       userId,
-      itemsCount: itemsCount.toString() 
+      itemsCount: itemsCount.toString(),
     });
 
     return sendResponse({
@@ -136,7 +152,7 @@ export const createIntent = async (req: Request, res: Response, next: NextFuncti
         subtotal: totals.subtotal,
         discountAmount: totals.discountAmount,
         shipping: totals.shippingCost,
-        tax: totals.tax
+        tax: totals.tax,
       },
     });
   } catch (error) {

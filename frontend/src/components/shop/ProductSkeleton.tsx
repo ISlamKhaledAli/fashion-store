@@ -23,4 +23,3 @@ export const ProductSkeleton = ({ className }: ProductSkeletonProps) => {
     </div>
   );
 };
-

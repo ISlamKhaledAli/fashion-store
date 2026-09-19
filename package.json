@@ -1,0 +1,31 @@
+{
+  "name": "fashion-store",
+  "version": "1.0.0",
+  "description": "A full-stack fashion eCommerce platform with a cinematic storefront, AI-assisted shopping, a retail-grade admin dashboard, and a hardened Express/Prisma API. The project is built as two deployable apps: a Next.js frontend and a Node.js backend.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently -n \"backend,frontend\" -c \"cyan,magenta\" \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "typecheck": "npm --prefix frontend run typecheck",
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ISlamKhaledAli/fashion-store.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ISlamKhaledAli/fashion-store/issues"
+  },
+  "homepage": "https://github.com/ISlamKhaledAli/fashion-store#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.1",
+    "prettier": "^3.9.8",
+    "prettier-plugin-tailwindcss": "^0.8.1"
+  }
+}

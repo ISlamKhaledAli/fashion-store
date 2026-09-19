@@ -26,30 +26,37 @@ function SuccessContent() {
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      className="space-y-6 max-w-md w-full p-8 border border-outline-variant/10 bg-surface-container-low shadow-sm"
+      className="w-full max-w-md space-y-6 border border-outline-variant/10 bg-surface-container-low p-8 shadow-sm"
     >
-      <div className="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+      <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-green-50 text-green-600">
         <span className="material-symbols-outlined text-3xl">check_circle</span>
       </div>
-      
+
       <h1 className="text-3xl font-medium tracking-tight">Order Confirmed!</h1>
-      
-      <p className="text-on-surface-variant text-sm leading-relaxed">
-        Thank you for exploring with us. Your curated selection is now being prepared for shipment.
+
+      <p className="text-sm leading-relaxed text-on-surface-variant">
+        Thank you for exploring with us. Your curated selection is now being
+        prepared for shipment.
       </p>
 
       {orderId && (
-        <div className="bg-surface py-4 px-6 mt-6 border border-outline-variant/10 rounded-sm">
-          <p className="text-[10px] text-on-surface-variant uppercase tracking-widest mb-1">
+        <div className="mt-6 rounded-sm border border-outline-variant/10 bg-surface px-6 py-4">
+          <p className="mb-1 text-[10px] tracking-widest text-on-surface-variant uppercase">
             Order Reference
           </p>
-          <p className="text-lg font-mono font-bold tracking-tight">#{orderId.toUpperCase()}</p>
+          <p className="font-mono text-lg font-bold tracking-tight">
+            #{orderId.toUpperCase()}
+          </p>
         </div>
       )}
 
       <div className="pt-8">
         <Link href="/products">
-          <Button variant="primary" size="none" className="w-full py-4 scale-100">
+          <Button
+            variant="primary"
+            size="none"
+            className="w-full scale-100 py-4"
+          >
             Continue Shopping
           </Button>
         </Link>
@@ -60,8 +67,12 @@ function SuccessContent() {
 
 export default function CheckoutSuccessPage() {
   return (
-    <main className="pt-32 pb-24 px-8 max-w-[1440px] mx-auto min-h-[60vh] flex flex-col items-center justify-center text-center">
-      <React.Suspense fallback={<div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>}>
+    <main className="mx-auto flex min-h-[60vh] max-w-[1440px] flex-col items-center justify-center px-8 pt-32 pb-24 text-center">
+      <React.Suspense
+        fallback={
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+        }
+      >
         <SuccessContent />
       </React.Suspense>
     </main>

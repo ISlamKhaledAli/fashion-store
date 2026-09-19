@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { WishlistItem } from "@/types";
+import type { WishlistItem } from "@/types";
 import { wishlistApi } from "@/lib/api";
 
 interface WishlistState {
@@ -31,7 +31,9 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
     try {
       const res = await wishlistApi.add(productId);
       if (res.data.success) {
-        set((state) => ({ items: [...state.items, res.data.data as WishlistItem] }));
+        set((state) => ({
+          items: [...state.items, res.data.data as WishlistItem],
+        }));
       }
     } catch (err) {
       console.error("Failed to add to wishlist:", err);
