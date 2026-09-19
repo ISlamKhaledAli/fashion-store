@@ -22,10 +22,31 @@ const refreshAxios = axios.create({
   withCredentials: true,
 });
 
-// Response Interceptor for Token Refresh
+// Request Interceptor: Attach client correlation ID for end-to-end tracing
+api.interceptors.request.use((config) => {
+  if (
+    typeof crypto !== "undefined" &&
+    crypto.randomUUID &&
+    !config.headers["X-Request-ID"]
+  ) {
+    config.headers["X-Request-ID"] = crypto.randomUUID();
+  }
+  return config;
+});
+
+// Response Interceptor for Token Refresh and Error Tracing
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    const traceId =
+      error.config?.headers?.["X-Request-ID"] ||
+      error.response?.headers?.["x-request-id"];
+    if (traceId && error.response?.status >= 500) {
+      console.error(
+        `[API Error | Trace ID: ${traceId}]`,
+        error.response?.data || error.message
+      );
+    }
     const originalRequest = error.config;
 
     // Handle 401 Unauthorized errors

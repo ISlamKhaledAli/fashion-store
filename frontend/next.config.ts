@@ -1,6 +1,5 @@
 import type { NextConfig } from "next";
 import bundleAnalyzer from "@next/bundle-analyzer";
-import path from "path";
 import { validateServerEnv } from "./src/lib/env";
 
 validateServerEnv();
@@ -11,9 +10,6 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 const nextConfig: NextConfig = {
   /* config options here */
-  turbopack: {
-    root: path.resolve(__dirname, ".."),
-  },
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [

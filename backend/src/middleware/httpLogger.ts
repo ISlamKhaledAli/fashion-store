@@ -10,8 +10,10 @@ const skip = () => {
   return env !== "development";
 };
 
+morgan.token("id", (req: any) => req.id || "-");
+
 const httpLogger = morgan(
-  ":method :url :status :res[content-length] - :response-time ms",
+  ":id :method :url :status :res[content-length] - :response-time ms",
   { stream, skip }
 );
 

@@ -103,6 +103,10 @@ model Product {
   variants     Variant[]
   wishlist     Wishlist[]
 
+  @@index([categoryId])
+  @@index([status])
+  @@index([featured])
+  @@index([createdAt])
   @@map("products")
 }
 
@@ -117,6 +121,7 @@ model ProductImage {
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
+  @@index([productId])
   @@map("product_images")
 }
 
@@ -132,6 +137,7 @@ model Variant {
   orderItems OrderItem[]
   product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
 
+  @@index([productId])
   @@map("variants")
 }
 
@@ -197,6 +203,10 @@ model Order {
   address         Address?      @relation(fields: [addressId], references: [id])
   user            User          @relation(fields: [userId], references: [id])
 
+  @@index([userId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
   @@map("orders")
 }
 
@@ -211,6 +221,8 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id])
   variant   Variant @relation(fields: [variantId], references: [id])
 
+  @@index([orderId])
+  @@index([productId])
   @@map("order_items")
 }
 
@@ -226,6 +238,8 @@ model Review {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
+  @@index([productId])
+  @@index([rating])
   @@map("reviews")
 }
 

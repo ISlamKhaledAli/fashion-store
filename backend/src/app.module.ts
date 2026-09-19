@@ -28,8 +28,21 @@ import discountRoutes from "./routes/discount.routes";
 import chatRoutes from "./routes/chat.routes";
 import sizeRoutes from "./routes/size.routes";
 import adminAiRoutes from "./routes/adminAi.routes";
+import compression from "compression";
+import { randomUUID } from "crypto";
 
 const app: Application = express();
+
+// Assign unique correlation ID to each request for end-to-end tracing
+app.use((req: Request, res: Response, next) => {
+  const requestId = (req.headers["x-request-id"] as string) || randomUUID();
+  (req as any).id = requestId;
+  res.setHeader("X-Request-ID", requestId);
+  next();
+});
+
+// Gzip / Deflate response compression
+app.use(compression());
 
 // Security middleware
 app.use(helmet());
