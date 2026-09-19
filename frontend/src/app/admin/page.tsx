@@ -10,6 +10,7 @@ import { OrderDetailPanel } from "@/components/admin/OrderDetailPanel";
 import { adminApi } from "@/lib/api";
 import type { Order, OrderStatus } from "@/types";
 import { Settings, ExternalLink } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { toast } from "sonner";
 
@@ -50,6 +51,7 @@ const containerVariants = {
 };
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [revenueLoading, setRevenueLoading] = useState(true);
   const [revenueRange, setRevenueRange] = useState<"30D" | "90D">("30D");
@@ -208,6 +210,7 @@ export default function AdminDashboard() {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => router.push("/admin/settings")}
             className="rounded-xl border-zinc-100 px-5 py-2.5 font-bold text-zinc-600 transition-all hover:border-zinc-200 hover:text-zinc-950"
             icon={<Settings size={16} />}
           >

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 const statuses = ["ALL", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"];
 
@@ -20,6 +21,29 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("ALL");
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleConfirmCancel = async () => {
+    if (!orderToCancel) return;
+    setCancelling(true);
+    try {
+      const res = await orderApi.cancel(orderToCancel);
+      if (res.data.success) {
+        setOrders(
+          orders.map((o) =>
+            o.id === orderToCancel ? { ...o, status: "CANCELLED" } : o
+          )
+        );
+        toast.success("Order cancelled successfully");
+      }
+    } catch {
+      toast.error("Failed to cancel order");
+    } finally {
+      setCancelling(false);
+      setOrderToCancel(null);
+    }
+  };
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -60,11 +84,19 @@ export default function OrdersPage() {
 
   const handleReturn = (e: React.MouseEvent, order: Order) => {
     e.stopPropagation();
-    // Show a simple return modal or toast for now
-    toast.info("To initiate a return, please contact support@store.com", {
-      description:
-        "Returns are accepted within 14 days of delivery in original condition.",
-    });
+    toast.info(
+      `Return Request for Order #${order.id.slice(-4).toUpperCase()}`,
+      {
+        description:
+          "Complimentary courier collection can be arranged via concierge@thecurator.com.",
+        action: {
+          label: "Return Policy",
+          onClick: () => {
+            window.location.href = "/returns";
+          },
+        },
+      }
+    );
   };
 
   const filteredOrders =
@@ -132,22 +164,7 @@ export default function OrdersPage() {
                   }
                   onTrack={(e) => handleTrackOrder(e, order)}
                   onReturn={(e) => handleReturn(e, order)}
-                  onCancel={async () => {
-                    if (
-                      confirm("Are you sure you want to cancel this order?")
-                    ) {
-                      const res = await orderApi.cancel(order.id);
-                      if (res.data.success) {
-                        setOrders(
-                          orders.map((o) =>
-                            o.id === order.id
-                              ? { ...o, status: "CANCELLED" }
-                              : o
-                          )
-                        );
-                      }
-                    }
-                  }}
+                  onCancel={() => setOrderToCancel(order.id)}
                 />
               ))
             ) : (
@@ -162,6 +179,17 @@ export default function OrdersPage() {
             )}
           </div>
         </main>
+        <ConfirmDialog
+          isOpen={Boolean(orderToCancel)}
+          onClose={() => setOrderToCancel(null)}
+          onConfirm={handleConfirmCancel}
+          title="Cancel Order?"
+          description="Are you sure you want to cancel this order? This action will halt fulfillment and initiate your refund process."
+          confirmBrand="danger"
+          confirmText="Cancel Order"
+          cancelText="Keep Order"
+          isLoading={cancelling}
+        />
       </div>
     </ProtectedRoute>
   );
@@ -180,7 +208,7 @@ function OrderCard({
   onToggle: () => void;
   onTrack: (e: React.MouseEvent) => void;
   onReturn: (e: React.MouseEvent) => void;
-  onCancel: () => Promise<void>;
+  onCancel: () => void;
 }) {
   return (
     <section

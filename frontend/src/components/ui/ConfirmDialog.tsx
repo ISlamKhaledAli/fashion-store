@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef } from "react";
 import { AlertTriangle } from "lucide-react";
-import { Button } from "./Button";
 import { CloseButton } from "./CloseButton";
 import { cn } from "@/lib/utils";
 
@@ -67,69 +66,74 @@ export function ConfirmDialog({
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
       aria-describedby="confirm-dialog-description"
-      className="animate-in fade-in fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/40 p-4 backdrop-blur-sm duration-200"
+      className="animate-in fade-in fixed inset-0 z-[100] flex items-center justify-center bg-stone-950/45 p-4 backdrop-blur-md duration-200"
       onClick={handleOverlayClick}
     >
-      <div className="animate-in zoom-in-95 slide-in-from-bottom-2 pointer-events-auto w-full max-w-md overflow-hidden rounded-2xl border border-zinc-100 bg-white shadow-xl duration-300">
-        <div className="p-6">
-          <div className="flex items-start gap-4">
-            <div
-              className={cn(
-                "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full",
-                confirmBrand === "danger"
-                  ? "bg-red-50 text-red-600"
-                  : "bg-zinc-100 text-zinc-900"
-              )}
-            >
-              <AlertTriangle strokeWidth={2} size={20} />
-            </div>
+      <div className="animate-in zoom-in-95 slide-in-from-bottom-2 pointer-events-auto relative w-full max-w-[380px] overflow-hidden rounded-3xl border border-stone-200/80 bg-white/95 p-6 text-center shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] backdrop-blur-xl duration-300">
+        <CloseButton
+          onClick={onClose}
+          disabled={isLoading}
+          className="absolute top-4 right-4 cursor-pointer rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
+          size={16}
+        />
 
-            <div className="w-full flex-1 pt-1">
-              <h3
-                id="confirm-dialog-title"
-                className="text-lg font-bold tracking-tight text-zinc-950"
-              >
-                {title}
-              </h3>
-              <p
-                id="confirm-dialog-description"
-                className="mt-2 text-sm leading-relaxed text-zinc-500"
-              >
-                {description}
-              </p>
-            </div>
-            <CloseButton
-              onClick={onClose}
-              disabled={isLoading}
-              className="cursor-pointer p-1.5 hover:bg-zinc-100"
-              size={18}
-            />
-          </div>
+        {/* Top Badge Icon */}
+        <div
+          className={cn(
+            "mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border shadow-inner",
+            confirmBrand === "danger"
+              ? "border-red-200 bg-red-50/80 text-red-600"
+              : "border-stone-200/90 bg-gradient-to-b from-stone-50 to-stone-100 text-stone-900"
+          )}
+        >
+          <AlertTriangle strokeWidth={1.8} size={22} />
         </div>
 
-        <div className="flex flex-col-reverse justify-end gap-3 border-t border-zinc-100 bg-zinc-50/50 px-6 py-4 sm:flex-row">
-          <Button
-            variant="outline"
+        {/* Brand Tagline */}
+        <p className="mt-4 font-mono text-[9px] font-bold tracking-[0.24em] text-stone-400 uppercase">
+          The Curator Atelier
+        </p>
+
+        {/* Editorial Title */}
+        <h3
+          id="confirm-dialog-title"
+          className="mt-1 font-serif text-xl font-medium tracking-tight text-stone-900"
+        >
+          {title}
+        </h3>
+
+        {/* Description */}
+        <p
+          id="confirm-dialog-description"
+          className="mt-2 font-sans text-xs leading-relaxed text-stone-500"
+        >
+          {description}
+        </p>
+
+        {/* Action Buttons */}
+        <div className="mt-6 flex items-center gap-2.5">
+          <button
+            type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="w-full rounded-lg border-zinc-200 font-medium shadow-sm hover:bg-zinc-100 sm:w-auto"
+            className="flex-1 cursor-pointer rounded-xl border border-stone-200 bg-white py-2.5 font-sans text-xs font-semibold text-stone-700 transition-all duration-200 hover:border-stone-300 hover:bg-stone-50 active:scale-[0.98] disabled:opacity-50"
           >
             {cancelText}
-          </Button>
-          <Button
+          </button>
+          <button
             ref={confirmButtonRef}
-            variant={confirmBrand === "danger" ? "primary" : confirmBrand}
+            type="button"
             onClick={onConfirm}
             disabled={isLoading}
             className={cn(
-              "w-full rounded-lg font-medium text-white shadow-md transition-all sm:w-auto",
+              "flex-1 cursor-pointer rounded-xl py-2.5 font-sans text-xs font-semibold text-white shadow-md transition-all duration-200 active:scale-[0.98] disabled:opacity-50",
               confirmBrand === "danger"
-                ? "border-red-600 bg-red-600 hover:-translate-y-px hover:bg-red-700 hover:shadow-lg"
-                : "bg-zinc-900"
+                ? "bg-red-600 hover:bg-red-700"
+                : "hover:bg-stone-850 bg-stone-950"
             )}
           >
             {isLoading ? "Processing..." : confirmText}
-          </Button>
+          </button>
         </div>
       </div>
     </div>

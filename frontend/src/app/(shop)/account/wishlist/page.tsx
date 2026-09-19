@@ -32,46 +32,51 @@ const WishlistItemCard = ({
     e.stopPropagation();
 
     if (isAnimating.current) return;
-    isAnimating.current = true;
-
     const variant = item.product.variants?.[0];
     if (!variant) return;
 
-    const start = Date.now();
-    setStatus("loading");
-    flyToCart(imageRef);
+    isAnimating.current = true;
 
-    await addItem({
-      id: "", // Will be assigned by server
-      cartItemId: "",
-      productId: item.productId,
-      variantId: variant.id,
-      name: item.product.name,
-      image:
-        item.product.images?.find((img) => img.isMain)?.url ||
-        item.product.images?.[0]?.url ||
-        "",
-      price: item.product.price,
-      size: variant.size,
-      color: variant.color,
-      quantity: 1,
-      stock: variant.stock || 10,
-    });
+    try {
+      const start = Date.now();
+      setStatus("loading");
 
-    // Ensure minimum 600ms loading state
-    const elapsed = Date.now() - start;
-    if (elapsed < 600) {
-      await new Promise((r) => setTimeout(r, 600 - elapsed));
-    }
+      await addItem({
+        id: "", // Will be assigned by server
+        cartItemId: "",
+        productId: item.productId,
+        variantId: variant.id,
+        name: item.product.name,
+        image:
+          item.product.images?.find((img) => img.isMain)?.url ||
+          item.product.images?.[0]?.url ||
+          "",
+        price: item.product.price,
+        size: variant.size,
+        color: variant.color,
+        quantity: 1,
+        stock: variant.stock || 10,
+      });
 
-    setStatus("success");
-    flyToCart(imageRef);
+      // Ensure minimum 400ms loading state
+      const elapsed = Date.now() - start;
+      if (elapsed < 400) {
+        await new Promise((r) => setTimeout(r, 400 - elapsed));
+      }
 
-    setTimeout(() => {
-      toggleDrawer(true);
+      setStatus("success");
+      flyToCart(imageRef);
+
+      setTimeout(() => {
+        toggleDrawer(true);
+        setStatus("idle");
+        isAnimating.current = false;
+      }, 700);
+    } catch (err) {
+      console.error("Wishlist add to cart error:", err);
       setStatus("idle");
       isAnimating.current = false;
-    }, 800);
+    }
   };
 
   return (

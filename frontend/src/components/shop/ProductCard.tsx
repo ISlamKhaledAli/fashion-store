@@ -2,7 +2,7 @@ import React, { useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Plus, Check } from "lucide-react";
+import { Heart, Plus, Check, Eye } from "lucide-react";
 import type { Product } from "@/types";
 import { toast } from "sonner";
 import { formatCurrency, cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "../ui/Button";
 import { flyToCart } from "@/lib/animations";
 import { RatingDisplay } from "../ui/RatingDisplay";
+import { QuickViewModal } from "./QuickViewModal";
 
 interface ProductCardProps {
   product: Product;
@@ -39,6 +40,7 @@ export const ProductCard = ({
   } = useWishlistStore();
   const router = useRouter();
   const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const isAnimating = useRef(false);
   const imageRef = useRef<HTMLImageElement>(null);
 
@@ -95,41 +97,51 @@ export const ProductCard = ({
     e.stopPropagation();
 
     if (isAnimating.current) return;
-    isAnimating.current = true;
-
-    if (!selectedVariant) return;
-
-    const start = Date.now();
-    setStatus("loading");
-
-    await addItem({
-      id: "", // Server handles IDs
-      cartItemId: "",
-      productId: product.id,
-      variantId: selectedVariant.id,
-      name: product.name,
-      image: currentImage?.url || "",
-      price: product.price,
-      size: selectedVariant.size,
-      color: selectedVariant.color,
-      quantity: 1,
-      stock: selectedVariant.stock || 10,
-    });
-
-    // Ensure minimum 600ms loading state
-    const elapsed = Date.now() - start;
-    if (elapsed < 600) {
-      await new Promise((r) => setTimeout(r, 600 - elapsed));
+    if (!selectedVariant) {
+      toast.error("Please select a variant first");
+      return;
     }
 
-    setStatus("success");
-    flyToCart(imageRef);
+    isAnimating.current = true;
 
-    setTimeout(() => {
-      toggleDrawer(true);
+    try {
+      const start = Date.now();
+      setStatus("loading");
+
+      await addItem({
+        id: "", // Server handles IDs
+        cartItemId: "",
+        productId: product.id,
+        variantId: selectedVariant.id,
+        name: product.name,
+        image: currentImage?.url || "",
+        price: product.price,
+        size: selectedVariant.size,
+        color: selectedVariant.color,
+        quantity: 1,
+        stock: selectedVariant.stock || 10,
+      });
+
+      // Ensure minimum 400ms loading state for smooth feel
+      const elapsed = Date.now() - start;
+      if (elapsed < 400) {
+        await new Promise((r) => setTimeout(r, 400 - elapsed));
+      }
+
+      setStatus("success");
+      flyToCart(imageRef);
+
+      setTimeout(() => {
+        toggleDrawer(true);
+        setStatus("idle");
+        isAnimating.current = false;
+      }, 700);
+    } catch (err) {
+      console.error("Add to cart error:", err);
+      toast.error("Failed to add item to cart");
       setStatus("idle");
       isAnimating.current = false;
-    }, 800);
+    }
   };
 
   const toggleFavorite = async (e: React.MouseEvent) => {
@@ -505,6 +517,21 @@ export const ProductCard = ({
             </motion.div>
           </AnimatePresence>
 
+          {/* Quick View Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsQuickViewOpen(true);
+            }}
+            title="Quick View"
+            aria-label="Quick View"
+            className="absolute bottom-6 left-6 z-10 flex h-12 w-12 translate-y-4 cursor-pointer items-center justify-center rounded-full bg-white/95 text-on-surface opacity-0 shadow-xl backdrop-blur-md transition-all delay-75 duration-500 group-hover:translate-y-0 group-hover:opacity-100 hover:scale-105 hover:bg-white active:scale-95"
+          >
+            <Eye size={20} strokeWidth={1.5} />
+          </button>
+
           {product.variants?.[0] && (
             <Button
               variant={status === "success" ? "success" : "primary"}
@@ -623,6 +650,12 @@ export const ProductCard = ({
           </div>
         </div>
       </Link>
+
+      <QuickViewModal
+        product={product}
+        isOpen={isQuickViewOpen}
+        onClose={() => setIsQuickViewOpen(false)}
+      />
     </motion.div>
   );
 };

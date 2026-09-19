@@ -1,6 +1,7 @@
 import api from "./axios";
 import type {
   User,
+  Address,
   Category,
   Brand,
   Product,
@@ -19,6 +20,11 @@ export const authApi = {
   register: (data: Record<string, unknown>) =>
     api.post<ApiResponse<{ user: User }>>("/auth/register", data),
   getMe: () => api.get<ApiResponse<User>>("/auth/me"),
+  updateProfile: (
+    data: Partial<Pick<User, "name" | "email" | "phone" | "avatar">>
+  ) => api.put<ApiResponse<User>>("/auth/profile", data),
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    api.put<ApiResponse<null>>("/auth/password", data),
 };
 
 export const productApi = {
@@ -104,12 +110,12 @@ export const reviewApi = {
 };
 
 export const addressApi = {
-  getAll: () => api.get<ApiResponse<unknown[]>>("/addresses"),
-  create: (data: Record<string, unknown>) =>
-    api.post<ApiResponse<unknown>>("/addresses", data),
-  update: (id: string, data: Record<string, unknown>) =>
-    api.put<ApiResponse<unknown>>(`/addresses/${id}`, data),
-  delete: (id: string) => api.delete<ApiResponse<unknown>>(`/addresses/${id}`),
+  getAll: () => api.get<ApiResponse<Address[]>>("/addresses"),
+  create: (data: Omit<Address, "id">) =>
+    api.post<ApiResponse<Address>>("/addresses", data),
+  update: (id: string, data: Partial<Omit<Address, "id">>) =>
+    api.put<ApiResponse<Address>>(`/addresses/${id}`, data),
+  delete: (id: string) => api.delete<ApiResponse<null>>(`/addresses/${id}`),
 };
 
 export const adminApi = {

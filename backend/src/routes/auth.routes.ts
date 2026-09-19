@@ -5,6 +5,8 @@ import {
   refresh,
   logout,
   getMe,
+  updateProfile,
+  changePassword,
 } from "../controllers/auth.controller";
 import { authMiddleware } from "../middleware/auth";
 import { authLimiter } from "../middleware/rateLimiter";
@@ -16,5 +18,7 @@ router.post("/login", authLimiter, login);
 router.post("/refresh", refresh);
 router.post("/logout", logout);
 router.get("/me", authMiddleware, getMe);
+router.put("/profile", authMiddleware, updateProfile);
+router.put("/password", authMiddleware, changePassword);
 
 export default router;

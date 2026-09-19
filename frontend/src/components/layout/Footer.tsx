@@ -1,32 +1,77 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Globe, Share2 } from "lucide-react";
+import { Globe, Share2, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import { RegionModal } from "./RegionModal";
+import { ShareModal } from "./ShareModal";
+import { toast } from "sonner";
 
 export const Footer = () => {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
+  const [isRegionModalOpen, setIsRegionModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      const hasSeen = localStorage.getItem("thecurator_has_seen_region_modal");
+      const hasPrefs = localStorage.getItem("thecurator_preferences");
+      if (!hasSeen && !hasPrefs) {
+        const timer = setTimeout(() => {
+          setIsRegionModalOpen(true);
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
+    } catch {
+      // Ignore local storage error
+    }
+  }, []);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !email.includes("@")) return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const cleanEmail = email.trim().toLowerCase();
 
-    setStatus("loading");
+    if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+
     try {
-      // For now: just simulate success (no backend endpoint yet)
-      await new Promise((r) => setTimeout(r, 800));
+      const stored = localStorage.getItem("curator_newsletter_subscribers");
+      const subscribers: string[] = stored ? JSON.parse(stored) : [];
+
+      if (subscribers.includes(cleanEmail)) {
+        toast.info("You are already subscribed to The Curator editorial.");
+        setEmail("");
+        return;
+      }
+
+      setStatus("loading");
+      await new Promise((r) => setTimeout(r, 600));
+
+      subscribers.push(cleanEmail);
+      localStorage.setItem(
+        "curator_newsletter_subscribers",
+        JSON.stringify(subscribers)
+      );
+
       setStatus("success");
       setEmail("");
-      setTimeout(() => setStatus("idle"), 3000);
+      toast.success(
+        "Welcome. You are now subscribed to our private dispatches."
+      );
+      setTimeout(() => setStatus("idle"), 4000);
     } catch {
       setStatus("error");
+      toast.error("Subscription failed. Please try again later.");
       setTimeout(() => setStatus("idle"), 3000);
     }
   };
@@ -155,20 +200,72 @@ export const Footer = () => {
           <p className="text-[11px] font-medium tracking-widest text-on-surface-variant uppercase">
             © {new Date().getFullYear()} Curator Editorial. All Rights Reserved.
           </p>
-          <div className="flex gap-8">
-            <Globe
-              className="cursor-pointer text-on-surface-variant/40 transition-colors hover:text-primary"
-              size={20}
-              strokeWidth={1.5}
-            />
-            <Share2
-              className="cursor-pointer text-on-surface-variant/40 transition-colors hover:text-primary"
-              size={20}
-              strokeWidth={1.5}
-            />
+          <div className="flex items-center gap-6">
+            <button
+              type="button"
+              onClick={() =>
+                window.dispatchEvent(new CustomEvent("open-pwa-install"))
+              }
+              aria-label="The Curator Atelier App"
+              title="Install Atelier App"
+              className="group flex cursor-pointer items-center gap-1.5 text-on-surface-variant/50 transition-colors hover:text-amber-500"
+            >
+              <Sparkles
+                className="text-amber-500 transition-transform group-hover:scale-110"
+                size={18}
+                strokeWidth={1.5}
+              />
+              <span className="hidden text-[11px] font-medium tracking-wider text-amber-500 uppercase opacity-0 transition-opacity group-hover:opacity-100 sm:inline">
+                Atelier App
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsRegionModalOpen(true)}
+              aria-label="Change Region and Currency"
+              title="Region & Currency"
+              className="group flex cursor-pointer items-center gap-1.5 text-on-surface-variant/50 transition-colors hover:text-primary"
+            >
+              <Globe
+                className="transition-transform group-hover:scale-110"
+                size={20}
+                strokeWidth={1.5}
+              />
+              <span className="hidden text-[11px] font-medium tracking-wider uppercase opacity-0 transition-opacity group-hover:opacity-100 sm:inline">
+                Region
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsShareModalOpen(true)}
+              aria-label="Share Store"
+              title="Share Collection"
+              className="group flex cursor-pointer items-center gap-1.5 text-on-surface-variant/50 transition-colors hover:text-primary"
+            >
+              <Share2
+                className="transition-transform group-hover:scale-110"
+                size={20}
+                strokeWidth={1.5}
+              />
+              <span className="hidden text-[11px] font-medium tracking-wider uppercase opacity-0 transition-opacity group-hover:opacity-100 sm:inline">
+                Share
+              </span>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Interactive Modals */}
+      <RegionModal
+        isOpen={isRegionModalOpen}
+        onClose={() => setIsRegionModalOpen(false)}
+      />
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+      />
     </motion.footer>
   );
 };

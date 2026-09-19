@@ -14,6 +14,7 @@ import {
   Tag,
   Warehouse,
   FolderTree,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,6 +39,7 @@ const navLinks = [
   { name: "Brands", href: "/admin/brands", icon: Tag },
   { name: "Inventory", href: "/admin/inventory", icon: Warehouse },
   { name: "Discounts", href: "/admin/discounts", icon: Tags },
+  { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
 export const AdminSidebar = ({

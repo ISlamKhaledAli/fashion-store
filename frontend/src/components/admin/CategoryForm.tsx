@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { UploadCloud } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface CategoryFormProps {
   activeCategory: Category | null;
@@ -30,6 +31,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   });
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (activeCategory) {
@@ -263,11 +265,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
               variant="outline"
               className="border-transparent text-zinc-400 transition-colors hover:text-red-600"
               type="button"
-              onClick={() => {
-                if (confirm("Are you sure you want to delete this category?")) {
-                  onDelete(activeCategory.id);
-                }
-              }}
+              onClick={() => setShowDeleteModal(true)}
             >
               Delete Category
             </Button>
@@ -296,6 +294,22 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
           </div>
         </div>
       </form>
+
+      <ConfirmDialog
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={() => {
+          if (activeCategory) {
+            onDelete(activeCategory.id);
+          }
+          setShowDeleteModal(false);
+        }}
+        title="Delete Category?"
+        description="Are you sure you want to permanently delete this category? Products assigned to it may lose their category link."
+        confirmBrand="danger"
+        confirmText="Delete Category"
+        cancelText="Cancel"
+      />
     </div>
   );
 };

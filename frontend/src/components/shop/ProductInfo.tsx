@@ -70,43 +70,50 @@ export const ProductInfo = ({
     if (!currentVariant || isAnimating.current) return;
     isAnimating.current = true;
 
-    const start = Date.now();
-    setButtonState("loading");
+    try {
+      const start = Date.now();
+      setButtonState("loading");
 
-    await addItem({
-      id: "", // Server handles IDs
-      cartItemId: "",
-      productId: product.id,
-      variantId: currentVariant.id,
-      name: product.name,
-      image:
-        product.images.find((img) => img.isMain)?.url ||
-        product.images[0]?.url ||
-        "",
-      price: product.price,
-      size: currentVariant.size,
-      color: currentVariant.color,
-      quantity,
-      stock: currentVariant.stock,
-    });
+      await addItem({
+        id: "", // Server handles IDs
+        cartItemId: "",
+        productId: product.id,
+        variantId: currentVariant.id,
+        name: product.name,
+        image:
+          product.images.find((img) => img.isMain)?.url ||
+          product.images[0]?.url ||
+          "",
+        price: product.price,
+        size: currentVariant.size,
+        color: currentVariant.color,
+        quantity,
+        stock: currentVariant.stock,
+      });
 
-    // Ensure minimum 600ms loading state
-    const elapsed = Date.now() - start;
-    if (elapsed < 600) {
-      await new Promise((r) => setTimeout(r, 600 - elapsed));
-    }
+      // Ensure minimum 400ms loading state
+      const elapsed = Date.now() - start;
+      if (elapsed < 400) {
+        await new Promise((r) => setTimeout(r, 400 - elapsed));
+      }
 
-    setButtonState("success");
+      setButtonState("success");
 
-    // Trigger fly animation immediately
-    const mainImg = document.getElementById("pdp-main-image");
-    flyToCart(mainImg);
+      // Trigger fly animation immediately
+      const mainImg = document.getElementById("pdp-main-image");
+      flyToCart(mainImg);
 
-    setTimeout(() => {
-      toggleDrawer(true);
+      setTimeout(() => {
+        toggleDrawer(true);
+        setButtonState("idle");
+        isAnimating.current = false;
+      }, 700);
+    } catch (err) {
+      console.error("PDP Add to cart error:", err);
+      toast.error("Failed to add to cart");
       setButtonState("idle");
       isAnimating.current = false;
-    }, 800);
+    }
   };
 
   const toggleWishlist = async () => {

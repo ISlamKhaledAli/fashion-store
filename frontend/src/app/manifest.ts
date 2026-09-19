@@ -2,19 +2,39 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "THE CURATOR | Premium Fashion Commerce",
+    name: "The Curator — High Fashion & Atelier",
     short_name: "The Curator",
     description:
-      "A cinematic premium fashion storefront with AI-assisted shopping and an archival luxury collection.",
+      "Digital flagship for archival luxury collections, private client concierge, and AI bespoke styling.",
     start_url: "/",
     display: "standalone",
-    background_color: "#f9f9fb",
+    orientation: "portrait",
+    background_color: "#030304",
     theme_color: "#030304",
     icons: [
       {
-        src: "/favicon.ico",
-        sizes: "any",
-        type: "image/x-icon",
+        src: "/icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
+      {
+        src: "/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+        purpose: "any",
       },
     ],
   };

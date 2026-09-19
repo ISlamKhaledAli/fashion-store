@@ -4,7 +4,11 @@ import { sendResponse } from "../utils/apiResponse";
 import { addressSchema } from "../validators/address.validator";
 import { NotFoundError } from "../utils/AppError";
 
-export const getAddresses = async (req: Request, res: Response, next: NextFunction) => {
+export const getAddresses = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const addresses = await prisma.address.findMany({
       where: { userId: req.user?.id },
@@ -15,7 +19,11 @@ export const getAddresses = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export const createAddress = async (req: Request, res: Response, next: NextFunction) => {
+export const createAddress = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const userId = req.user?.id as string;
     const validatedData = addressSchema.parse(req.body);
@@ -37,14 +45,18 @@ export const createAddress = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-export const updateAddress = async (req: Request, res: Response, next: NextFunction) => {
+export const updateAddress = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { id } = req.params;
     const userId = req.user?.id as string;
     const validatedData = addressSchema.partial().parse(req.body);
 
-    const existingAddress = await prisma.address.findUnique({
-      where: { id: String(id), userId }
+    const existingAddress = await prisma.address.findFirst({
+      where: { id: String(id), userId },
     });
 
     if (!existingAddress) {
@@ -59,7 +71,7 @@ export const updateAddress = async (req: Request, res: Response, next: NextFunct
     }
 
     const address = await prisma.address.update({
-      where: { id: String(id), userId },
+      where: { id: String(id) },
       data: validatedData,
     });
 
@@ -69,13 +81,17 @@ export const updateAddress = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-export const deleteAddress = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteAddress = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { id } = req.params;
-    const userId = req.user?.id;
+    const userId = req.user?.id as string;
 
-    const existingAddress = await prisma.address.findUnique({
-      where: { id: String(id), userId }
+    const existingAddress = await prisma.address.findFirst({
+      where: { id: String(id), userId },
     });
 
     if (!existingAddress) {
@@ -83,10 +99,15 @@ export const deleteAddress = async (req: Request, res: Response, next: NextFunct
     }
 
     await prisma.address.delete({
-      where: { id: String(id), userId },
+      where: { id: String(id) },
     });
 
-    return sendResponse({ res, status: 200, success: true, message: "Address deleted" });
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Address deleted",
+    });
   } catch (error) {
     next(error);
   }

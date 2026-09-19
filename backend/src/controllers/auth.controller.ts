@@ -1,9 +1,19 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
 import { hashPassword, comparePassword } from "../utils/bcrypt";
-import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../utils/jwt";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} from "../utils/jwt";
 import { sendResponse } from "../utils/apiResponse";
-import { registerSchema, loginSchema, refreshSchema } from "../validators/auth.validator";
+import {
+  registerSchema,
+  loginSchema,
+  refreshSchema,
+  updateProfileSchema,
+  changePasswordSchema,
+} from "../validators/auth.validator";
 import { AuthError, ConflictError, NotFoundError } from "../utils/AppError";
 
 const isProduction = process.env.NODE_ENV === "production";
@@ -15,7 +25,11 @@ const COOKIE_OPTIONS = {
   path: "/",
 };
 
-export const register = async (req: Request, res: Response, next: NextFunction) => {
+export const register = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const validatedData = registerSchema.parse(req.body);
 
@@ -69,7 +83,11 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
   }
 };
 
-export const login = async (req: Request, res: Response, next: NextFunction) => {
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const validatedData = loginSchema.parse(req.body);
 
@@ -77,7 +95,10 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       where: { email: validatedData.email },
     });
 
-    if (!user || !(await comparePassword(validatedData.password, user.password))) {
+    if (
+      !user ||
+      !(await comparePassword(validatedData.password, user.password))
+    ) {
       throw new AuthError("Invalid email or password");
     }
 
@@ -114,7 +135,11 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
   }
 };
 
-export const refresh = async (req: Request, res: Response, next: NextFunction) => {
+export const refresh = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { refreshToken } = refreshSchema.parse({
       refreshToken: req.cookies?.refreshToken,
@@ -151,7 +176,11 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
   }
 };
 
-export const logout = async (req: Request, res: Response, next: NextFunction) => {
+export const logout = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   res.clearCookie("accessToken", COOKIE_OPTIONS);
   res.clearCookie("refreshToken", COOKIE_OPTIONS);
 
@@ -163,11 +192,22 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
   });
 };
 
-export const getMe = async (req: Request, res: Response, next: NextFunction) => {
+export const getMe = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user?.id },
-      select: { id: true, name: true, email: true, role: true, avatar: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        avatar: true,
+      },
     });
 
     if (!user) {
@@ -175,6 +215,90 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
     }
 
     return sendResponse({ res, status: 200, success: true, data: user });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateProfile = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user?.id as string;
+    const validatedData = updateProfileSchema.parse(req.body);
+
+    if (validatedData.email) {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          email: validatedData.email,
+          NOT: { id: userId },
+        },
+      });
+
+      if (existingUser) {
+        throw new ConflictError("Email already in use by another account");
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: validatedData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        avatar: true,
+      },
+    });
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Profile updated successfully",
+      data: updatedUser,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const changePassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user?.id as string;
+    const { currentPassword, newPassword } = changePasswordSchema.parse(
+      req.body
+    );
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user || !(await comparePassword(currentPassword, user.password))) {
+      throw new AuthError("Current password is incorrect");
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Password changed successfully",
+    });
   } catch (error) {
     next(error);
   }

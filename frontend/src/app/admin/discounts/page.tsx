@@ -23,6 +23,7 @@ import { DiscountFormPanel } from "@/components/admin/DiscountFormPanel";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { PriceDisplay } from "@/components/admin/PriceDisplay";
 import { MetricCard } from "@/components/admin/MetricCard";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { AdminTab } from "@/components/admin/AdminTabs";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { cn } from "@/lib/utils";
@@ -278,6 +279,7 @@ export default function DiscountsPage() {
   const [editingDiscount, setEditingDiscount] = useState<DiscountItem | null>(
     null
   );
+  const [discountToDelete, setDiscountToDelete] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
   const [page, setPage] = useState(1);
@@ -335,16 +337,22 @@ export default function DiscountsPage() {
     []
   );
 
-  const deleteDiscount = useCallback(async (id: string) => {
-    if (!confirm("Permanently purge this promotion from the archives?")) return;
-    try {
-      await adminApi.deleteDiscount(id);
-      toast.success("Manifest purged");
-      setDiscounts((prev) => prev.filter((d) => d.id !== id));
-    } catch (err) {
-      toast.error("Purge failed");
-    }
+  const deleteDiscount = useCallback((id: string) => {
+    setDiscountToDelete(id);
   }, []);
+
+  const executeDeleteDiscount = async () => {
+    if (!discountToDelete) return;
+    try {
+      await adminApi.deleteDiscount(discountToDelete);
+      toast.success("Manifest purged");
+      setDiscounts((prev) => prev.filter((d) => d.id !== discountToDelete));
+    } catch {
+      toast.error("Purge failed");
+    } finally {
+      setDiscountToDelete(null);
+    }
+  };
 
   const filteredDiscounts = useMemo(() => {
     const now = new Date();
@@ -727,6 +735,17 @@ export default function DiscountsPage() {
           onClose={() => setIsFormOpen(false)}
           discount={editingDiscount}
           onSuccess={fetchDiscounts}
+        />
+
+        <ConfirmDialog
+          isOpen={Boolean(discountToDelete)}
+          onClose={() => setDiscountToDelete(null)}
+          onConfirm={executeDeleteDiscount}
+          title="Purge Promotion?"
+          description="Are you sure you want to permanently purge this promotional manifest from the store archives?"
+          confirmBrand="danger"
+          confirmText="Purge Manifest"
+          cancelText="Keep Promotion"
         />
       </div>
     </>

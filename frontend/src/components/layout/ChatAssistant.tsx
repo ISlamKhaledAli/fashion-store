@@ -135,6 +135,7 @@ export const ChatAssistant = () => {
   const [inputVal, setInputVal] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -155,12 +156,20 @@ export const ChatAssistant = () => {
     }
   }, [messages, isLoading]);
 
-  // Show welcome tooltip after 4 seconds
+  // Show welcome tooltip after 3 seconds, then auto-hide after 6 seconds
   useEffect(() => {
-    const timer = setTimeout(() => {
+    let hideTimer: NodeJS.Timeout;
+    const showTimer = setTimeout(() => {
       setShowTooltip(true);
-    }, 4000);
-    return () => clearTimeout(timer);
+      hideTimer = setTimeout(() => {
+        setShowTooltip(false);
+      }, 6000);
+    }, 3000);
+
+    return () => {
+      clearTimeout(showTimer);
+      if (hideTimer) clearTimeout(hideTimer);
+    };
   }, []);
 
   // Listen to measurements-saved custom event to display green success toast
@@ -596,17 +605,9 @@ export const ChatAssistant = () => {
                 <Button
                   variant="none"
                   size="none"
-                  onClick={() => {
-                    if (
-                      confirm(
-                        "Are you sure you want to clear the conversation?"
-                      )
-                    ) {
-                      clearChat();
-                    }
-                  }}
+                  onClick={() => setShowClearConfirm(true)}
                   title="Clear conversation"
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-100 bg-stone-50 text-stone-400 transition-all duration-300 hover:border-stone-200 hover:bg-stone-100 hover:text-stone-900"
+                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-stone-100 bg-stone-50 text-stone-400 transition-all duration-300 hover:border-stone-200 hover:bg-stone-100 hover:text-stone-900"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
@@ -777,6 +778,74 @@ export const ChatAssistant = () => {
                 </Button>
               </div>
             </div>
+
+            {/* Luxury Clear Conversation Confirmation Dialog */}
+            <AnimatePresence>
+              {showClearConfirm && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute inset-0 z-50 flex items-center justify-center bg-stone-950/45 p-6 backdrop-blur-md"
+                  onClick={() => setShowClearConfirm(false)}
+                >
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0, y: 15 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0, y: 15 }}
+                    transition={{ type: "spring", damping: 26, stiffness: 320 }}
+                    className="relative w-full max-w-[320px] rounded-3xl border border-stone-200/80 bg-white/95 p-6 text-center shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] backdrop-blur-xl"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Top Badge Icon */}
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-stone-200/90 bg-gradient-to-b from-stone-50 to-stone-100 text-stone-900 shadow-inner">
+                      <Trash2 className="text-stone-850 h-5 w-5" />
+                    </div>
+
+                    {/* Brand Tagline */}
+                    <p className="mt-4 font-mono text-[9px] font-bold tracking-[0.24em] text-stone-400 uppercase">
+                      The Curator Atelier
+                    </p>
+
+                    {/* Editorial Title */}
+                    <h4 className="mt-1 font-serif text-lg font-medium tracking-tight text-stone-900">
+                      Clear Conversation?
+                    </h4>
+
+                    {/* Description */}
+                    <p className="mt-2 font-sans text-[12px] leading-relaxed text-stone-500">
+                      This will reset your conversation history and stylist
+                      recommendations. A fresh session will begin.
+                    </p>
+
+                    {/* Action Buttons */}
+                    <div className="mt-6 flex items-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setShowClearConfirm(false)}
+                        className="flex-1 cursor-pointer rounded-xl border border-stone-200 bg-white py-2.5 font-sans text-xs font-semibold text-stone-700 transition-all duration-200 hover:border-stone-300 hover:bg-stone-50 active:scale-[0.98]"
+                      >
+                        Keep Chat
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          clearChat();
+                          setShowClearConfirm(false);
+                          toast.success("Conversation cleared", {
+                            description: "Your session has been refreshed.",
+                          });
+                        }}
+                        className="hover:bg-stone-850 flex-1 cursor-pointer rounded-xl bg-stone-950 py-2.5 font-sans text-xs font-semibold text-white shadow-md transition-all duration-200 active:scale-[0.98]"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>

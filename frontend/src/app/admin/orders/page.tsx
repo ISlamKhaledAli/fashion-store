@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { PriceDisplay } from "@/components/admin/PriceDisplay";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 // Optimized Imports
 import { OrderDetailPanel } from "@/components/admin/OrderDetailPanel";
@@ -40,6 +41,8 @@ export default function AdminOrdersPage() {
   // Drawer State
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [bulkDeleteIds, setBulkDeleteIds] = useState<string[] | null>(null);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -145,30 +148,32 @@ export default function AdminOrdersPage() {
         setLoading(false);
       }
     } else if (action === "delete") {
-      if (
-        !window.confirm(
-          `Are you sure you want to delete ${ids.length} orders? This action cannot be undone.`
-        )
-      ) {
-        return;
-      }
-      try {
-        setLoading(true);
-        const res = await adminApi.bulkDeleteOrders(ids);
-        if (res.data.success) {
-          toast.success(`Deleted ${ids.length} orders`);
-          const isMounted = { current: true };
-          await fetchOrders(1, isMounted);
-        }
-      } catch (error) {
-        toast.error("Failed to delete orders");
-      } finally {
-        setLoading(false);
-      }
+      setBulkDeleteIds(ids);
     } else if (action === "export") {
       handleExport();
     }
     setSelectedIds(new Set());
+  };
+
+  const executeBulkDelete = async () => {
+    if (!bulkDeleteIds) return;
+    setIsBulkDeleting(true);
+    try {
+      setLoading(true);
+      const res = await adminApi.bulkDeleteOrders(bulkDeleteIds);
+      if (res.data.success) {
+        toast.success(`Deleted ${bulkDeleteIds.length} orders`);
+        const isMounted = { current: true };
+        await fetchOrders(1, isMounted);
+        setSelectedIds(new Set());
+      }
+    } catch {
+      toast.error("Failed to delete orders");
+    } finally {
+      setIsBulkDeleting(false);
+      setBulkDeleteIds(null);
+      setLoading(false);
+    }
   };
 
   const handleExport = () => {
@@ -597,6 +602,18 @@ export default function AdminOrdersPage() {
         isOpen={isPanelOpen}
         onClose={() => setIsPanelOpen(false)}
         onUpdateStatus={handleUpdateStatus}
+      />
+
+      <ConfirmDialog
+        isOpen={Boolean(bulkDeleteIds)}
+        onClose={() => setBulkDeleteIds(null)}
+        onConfirm={executeBulkDelete}
+        title="Delete Selected Orders?"
+        description={`Are you sure you want to permanently delete ${bulkDeleteIds?.length || 0} orders? This action cannot be undone.`}
+        confirmBrand="danger"
+        confirmText="Delete Orders"
+        cancelText="Cancel"
+        isLoading={isBulkDeleting}
       />
     </div>
   );

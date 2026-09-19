@@ -8,7 +8,7 @@ import {
   useTransform,
   AnimatePresence,
 } from "framer-motion";
-import { ShoppingBag, User, Menu, X, Search } from "lucide-react";
+import { ShoppingBag, User, Menu, X, Search, Sparkles } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
@@ -185,6 +185,24 @@ export const Navbar = () => {
                   {link.name}
                 </Link>
               ))}
+
+              {/* Luxury Atelier App Install Trigger */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  window.dispatchEvent(new CustomEvent("open-pwa-install"));
+                }}
+                className="flex min-h-12 cursor-pointer items-center justify-between border-b border-outline-variant/10 font-serif text-base font-semibold text-amber-600 dark:text-amber-400"
+              >
+                <span className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-amber-500" />
+                  Atelier App
+                </span>
+                <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 font-sans text-[9px] font-bold tracking-widest text-amber-600 uppercase dark:text-amber-300">
+                  Install
+                </span>
+              </button>
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3">

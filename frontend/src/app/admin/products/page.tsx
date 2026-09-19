@@ -25,6 +25,7 @@ import { TableImage } from "@/components/admin/TableImage";
 import type { AdminTab } from "@/components/admin/AdminTabs";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { PriceDisplay } from "@/components/admin/PriceDisplay";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 const ProductFormPanel = React.lazy(() =>
   import("@/components/admin/ProductFormPanel").then((module) => ({
@@ -206,6 +207,8 @@ export default function AdminProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -307,15 +310,15 @@ export default function AdminProductsPage() {
     []
   );
 
-  const handleDelete = React.useCallback(async (id: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to permanently delete this piece? This action cannot be undone."
-      )
-    )
-      return;
+  const handleDelete = React.useCallback((id: string) => {
+    setProductToDelete(id);
+  }, []);
+
+  const executeDelete = async () => {
+    if (!productToDelete) return;
+    setIsDeleting(true);
     try {
-      await adminApi.deleteProduct(id);
+      await adminApi.deleteProduct(productToDelete);
       toast.success("Piece purged from archives");
       const isMounted = { current: true };
       fetchProducts(isMounted);
@@ -324,8 +327,11 @@ export default function AdminProductsPage() {
       const errorMsg =
         axiosErr.response?.data?.message || "Critical failure. Data persists.";
       toast.error(errorMsg);
+    } finally {
+      setIsDeleting(false);
+      setProductToDelete(null);
     }
-  }, []);
+  };
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6 duration-1000 sm:space-y-8 lg:space-y-12">
@@ -559,6 +565,18 @@ export default function AdminProductsPage() {
           onSuccess={() => fetchProducts({ current: true })}
         />
       </React.Suspense>
+
+      <ConfirmDialog
+        isOpen={Boolean(productToDelete)}
+        onClose={() => setProductToDelete(null)}
+        onConfirm={executeDelete}
+        title="Purge Piece from Catalog?"
+        description="Are you sure you want to permanently delete this piece? All variants, images, and inventory records will be permanently removed."
+        confirmBrand="danger"
+        confirmText="Purge Piece"
+        cancelText="Cancel"
+        isLoading={isDeleting}
+      />
     </div>
   );
 }

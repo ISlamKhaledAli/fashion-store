@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { useCartStore } from "@/store/cartStore";
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 export default function AccountPage() {
   const { user } = useAuthStore();
@@ -23,6 +24,8 @@ export default function AccountPage() {
     null
   );
   const [isEditing, setIsEditing] = useState(false);
+  const [showClearMeasurementsModal, setShowClearMeasurementsModal] =
+    useState(false);
   const [formData, setFormData] = useState<UserMeasurements>({});
   const [isSaving, setIsSaving] = useState(false);
 
@@ -72,14 +75,11 @@ export default function AccountPage() {
     }
   };
 
-  const handleClearMeasurements = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to clear your boutique measurements profile?"
-      )
-    ) {
-      return;
-    }
+  const handleClearMeasurements = () => {
+    setShowClearMeasurementsModal(true);
+  };
+
+  const executeClearMeasurements = async () => {
     try {
       const res = await sizeApi.clearMeasurements();
       if (res.data.success) {
@@ -92,6 +92,8 @@ export default function AccountPage() {
       console.error("Failed to clear measurements:", err);
       const { toast } = await import("sonner");
       toast.error("Failed to clear measurements.");
+    } finally {
+      setShowClearMeasurementsModal(false);
     }
   };
 
@@ -556,6 +558,16 @@ export default function AccountPage() {
           </section>
         </main>
       </div>
+      <ConfirmDialog
+        isOpen={showClearMeasurementsModal}
+        onClose={() => setShowClearMeasurementsModal(false)}
+        onConfirm={executeClearMeasurements}
+        title="Clear Sizing Profile?"
+        description="Are you sure you want to clear your boutique body measurements? This will remove your saved dimensions from your personal stylist profile."
+        confirmBrand="danger"
+        confirmText="Clear Profile"
+        cancelText="Keep Profile"
+      />
     </ProtectedRoute>
   );
 }

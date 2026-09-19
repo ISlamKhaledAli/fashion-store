@@ -2,6 +2,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   role: "CUSTOMER" | "ADMIN";
   avatar?: string;
   status: "ACTIVE" | "BANNED";
@@ -113,6 +114,7 @@ export interface WishlistItem {
 
 export interface Address {
   id: string;
+  label?: string;
   firstName: string;
   lastName: string;
   street: string;
@@ -122,6 +124,7 @@ export interface Address {
   zip: string;
   country: string;
   phone?: string;
+  isDefault?: boolean;
 }
 
 export type OrderStatus =
