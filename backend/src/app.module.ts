@@ -31,6 +31,10 @@ import adminAiRoutes from "./routes/adminAi.routes";
 import contentRoutes from "./routes/content.routes";
 import contactRoutes from "./routes/contact.routes";
 import newsletterRoutes from "./routes/newsletter.routes";
+import rentalRoutes from "./routes/rental.routes";
+import returnRoutes from "./routes/return.routes";
+import notificationRoutes from "./routes/notification.routes";
+import bannerRoutes from "./routes/banner.routes";
 import compression from "compression";
 import { randomUUID } from "crypto";
 
@@ -148,6 +152,10 @@ app.use("/api/admin/ai", adminAiRoutes);
 app.use("/api/content", contentRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/newsletter", newsletterRoutes);
+app.use("/api/rentals", rentalRoutes);
+app.use("/api/returns", returnRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/banners", bannerRoutes);
 
 // Catch-all for unmatched routes
 app.use((req: Request, res: Response) => {

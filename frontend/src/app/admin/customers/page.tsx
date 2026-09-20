@@ -370,6 +370,18 @@ export default function AdminCustomersPage() {
                               : "MEMBER"}
                           </span>
                         </div>
+                        {customer.tags && customer.tags.length > 0 && (
+                          <div className="mt-0.5 flex flex-wrap gap-1">
+                            {customer.tags.map((t) => (
+                              <span
+                                key={t}
+                                className="rounded bg-zinc-100 px-1.5 py-0.5 text-[9px] font-medium text-zinc-700"
+                              >
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-8 py-8 text-right">
@@ -477,6 +489,7 @@ export default function AdminCustomersPage() {
         isOpen={isPanelOpen}
         onClose={() => setIsPanelOpen(false)}
         onStatusChange={handleStatusChange}
+        onCustomerUpdated={fetchCustomers}
       />
     </div>
   );

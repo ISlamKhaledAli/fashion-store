@@ -1,10 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
-import { verifyStripeWebhook, createPaymentIntent } from "../services/stripe";
+import stripe, {
+  createPaymentIntent,
+  StripeEvent,
+  StripePaymentIntent,
+} from "../services/stripe";
 import { calculateOrderTotals, calculateDiscount } from "../utils/pricing";
-import logger from "../utils/logger";
-import { ValidationError, NotFoundError } from "../utils/AppError";
+import { env } from "../utils/validateEnv";
 import { sendResponse } from "../utils/apiResponse";
+import { NotFoundError, ValidationError } from "../utils/AppError";
+import logger from "../utils/logger";
 
 export const stripeWebhook = async (
   req: Request,
@@ -13,32 +18,46 @@ export const stripeWebhook = async (
 ) => {
   const sig = req.headers["stripe-signature"] as string;
 
-  let event;
+  let event: StripeEvent;
 
   try {
-    event = verifyStripeWebhook(req.body, sig);
-  } catch (err: any) {
-    logger.error("Webhook signature verification failed:", {
-      message: err.message,
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : "Unknown error";
+    logger.error(`Webhook signature verification failed: ${errorMsg}`);
+    return sendResponse({
+      res,
+      status: 400,
+      success: false,
+      message: `Webhook Error: ${errorMsg}`,
     });
-    return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
   try {
+    // Idempotency check: Ignore duplicate events
     const existingEvent = await prisma.webhookEvent.findUnique({
       where: { id: event.id },
     });
+
     if (existingEvent) {
-      return res
-        .status(200)
-        .json({ success: true, received: true, message: "Duplicate Event" });
+      logger.info(`Webhook event ${event.id} already processed. Skipping.`);
+      return sendResponse({
+        res,
+        status: 200,
+        success: true,
+        message: "Event already processed",
+      });
     }
 
     // Handle the event
     switch (event.type) {
       case "payment_intent.succeeded":
-        const paymentIntent = event.data.object as any;
-        const orderId = paymentIntent.metadata.orderId;
+        const paymentIntent = event.data.object as StripePaymentIntent;
+        const orderId = paymentIntent.metadata?.orderId;
 
         if (orderId) {
           await prisma.order.update({
@@ -54,8 +73,8 @@ export const stripeWebhook = async (
         break;
 
       case "payment_intent.payment_failed":
-        const failedIntent = event.data.object as any;
-        const failedOrderId = failedIntent.metadata.orderId;
+        const failedIntent = event.data.object as StripePaymentIntent;
+        const failedOrderId = failedIntent.metadata?.orderId;
 
         if (failedOrderId) {
           await prisma.order.update({
@@ -116,12 +135,19 @@ export const createIntent = async (
 
     // 2. Validate discount if provided
     let rawDiscountAmount = 0;
+    const cartItems = cart.items.map((it) => ({
+      productId: it.variant.product.id,
+      categoryId: it.variant.product.categoryId,
+      price: it.variant.product.price,
+      quantity: it.quantity,
+    }));
+
     if (promoCode) {
       const discountRecord = await prisma.discount.findUnique({
         where: { code: promoCode },
       });
       if (discountRecord) {
-        const result = calculateDiscount(subtotal, discountRecord);
+        const result = calculateDiscount(subtotal, discountRecord, cartItems);
         if (result.isValid) {
           rawDiscountAmount = result.discountAmount;
         }

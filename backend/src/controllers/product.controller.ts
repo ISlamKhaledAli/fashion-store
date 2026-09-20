@@ -10,6 +10,7 @@ import {
 import { NotFoundError, ConflictError } from "../utils/AppError";
 import { Prisma } from "@prisma/client";
 import logger from "../utils/logger";
+import { logAudit } from "../utils/auditLogger";
 
 export const getProducts = async (
   req: Request,
@@ -116,6 +117,7 @@ export const getProductByIdentifier = async (
           },
         },
         variants: true,
+        rentalPeriods: true,
         reviews: {
           include: { user: { select: { name: true, avatar: true } } },
         },
@@ -140,6 +142,7 @@ export const getProductByIdentifier = async (
             },
           },
           variants: true,
+          rentalPeriods: true,
           reviews: {
             include: { user: { select: { name: true, avatar: true } } },
           },
@@ -263,6 +266,13 @@ export const createProduct = async (
       },
     });
 
+    logAudit(req, {
+      action: "PRODUCT_CREATE",
+      entity: "Product",
+      entityId: product.id,
+      details: { name: product.name, slug: product.slug, price: product.price },
+    });
+
     return sendResponse({
       res,
       status: 201,
@@ -287,10 +297,12 @@ export const updateProduct = async (
       logger.warn("Product update validation failed", {
         errors: parseResult.error.flatten(),
       });
-      return res.status(400).json({
+      return sendResponse({
+        res,
+        status: 400,
         success: false,
         message: "Validation failed",
-        errors: parseResult.error.flatten(),
+        data: parseResult.error.flatten(),
       });
     }
     const validatedData = parseResult.data;
@@ -416,6 +428,17 @@ export const updateProduct = async (
       });
     });
 
+    logAudit(req, {
+      action: "PRODUCT_UPDATE",
+      entity: "Product",
+      entityId: product.id,
+      details: {
+        name: product.name,
+        price: product.price,
+        status: product.status,
+      },
+    });
+
     return sendResponse({
       res,
       status: 200,
@@ -455,6 +478,13 @@ export const deleteProduct = async (
 
     await prisma.product.delete({
       where: { id: String(id) },
+    });
+
+    logAudit(req, {
+      action: "PRODUCT_DELETE",
+      entity: "Product",
+      entityId: String(id),
+      details: { name: existing.name },
     });
 
     return sendResponse({
@@ -582,6 +612,128 @@ export const updateProductImage = async (
       success: true,
       message: "Image updated",
       data: image,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const bulkUpdateProductStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { ids, status } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return sendResponse({
+        res,
+        status: 400,
+        success: false,
+        message: "Product IDs are required",
+      });
+    }
+
+    if (!["ACTIVE", "DRAFT", "ARCHIVED"].includes(status)) {
+      return sendResponse({
+        res,
+        status: 400,
+        success: false,
+        message: "Invalid product status",
+      });
+    }
+
+    const result = await prisma.product.updateMany({
+      where: { id: { in: ids } },
+      data: { status },
+    });
+
+    logAudit(req, {
+      action: "PRODUCT_BULK_STATUS_UPDATE",
+      entity: "Product",
+      details: { count: result.count, status, ids },
+    });
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: `Updated status to ${status} for ${result.count} products`,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const bulkDeleteProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return sendResponse({
+        res,
+        status: 400,
+        success: false,
+        message: "Product IDs are required",
+      });
+    }
+
+    // Check which products are attached to existing orders
+    const ordered = await prisma.orderItem.findMany({
+      where: { productId: { in: ids } },
+      select: { productId: true },
+      distinct: ["productId"],
+    });
+
+    const orderedIds = new Set(ordered.map((o) => o.productId));
+    const deletableIds = ids.filter((id) => !orderedIds.has(id));
+    const archivableIds = ids.filter((id) => orderedIds.has(id));
+
+    let deletedCount = 0;
+    let archivedCount = 0;
+
+    if (deletableIds.length > 0) {
+      const delResult = await prisma.product.deleteMany({
+        where: { id: { in: deletableIds } },
+      });
+      deletedCount = delResult.count;
+    }
+
+    if (archivableIds.length > 0) {
+      const archResult = await prisma.product.updateMany({
+        where: { id: { in: archivableIds } },
+        data: { status: "ARCHIVED" },
+      });
+      archivedCount = archResult.count;
+    }
+
+    logAudit(req, {
+      action: "PRODUCT_BULK_DELETE",
+      entity: "Product",
+      details: { deletedCount, archivedCount, ids },
+    });
+
+    let message = "";
+    if (deletedCount > 0 && archivedCount > 0) {
+      message = `${deletedCount} products permanently deleted, and ${archivedCount} products with orders were archived.`;
+    } else if (archivedCount > 0) {
+      message = `${archivedCount} products with orders were archived to preserve order history.`;
+    } else {
+      message = `${deletedCount} products permanently deleted.`;
+    }
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message,
+      data: { deletedCount, archivedCount },
     });
   } catch (error) {
     next(error);

@@ -11,12 +11,14 @@ import {
   Save,
   RotateCcw,
   AlertTriangle,
+  Clock,
+  ShoppingBag,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { contentApi } from "@/lib/api";
+import { contentApi, adminSettingsApi } from "@/lib/api";
 
 interface AdminSettingsState {
   storeName: string;
@@ -32,6 +34,15 @@ interface AdminSettingsState {
   notifyOnNewOrders: boolean;
   notifyOnLowStock: boolean;
   maintenanceMode: boolean;
+  // Rental System Controls
+  enableRentalSystem: boolean;
+  enableSecurityDeposit: boolean;
+  defaultLateFeePerDay: number;
+  maxRentalExtensionDays: number;
+  // Abandoned Cart Recovery
+  enableAbandonedCartRecovery: boolean;
+  abandonedCartEmailDelay: number;
+  abandonedCartDiscountPercent: number;
 }
 
 const defaultSettings: AdminSettingsState = {
@@ -48,9 +59,17 @@ const defaultSettings: AdminSettingsState = {
   notifyOnNewOrders: true,
   notifyOnLowStock: true,
   maintenanceMode: false,
+  enableRentalSystem: true,
+  enableSecurityDeposit: true,
+  defaultLateFeePerDay: 15,
+  maxRentalExtensionDays: 7,
+  enableAbandonedCartRecovery: true,
+  abandonedCartEmailDelay: 60,
+  abandonedCartDiscountPercent: 5,
 };
 
-type AdminSettingsTab = "general" | "shipping" | "tax" | "notifications";
+type AdminSettingsTab =
+  "general" | "shipping" | "tax" | "notifications" | "rental" | "recovery";
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<AdminSettingsState>(defaultSettings);
@@ -101,7 +120,37 @@ export default function AdminSettingsPage() {
     e.preventDefault();
     setIsSaving(true);
     try {
-      await contentApi.upsert("admin_settings", settings);
+      await Promise.allSettled([
+        contentApi.upsert("admin_settings", settings),
+        adminSettingsApi.updateSetting(
+          "lowStockThreshold",
+          settings.lowStockThreshold
+        ),
+        adminSettingsApi.updateSetting(
+          "enableSecurityDeposit",
+          settings.enableSecurityDeposit
+        ),
+        adminSettingsApi.updateSetting(
+          "defaultLateFeePerDay",
+          settings.defaultLateFeePerDay
+        ),
+        adminSettingsApi.updateSetting(
+          "maxRentalExtensionDays",
+          settings.maxRentalExtensionDays
+        ),
+        adminSettingsApi.updateSetting(
+          "enableAbandonedCartRecovery",
+          settings.enableAbandonedCartRecovery
+        ),
+        adminSettingsApi.updateSetting(
+          "abandonedCartEmailDelay",
+          settings.abandonedCartEmailDelay
+        ),
+        adminSettingsApi.updateSetting(
+          "abandonedCartDiscountPercent",
+          settings.abandonedCartDiscountPercent
+        ),
+      ]);
       try {
         localStorage.setItem(
           "curator_admin_settings",
@@ -178,6 +227,8 @@ export default function AdminSettingsPage() {
           { id: "shipping", label: "Logistics & Shipping", icon: Truck },
           { id: "tax", label: "Taxes & Currency", icon: Percent },
           { id: "notifications", label: "Alerts & Operations", icon: Bell },
+          { id: "rental", label: "Rental System", icon: Clock },
+          { id: "recovery", label: "Cart Recovery", icon: ShoppingBag },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -491,6 +542,203 @@ export default function AdminSettingsPage() {
                       </span>
                     </label>
                   </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Tab 5: Rental System */}
+        {activeTab === "rental" && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8"
+          >
+            <div className="border-b border-zinc-100 pb-4">
+              <h3 className="text-base font-bold text-zinc-900">
+                Luxury Rental System Controls
+              </h3>
+              <p className="text-xs text-zinc-500">
+                Global settings for couture bookings, deposit policy, and
+                overdue policies.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <label className="flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={settings.enableRentalSystem}
+                  onChange={(e) =>
+                    handleChange("enableRentalSystem", e.target.checked)
+                  }
+                  className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900"
+                />
+                <div>
+                  <span className="text-sm font-semibold text-zinc-800">
+                    Enable Rental Service on Storefront
+                  </span>
+                  <p className="text-xs text-zinc-500">
+                    Allows customers to book and rent designated archive
+                    garments
+                  </p>
+                </div>
+              </label>
+
+              <label className="flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={settings.enableSecurityDeposit}
+                  onChange={(e) =>
+                    handleChange("enableSecurityDeposit", e.target.checked)
+                  }
+                  className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900"
+                />
+                <div>
+                  <span className="text-sm font-semibold text-zinc-800">
+                    Mandatory Refundable Security Deposit
+                  </span>
+                  <p className="text-xs text-zinc-500">
+                    Collect deposit held safely on card until piece is returned
+                    and inspected
+                  </p>
+                </div>
+              </label>
+
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-semibold tracking-wider text-zinc-700 uppercase">
+                    Default Overdue Fee per Day ($)
+                  </label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={settings.defaultLateFeePerDay}
+                    onChange={(e) =>
+                      handleChange(
+                        "defaultLateFeePerDay",
+                        Number(e.target.value)
+                      )
+                    }
+                    className="mt-2"
+                  />
+                  <span className="mt-1 block text-[11px] text-zinc-500">
+                    Applied automatically when item return date has expired.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold tracking-wider text-zinc-700 uppercase">
+                    Max Extension Allowance (Days)
+                  </label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={settings.maxRentalExtensionDays}
+                    onChange={(e) =>
+                      handleChange(
+                        "maxRentalExtensionDays",
+                        Number(e.target.value)
+                      )
+                    }
+                    className="mt-2"
+                  />
+                  <span className="mt-1 block text-[11px] text-zinc-500">
+                    Maximum extra days customer can request to extend their
+                    wear.
+                  </span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Tab 6: Abandoned Cart Recovery */}
+        {activeTab === "recovery" && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8"
+          >
+            <div className="border-b border-zinc-100 pb-4">
+              <h3 className="text-base font-bold text-zinc-900">
+                Abandoned Cart Recovery Automation
+              </h3>
+              <p className="text-xs text-zinc-500">
+                Automatically remind visitors who left garments in bag with an
+                exclusive discount code.
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <label className="flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={settings.enableAbandonedCartRecovery}
+                  onChange={(e) =>
+                    handleChange(
+                      "enableAbandonedCartRecovery",
+                      e.target.checked
+                    )
+                  }
+                  className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900"
+                />
+                <div>
+                  <span className="text-sm font-semibold text-zinc-800">
+                    Enable Automated Abandoned Cart Recovery Emails
+                  </span>
+                  <p className="text-xs text-zinc-500">
+                    Sends high-converting email with items and discount coupon
+                  </p>
+                </div>
+              </label>
+
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-semibold tracking-wider text-zinc-700 uppercase">
+                    Email Dispatch Delay (Minutes)
+                  </label>
+                  <Input
+                    type="number"
+                    min={15}
+                    max={1440}
+                    value={settings.abandonedCartEmailDelay}
+                    onChange={(e) =>
+                      handleChange(
+                        "abandonedCartEmailDelay",
+                        Number(e.target.value)
+                      )
+                    }
+                    className="mt-2"
+                  />
+                  <span className="mt-1 block text-[11px] text-zinc-500">
+                    Time to wait before sending email after user leaves session.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold tracking-wider text-zinc-700 uppercase">
+                    Incentive Discount Percentage (%)
+                  </label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={50}
+                    value={settings.abandonedCartDiscountPercent}
+                    onChange={(e) =>
+                      handleChange(
+                        "abandonedCartDiscountPercent",
+                        Number(e.target.value)
+                      )
+                    }
+                    className="mt-2"
+                  />
+                  <span className="mt-1 block text-[11px] text-zinc-500">
+                    Exclusive coupon generated and provided inside the recovery
+                    email.
+                  </span>
                 </div>
               </div>
             </div>

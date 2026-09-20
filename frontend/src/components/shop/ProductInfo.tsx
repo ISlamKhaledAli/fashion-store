@@ -13,6 +13,7 @@ import { flyToCart } from "@/lib/animations";
 import { toast } from "sonner";
 import { RatingDisplay } from "../ui/RatingDisplay";
 import { useChatStore } from "@/store/chatStore";
+import { RentalSelector } from "./RentalSelector";
 
 interface ProductInfoProps {
   product: Product;
@@ -44,6 +45,7 @@ export const ProductInfo = ({
   const router = useRouter();
 
   const isFavorite = isInWishlist(product.id);
+  const [purchaseMode, setPurchaseMode] = useState<"BUY" | "RENT">("BUY");
 
   const availableSizes = product.variants
     .filter((v) => v.color === selectedColor)
@@ -98,21 +100,17 @@ export const ProductInfo = ({
       }
 
       setButtonState("success");
-
-      // Trigger fly animation immediately
-      const mainImg = document.getElementById("pdp-main-image");
-      flyToCart(mainImg);
-
+      toggleDrawer(true);
+      flyToCart(e?.currentTarget as HTMLElement);
+    } catch (error) {
+      console.error("Add to cart error:", error);
+      toast.error("Failed to add item to bag");
+      setButtonState("idle");
+    } finally {
       setTimeout(() => {
-        toggleDrawer(true);
         setButtonState("idle");
         isAnimating.current = false;
-      }, 700);
-    } catch (err) {
-      console.error("PDP Add to cart error:", err);
-      toast.error("Failed to add to cart");
-      setButtonState("idle");
-      isAnimating.current = false;
+      }, 1500);
     }
   };
 
@@ -150,9 +148,43 @@ export const ProductInfo = ({
         />
       </div>
 
-      <div className="text-[28px] font-bold text-on-surface">
-        {formatCurrency(product.price)}
-      </div>
+      {product.isRentable && (
+        <div className="flex rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
+          <button
+            type="button"
+            onClick={() => setPurchaseMode("BUY")}
+            className={cn(
+              "flex-1 rounded-md py-2.5 text-xs font-semibold tracking-wider uppercase transition-all",
+              purchaseMode === "BUY"
+                ? "bg-white text-zinc-900 shadow-xs dark:bg-zinc-900 dark:text-zinc-100"
+                : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400"
+            )}
+          >
+            Buy To Own
+          </button>
+          <button
+            type="button"
+            onClick={() => setPurchaseMode("RENT")}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-1.5 rounded-md py-2.5 text-xs font-semibold tracking-wider uppercase transition-all",
+              purchaseMode === "RENT"
+                ? "bg-amber-600 text-white shadow-xs dark:bg-amber-600"
+                : "text-amber-700 hover:text-amber-800 dark:text-amber-400"
+            )}
+          >
+            <span>Rent & Reserve</span>
+            <span className="rounded-sm bg-white/20 px-1 py-0.5 text-[10px]">
+              Rental
+            </span>
+          </button>
+        </div>
+      )}
+
+      {purchaseMode === "BUY" && (
+        <div className="text-[28px] font-bold text-on-surface">
+          {formatCurrency(product.price)}
+        </div>
+      )}
 
       <div className="space-y-4">
         <p className="font-label text-xs tracking-widest uppercase">
@@ -219,14 +251,14 @@ export const ProductInfo = ({
           {availableSizes.map((size) => (
             <Button
               key={size}
-              onClick={() => setSelectedSize(size)}
-              variant={selectedSize === size ? "primary" : "outline"}
+              variant="none"
               size="none"
+              onClick={() => setSelectedSize(size)}
               className={cn(
-                "border py-3 text-sm transition-all duration-200",
+                "cursor-pointer border py-3 text-xs tracking-widest uppercase transition-all",
                 selectedSize === size
-                  ? "border-primary bg-primary text-white"
-                  : "border-outline-variant text-on-surface hover:border-primary"
+                  ? "border-primary bg-primary text-on-primary"
+                  : "border-outline-variant bg-surface text-on-surface hover:border-primary"
               )}
             >
               {size}
@@ -235,102 +267,108 @@ export const ProductInfo = ({
         </div>
       </div>
 
-      <div className="flex gap-4">
-        <div className="flex items-center border border-outline-variant bg-white">
-          <Button
-            variant="ghost"
-            size="none"
-            onClick={() => setQuantity(Math.max(1, quantity - 1))}
-            className="p-3 transition-colors hover:text-primary"
-            aria-label="Decrease quantity"
-          >
-            <span className="material-symbols-outlined text-lg">remove</span>
-          </Button>
-          <span className="min-w-1.5rem mx-4 text-center text-sm tabular-nums">
-            {quantity}
-          </span>
-          <Button
-            variant="ghost"
-            size="none"
-            onClick={() => setQuantity(quantity + 1)}
-            className="p-3 transition-colors hover:text-primary"
-            aria-label="Increase quantity"
-          >
-            <span className="material-symbols-outlined text-lg">add</span>
-          </Button>
-        </div>
-
-        <Button
-          onClick={handleAddToCart}
-          disabled={buttonState !== "idle" || !currentVariant}
-          className={cn(
-            "group relative flex-1 overflow-hidden py-4 font-medium transition-all duration-300 disabled:opacity-70",
-            buttonState === "success" ? "bg-green-600 text-white" : ""
-          )}
-          isLoading={buttonState === "loading"}
-        >
-          <AnimatePresence mode="wait">
-            {buttonState === "idle" && (
-              <motion.span
-                key="idle"
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                transition={{ duration: 0.2 }}
-                className="flex items-center justify-center gap-2"
-              >
-                Add to Cart
-              </motion.span>
-            )}
-            {buttonState === "success" && (
-              <motion.span
-                key="success"
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                transition={{ duration: 0.2 }}
-                className="flex items-center justify-center gap-2"
-              >
-                <div className="flex items-center gap-2">
-                  <motion.span
-                    initial={{ scale: 0.5 }}
-                    animate={{ scale: 1 }}
-                    className="material-symbols-outlined text-xl"
-                  >
-                    check
-                  </motion.span>
-                  Added
-                </div>
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </Button>
-
-        <Button
-          variant="none"
-          size="none"
-          onClick={toggleWishlist}
-          className={cn(
-            "flex items-center justify-center rounded-sm border p-4 transition-colors",
-            isFavorite
-              ? "border-red-100 bg-red-50 text-red-600"
-              : "border-outline-variant text-on-surface hover:bg-surface-container"
-          )}
-          aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
-          icon={
-            <motion.span
-              animate={{ scale: isFavorite ? [1, 1.2, 1] : 1 }}
-              className={cn(
-                "material-symbols-outlined text-xl",
-                isFavorite && "fill-current"
-              )}
-              style={{ fontVariationSettings: `'FILL' ${isFavorite ? 1 : 0}` }}
+      {purchaseMode === "RENT" ? (
+        <RentalSelector product={product} selectedVariant={currentVariant} />
+      ) : (
+        <div className="flex gap-4">
+          <div className="flex items-center border border-outline-variant bg-white">
+            <Button
+              variant="ghost"
+              size="none"
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              className="p-3 transition-colors hover:text-primary"
+              aria-label="Decrease quantity"
             >
-              favorite
-            </motion.span>
-          }
-        />
-      </div>
+              <span className="material-symbols-outlined text-lg">remove</span>
+            </Button>
+            <span className="min-w-1.5rem mx-4 text-center text-sm tabular-nums">
+              {quantity}
+            </span>
+            <Button
+              variant="ghost"
+              size="none"
+              onClick={() => setQuantity(quantity + 1)}
+              className="p-3 transition-colors hover:text-primary"
+              aria-label="Increase quantity"
+            >
+              <span className="material-symbols-outlined text-lg">add</span>
+            </Button>
+          </div>
+
+          <Button
+            onClick={handleAddToCart}
+            disabled={buttonState !== "idle" || !currentVariant}
+            className={cn(
+              "group relative flex-1 overflow-hidden py-4 font-medium transition-all duration-300 disabled:opacity-70",
+              buttonState === "success" ? "bg-green-600 text-white" : ""
+            )}
+            isLoading={buttonState === "loading"}
+          >
+            <AnimatePresence mode="wait">
+              {buttonState === "idle" && (
+                <motion.span
+                  key="idle"
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-center justify-center gap-2"
+                >
+                  Add to Cart
+                </motion.span>
+              )}
+              {buttonState === "success" && (
+                <motion.span
+                  key="success"
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-center justify-center gap-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <motion.span
+                      initial={{ scale: 0.5 }}
+                      animate={{ scale: 1 }}
+                      className="material-symbols-outlined text-xl"
+                    >
+                      check
+                    </motion.span>
+                    Added
+                  </div>
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Button>
+
+          <Button
+            variant="none"
+            size="none"
+            onClick={toggleWishlist}
+            className={cn(
+              "flex items-center justify-center rounded-sm border p-4 transition-colors",
+              isFavorite
+                ? "border-red-100 bg-red-50 text-red-600"
+                : "border-outline-variant text-on-surface hover:bg-surface-container"
+            )}
+            aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
+            icon={
+              <motion.span
+                animate={{ scale: isFavorite ? [1, 1.2, 1] : 1 }}
+                className={cn(
+                  "material-symbols-outlined text-xl",
+                  isFavorite && "fill-current"
+                )}
+                style={{
+                  fontVariationSettings: `'FILL' ${isFavorite ? 1 : 0}`,
+                }}
+              >
+                favorite
+              </motion.span>
+            }
+          />
+        </div>
+      )}
 
       <div className="space-y-4 border-t border-surface-container pt-8">
         <div className="flex items-center gap-4">

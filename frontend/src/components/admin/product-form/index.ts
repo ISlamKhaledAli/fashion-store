@@ -2,4 +2,8 @@ export * from "./types";
 export * from "./IdentitySection";
 export * from "./PricingSection";
 export * from "./MediaSection";
+export * from "./VariantGeneratorSection";
+export * from "./FeaturesSection";
+export * from "./AccordionsSection";
+export * from "./SearchPresenceSection";
 export * from "./FormSkeleton";

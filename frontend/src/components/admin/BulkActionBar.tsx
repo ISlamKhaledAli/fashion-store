@@ -6,14 +6,25 @@ import { Truck, Download, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CloseButton } from "@/components/ui/CloseButton";
 
+export interface BulkActionItem {
+  id: string;
+  label: string;
+  icon?: React.ReactNode;
+  variant?: "default" | "danger";
+}
+
 interface BulkActionBarProps {
   selectedCount: number;
+  label?: string;
+  actions?: BulkActionItem[];
   onClear: () => void;
   onAction: (action: string) => void;
 }
 
 export const BulkActionBar = ({
   selectedCount,
+  label = "Orders Selected",
+  actions,
   onClear,
   onAction,
 }: BulkActionBarProps) => {
@@ -35,7 +46,7 @@ export const BulkActionBar = ({
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-medium tracking-tight text-white">
-                  Orders Selected
+                  {label}
                 </span>
                 <Button
                   variant="none"
@@ -52,55 +63,78 @@ export const BulkActionBar = ({
             <div className="mx-6 h-8 w-px bg-white/10" />
 
             {/* Center: Actions */}
-            <div className="flex flex-1 items-center justify-center gap-6">
-              <Button
-                variant="none"
-                size="none"
-                onClick={() => onAction("ship")}
-                className="group flex items-center gap-2.5 text-sm font-medium text-zinc-300 transition-all hover:text-white"
-                icon={
-                  <Truck
-                    size={18}
-                    className="text-zinc-500 transition-colors group-hover:text-white"
-                  />
-                }
-              >
-                Mark as Shipped
-              </Button>
+            <div className="flex flex-1 flex-wrap items-center justify-center gap-4">
+              {actions ? (
+                actions.map((act, idx) => (
+                  <React.Fragment key={act.id}>
+                    {idx > 0 && <div className="h-4 w-px bg-white/5" />}
+                    <Button
+                      variant="none"
+                      size="none"
+                      onClick={() => onAction(act.id)}
+                      className={`group flex items-center gap-2 text-xs font-medium transition-all sm:text-sm ${
+                        act.variant === "danger"
+                          ? "text-red-400/80 hover:text-red-400"
+                          : "text-zinc-300 hover:text-white"
+                      }`}
+                      icon={act.icon}
+                    >
+                      {act.label}
+                    </Button>
+                  </React.Fragment>
+                ))
+              ) : (
+                <>
+                  <Button
+                    variant="none"
+                    size="none"
+                    onClick={() => onAction("ship")}
+                    className="group flex items-center gap-2.5 text-sm font-medium text-zinc-300 transition-all hover:text-white"
+                    icon={
+                      <Truck
+                        size={18}
+                        className="text-zinc-500 transition-colors group-hover:text-white"
+                      />
+                    }
+                  >
+                    Mark as Shipped
+                  </Button>
 
-              <div className="h-4 w-px bg-white/5" />
+                  <div className="h-4 w-px bg-white/5" />
 
-              <Button
-                variant="none"
-                size="none"
-                onClick={() => onAction("export")}
-                className="group flex items-center gap-2.5 text-sm font-medium text-zinc-300 transition-all hover:text-white"
-                icon={
-                  <Download
-                    size={18}
-                    className="text-zinc-500 transition-colors group-hover:text-white"
-                  />
-                }
-              >
-                Export CSV
-              </Button>
+                  <Button
+                    variant="none"
+                    size="none"
+                    onClick={() => onAction("export")}
+                    className="group flex items-center gap-2.5 text-sm font-medium text-zinc-300 transition-all hover:text-white"
+                    icon={
+                      <Download
+                        size={18}
+                        className="text-zinc-500 transition-colors group-hover:text-white"
+                      />
+                    }
+                  >
+                    Export CSV
+                  </Button>
 
-              <div className="h-4 w-px bg-white/5" />
+                  <div className="h-4 w-px bg-white/5" />
 
-              <Button
-                variant="none"
-                size="none"
-                onClick={() => onAction("delete")}
-                className="group flex items-center gap-2.5 text-sm font-medium text-red-400/80 transition-all hover:text-red-400"
-                icon={
-                  <Trash2
-                    size={18}
-                    className="text-red-500/50 transition-colors group-hover:text-red-400"
-                  />
-                }
-              >
-                Delete
-              </Button>
+                  <Button
+                    variant="none"
+                    size="none"
+                    onClick={() => onAction("delete")}
+                    className="group flex items-center gap-2.5 text-sm font-medium text-red-400/80 transition-all hover:text-red-400"
+                    icon={
+                      <Trash2
+                        size={18}
+                        className="text-red-500/50 transition-colors group-hover:text-red-400"
+                      />
+                    }
+                  >
+                    Delete
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Divider */}

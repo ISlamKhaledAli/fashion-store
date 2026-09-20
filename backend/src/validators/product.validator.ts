@@ -40,6 +40,10 @@ export const createProductSchema = z.object({
   images: z.array(imageSchema).optional(),
   features: z.array(featureSchema).optional().nullable(),
   details: z.array(detailSchema).optional().nullable(),
+  isRentable: z.boolean().optional(),
+  rentalPrice: z.number().min(0).optional().nullable(),
+  securityDeposit: z.number().min(0).optional().nullable(),
+  maxRentalDays: z.number().int().min(1).optional().nullable(),
 });
 
 export const updateProductSchema = z.object({
@@ -53,20 +57,32 @@ export const updateProductSchema = z.object({
   brandId: z.string().optional().nullable(),
   status: z.enum(["ACTIVE", "DRAFT", "ARCHIVED"]).optional(),
   featured: z.boolean().optional(),
-  variants: z.array(z.object({
-    id: z.string().optional(),
-    size: z.string().optional(),
-    color: z.string().optional(),
-    colorHex: z.string().optional().nullable(),
-    stock: z.number().int().min(0).optional(),
-    sku: z.string().optional(),
-  })).optional(),
-  images: z.array(z.object({
-    id: z.string().optional(),
-    url: z.string().optional(),
-    publicId: z.string().optional(),
-    isMain: z.boolean().optional(),
-  })).optional(),
+  variants: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        size: z.string().optional(),
+        color: z.string().optional(),
+        colorHex: z.string().optional().nullable(),
+        stock: z.number().int().min(0).optional(),
+        sku: z.string().optional(),
+      })
+    )
+    .optional(),
+  images: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        url: z.string().optional(),
+        publicId: z.string().optional(),
+        isMain: z.boolean().optional(),
+      })
+    )
+    .optional(),
   features: z.array(featureSchema).optional().nullable(),
   details: z.array(detailSchema).optional().nullable(),
+  isRentable: z.boolean().optional(),
+  rentalPrice: z.number().min(0).optional().nullable(),
+  securityDeposit: z.number().min(0).optional().nullable(),
+  maxRentalDays: z.number().int().min(1).optional().nullable(),
 });

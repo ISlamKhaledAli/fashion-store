@@ -1,12 +1,24 @@
 "use client";
 
-import React, { useMemo, useCallback, useState } from "react";
-import { CheckCircle, Printer, Truck, ExternalLink, Save } from "lucide-react";
+import React, { useState, useCallback, useMemo } from "react";
+import {
+  CheckCircle,
+  Printer,
+  Truck,
+  Save,
+  Ban,
+  FileText,
+  Check,
+  ExternalLink,
+} from "lucide-react";
 import type { Order } from "@/types";
 import { StatusBadge } from "./StatusBadge";
 import { PriceDisplay } from "./PriceDisplay";
 import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { AdminDrawer } from "./AdminDrawer";
+import { adminApi } from "@/lib/api";
+import { toast } from "sonner";
 
 // Atomic Sub-components
 import { OrderSummary } from "./order-detail/OrderSummary";
@@ -136,8 +148,169 @@ const TrackingFulfillmentSection = ({
   );
 };
 
+interface InternalNotesSectionProps {
+  order: Order;
+  onNotesSaved?: (notes: string) => void;
+}
+
+const InternalNotesSection = ({
+  order,
+  onNotesSaved,
+}: InternalNotesSectionProps) => {
+  const [notes, setNotes] = useState(() => order.internalNotes || "");
+  const [saving, setSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await adminApi.updateOrderInternalNotes(order.id, notes);
+      toast.success("Internal notes saved");
+      setIsSaved(true);
+      onNotesSaved?.(notes);
+      setTimeout(() => setIsSaved(false), 2500);
+    } catch {
+      toast.error("Failed to save internal notes");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="rounded-xl border border-zinc-200/80 bg-zinc-50/60 p-5 dark:border-zinc-800 dark:bg-zinc-900/40">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <FileText className="h-3.5 w-3.5 text-zinc-500" />
+          <h3 className="text-xs font-bold tracking-[0.15em] text-zinc-500 uppercase">
+            Internal Staff Notes (Private)
+          </h3>
+        </div>
+        <span className="text-[10px] text-zinc-400 italic">
+          Not visible to customer
+        </span>
+      </div>
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="Add private handling notes, VIP requests, tailoring instructions..."
+        rows={3}
+        className="w-full resize-y rounded-lg border border-zinc-200 bg-white p-3 text-xs font-medium text-zinc-800 transition-colors focus:border-zinc-900 focus:outline-hidden dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
+      />
+      <div className="mt-2.5 flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleSave}
+          disabled={saving}
+          icon={
+            isSaved ? (
+              <Check className="h-3.5 w-3.5 text-emerald-600" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )
+          }
+          className="text-xs"
+        >
+          {saving ? "Saving..." : isSaved ? "Saved!" : "Save Notes"}
+        </Button>
+      </div>
+    </section>
+  );
+};
+
+interface CancelOrderModalProps {
+  orderId: string;
+  isOpen: boolean;
+  onClose: () => void;
+  onCancelled: () => void;
+}
+
+const CancelOrderModal = ({
+  orderId,
+  isOpen,
+  onClose,
+  onCancelled,
+}: CancelOrderModalProps) => {
+  const [reason, setReason] = useState("");
+  const [restock, setRestock] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancel = async () => {
+    setCancelling(true);
+    try {
+      await adminApi.cancelOrder(orderId, reason.trim() || undefined, restock);
+      toast.success("Order cancelled and email dispatch triggered");
+      onCancelled();
+      onClose();
+    } catch {
+      toast.error("Failed to cancel order");
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Cancel Order Acquisition">
+      <div className="space-y-4 pt-2">
+        <p className="text-muted-foreground text-xs leading-relaxed">
+          Cancelling will transition the order stance to{" "}
+          <span className="text-foreground font-semibold">CANCELLED</span> and
+          dispatch an automated advisory email to the client.
+        </p>
+
+        <div>
+          <label className="text-muted-foreground mb-1.5 block text-xs font-semibold tracking-wider uppercase">
+            Cancellation Reason
+          </label>
+          <input
+            type="text"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="e.g. Client requested alteration, inventory discrepancy..."
+            className="border-border text-foreground w-full rounded-lg border bg-background p-2.5 text-xs focus:ring-1 focus:ring-primary focus:outline-hidden"
+          />
+        </div>
+
+        <label className="text-foreground flex cursor-pointer items-center gap-2.5 pt-1 text-xs">
+          <input
+            type="checkbox"
+            checked={restock}
+            onChange={(e) => setRestock(e.target.checked)}
+            className="border-border h-4 w-4 rounded text-primary focus:ring-primary"
+          />
+          <span>
+            Automatically return item quantities back to available inventory
+          </span>
+        </label>
+
+        <div className="border-border/40 flex items-center justify-end gap-2 border-t pt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onClose}
+            disabled={cancelling}
+          >
+            Keep Active
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleCancel}
+            disabled={cancelling}
+            className="border-none bg-red-600 text-white hover:bg-red-700"
+          >
+            {cancelling ? "Processing..." : "Confirm Cancellation"}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
 export const OrderDetailPanel = React.memo(
   ({ order, isOpen, onClose, onUpdateStatus }: OrderDetailPanelProps) => {
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+
     const handlePrint = useCallback(() => {
       window.print();
     }, []);
@@ -234,6 +407,17 @@ export const OrderDetailPanel = React.memo(
             >
               Print
             </Button>
+            {order && order.status !== "CANCELLED" && (
+              <Button
+                variant="outline"
+                size="none"
+                onClick={() => setIsCancelModalOpen(true)}
+                className="no-print flex w-auto items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50/50 px-4 py-2.5 text-xs font-bold tracking-widest text-red-600 uppercase hover:bg-red-100 active:scale-95"
+                icon={<Ban size={13} />}
+              >
+                Cancel
+              </Button>
+            )}
             {actionConfig && (
               <Button
                 variant="primary"
@@ -452,6 +636,8 @@ export const OrderDetailPanel = React.memo(
                   }}
                 />
 
+                <InternalNotesSection key={`notes-${order.id}`} order={order} />
+
                 <section>
                   <h3 className="mb-6 text-xs font-bold tracking-[0.15em] text-zinc-500 uppercase">
                     Fulfillment Timeline
@@ -468,6 +654,17 @@ export const OrderDetailPanel = React.memo(
             )}
           </div>
         </div>
+
+        {order && (
+          <CancelOrderModal
+            orderId={order.id}
+            isOpen={isCancelModalOpen}
+            onClose={() => setIsCancelModalOpen(false)}
+            onCancelled={() => {
+              onUpdateStatus(order.id, "CANCELLED");
+            }}
+          />
+        )}
       </AdminDrawer>
     );
   }

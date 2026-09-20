@@ -12,6 +12,7 @@ import type { Order, OrderStatus } from "@/types";
 import { Settings, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { ReportModal } from "@/components/admin/ReportModal";
 import { toast } from "sonner";
 
 interface RevenuePoint {
@@ -55,6 +56,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [revenueLoading, setRevenueLoading] = useState(true);
   const [revenueRange, setRevenueRange] = useState<"30D" | "90D">("30D");
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   const [metrics, setMetrics] = useState({
     totalRevenue: 0,
@@ -219,6 +221,7 @@ export default function AdminDashboard() {
           <Button
             variant="primary"
             size="sm"
+            onClick={() => setIsReportModalOpen(true)}
             className="flex items-center gap-2 rounded-xl bg-zinc-950 px-5 py-2.5 font-bold text-white shadow-lg shadow-zinc-950/20 transition-all hover:bg-zinc-800 active:scale-95"
           >
             Generate Report
@@ -334,6 +337,11 @@ export default function AdminDashboard() {
         isOpen={!!selectedOrder}
         onClose={() => setSelectedOrder(null)}
         onUpdateStatus={handleUpdateOrderStatus}
+      />
+
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
       />
     </motion.div>
   );

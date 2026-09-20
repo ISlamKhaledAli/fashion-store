@@ -226,14 +226,36 @@ export const calculateTotals = async (
       throw new ValidationError("Your cart is empty");
     }
 
-    // 2. Validate promo code against DB if provided
+    // 2. Validate promo code or find auto-apply promotion
     let rawDiscountAmount = 0;
-    if (promoCode) {
+    const cartItems = cart.items.map((it) => ({
+      productId: it.variant.product.id,
+      categoryId: it.variant.product.categoryId,
+      price: it.variant.product.price,
+      quantity: it.quantity,
+    }));
+
+    let effectivePromoCode = promoCode;
+    if (!effectivePromoCode) {
+      const autoDiscount = await prisma.discount.findFirst({
+        where: {
+          isActive: true,
+          autoApply: true,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+        orderBy: { value: "desc" },
+      });
+      if (autoDiscount) {
+        effectivePromoCode = autoDiscount.code;
+      }
+    }
+
+    if (effectivePromoCode) {
       const discountRecord = await prisma.discount.findUnique({
-        where: { code: promoCode },
+        where: { code: effectivePromoCode },
       });
       if (discountRecord) {
-        const result = calculateDiscount(subtotal, discountRecord);
+        const result = calculateDiscount(subtotal, discountRecord, cartItems);
         if (result.isValid) {
           rawDiscountAmount = result.discountAmount;
         }

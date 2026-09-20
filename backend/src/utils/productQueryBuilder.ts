@@ -47,7 +47,9 @@ export const buildProductQuery = ({
         name: { equals: String(category), mode: "insensitive" },
       };
     } else {
-      const cats = String(category).split(",").map((c) => c.trim());
+      const cats = String(category)
+        .split(",")
+        .map((c) => c.trim());
       where.category = {
         OR: cats.map((cat) => ({
           name: { equals: cat, mode: "insensitive" },
@@ -84,22 +86,36 @@ export const buildProductQuery = ({
       where.OR = [
         { name: { contains: String(search), mode: "insensitive" } },
         { description: { contains: String(search), mode: "insensitive" } },
-        { variants: { some: { sku: { contains: String(search), mode: "insensitive" } } } },
+        {
+          variants: {
+            some: { sku: { contains: String(search), mode: "insensitive" } },
+          },
+        },
       ];
     } else {
       where.OR = [
         { name: { contains: String(search), mode: "insensitive" } },
         { description: { contains: String(search), mode: "insensitive" } },
-        { category: { name: { contains: String(search), mode: "insensitive" } } },
+        {
+          category: { name: { contains: String(search), mode: "insensitive" } },
+        },
         { brand: { name: { contains: String(search), mode: "insensitive" } } },
-        { tags: { some: { tag: { name: { contains: String(search), mode: "insensitive" } } } } },
+        {
+          tags: {
+            some: {
+              tag: { name: { contains: String(search), mode: "insensitive" } },
+            },
+          },
+        },
       ];
     }
   }
 
   // 7. Color Filter
   if (color && !adminMode) {
-    const colors = String(color).split(",").map((c) => c.trim());
+    const colors = String(color)
+      .split(",")
+      .map((c) => c.trim());
     where.variants = {
       some: {
         color: {
@@ -129,12 +145,19 @@ export const buildProductQuery = ({
   if (adminMode) {
     include.images = true;
     include.variants = true;
+    include.rentalPeriods = true;
   } else {
-    include.images = { 
-      select: { url: true, isMain: true, variantColor: true }
+    include.images = {
+      select: { url: true, isMain: true, variantColor: true },
     };
     include.variants = {
-      select: { id: true, size: true, color: true, colorHex: true, stock: true },
+      select: {
+        id: true,
+        size: true,
+        color: true,
+        colorHex: true,
+        stock: true,
+      },
     };
     include.reviews = { select: { rating: true } };
   }

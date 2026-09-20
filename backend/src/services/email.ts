@@ -408,3 +408,152 @@ export const sendWelcomeEmail = async (to: string, name: string) => {
 
   await sendEmail(to, "Welcome to The Curator Atelier", html);
 };
+
+export const sendOrderProcessingEmail = async (data: {
+  to: string;
+  orderNumber: string;
+  customerName?: string;
+  itemsCount?: number;
+}) => {
+  const shortOrder = data.orderNumber.slice(-8).toUpperCase();
+  const greeting = data.customerName
+    ? `Dear ${data.customerName},`
+    : "Dear Client,";
+
+  const content = `
+    <h2 class="title">Atelier Preparing Your Acquisition</h2>
+    <p class="subtitle">
+      ${greeting}<br/>
+      Your acquisition for Order #${shortOrder} has cleared verification and is currently being inspected, curated, and prepared for dispatch.
+    </p>
+
+    <div style="background:#ffffff;border:1px solid #e4e4e7;border-radius:12px;padding:20px;margin:24px 0;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#71717a;margin-bottom:6px;">
+        Curatorial Inspection
+      </div>
+      <p style="font-size:13px;color:#27272a;margin:0 0 12px 0;">
+        Each garment is steamed, hand-inspected for textile fidelity, and packed inside our custom archival garment packaging.
+      </p>
+      <div style="font-size:12px;font-weight:600;color:#09090b;">
+        Order Reference: #${shortOrder}
+      </div>
+    </div>
+
+    <p style="font-size:12px;color:#71717a;line-height:1.6;">
+      Once our logistics courier verifies customs departure, you will receive an automated waybill notification with real-time tracking coordinates.
+    </p>
+
+    <div style="text-align:center;margin-top:28px;">
+      <a href="${env.CLIENT_URL || "https://thecurator.com"}/account/orders" class="cta-button">
+        View Order Status &rarr;
+      </a>
+    </div>
+  `;
+
+  const html = renderEmailShell(
+    `Order #${shortOrder} Processing`,
+    `Order #${shortOrder} is in curatorial preparation.`,
+    content
+  );
+
+  await sendEmail(
+    data.to,
+    `Your Order #${shortOrder} is Being Prepared — The Curator`,
+    html
+  );
+};
+
+export const sendOrderDeliveredEmail = async (data: {
+  to: string;
+  orderNumber: string;
+  customerName?: string;
+}) => {
+  const shortOrder = data.orderNumber.slice(-8).toUpperCase();
+  const greeting = data.customerName
+    ? `Dear ${data.customerName},`
+    : "Dear Client,";
+
+  const content = `
+    <h2 class="title">Acquisition Delivered</h2>
+    <p class="subtitle">
+      ${greeting}<br/>
+      Carrier delivery coordinates confirm Order #${shortOrder} has safely arrived at your destination.
+    </p>
+
+    <div style="background:#09090b;border-radius:12px;padding:24px;margin:24px 0;text-align:center;color:#ffffff;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#a1a1aa;margin-bottom:8px;">
+        Archival Garment Care
+      </div>
+      <p style="font-size:13px;color:#e4e4e7;line-height:1.6;margin:0 0 16px 0;">
+        We recommend allowing tailored pieces to rest on wide cedar shoulders for 12 hours after unboxing to allow luxury fibers to breathe.
+      </p>
+      <a href="${env.CLIENT_URL || "https://thecurator.com"}/account/orders" class="cta-button" style="background:#ffffff;color:#09090b !important;">
+        Inspect Order &amp; Share Critique &rarr;
+      </a>
+    </div>
+
+    <p style="font-size:12px;color:#71717a;line-height:1.6;">
+      Should there be any discrepancy with packaging integrity or fit, please notify our client relations team within 7 days.
+    </p>
+  `;
+
+  const html = renderEmailShell(
+    `Order Delivered #${shortOrder}`,
+    `Order #${shortOrder} has been safely delivered.`,
+    content
+  );
+
+  await sendEmail(
+    data.to,
+    `Delivered: Order #${shortOrder} — The Curator`,
+    html
+  );
+};
+
+export const sendOrderCancelledEmail = async (data: {
+  to: string;
+  orderNumber: string;
+  customerName?: string;
+  reason?: string;
+}) => {
+  const shortOrder = data.orderNumber.slice(-8).toUpperCase();
+  const greeting = data.customerName
+    ? `Dear ${data.customerName},`
+    : "Dear Client,";
+
+  const content = `
+    <h2 class="title">Order Cancelled</h2>
+    <p class="subtitle">
+      ${greeting}<br/>
+      Order #${shortOrder} has been cancelled.
+    </p>
+
+    <div style="background:#ffffff;border:1px solid #e4e4e7;border-radius:12px;padding:20px;margin:24px 0;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#71717a;margin-bottom:6px;">
+        Cancellation Details
+      </div>
+      <p style="font-size:13px;color:#27272a;margin:0 0 10px 0;">
+        ${data.reason ? `Reason: ${data.reason}` : "Your order was cancelled per client or inventory request."}
+      </p>
+      <p style="font-size:12px;color:#71717a;margin:0;">
+        Any pre-authorized funds or charges have been released or refunded back to your original payment method. Please allow 3-5 business days for bank processing.
+      </p>
+    </div>
+
+    <p style="font-size:12px;color:#71717a;line-height:1.6;">
+      If you believe this cancellation was made in error or would like assistance finding alternative archival pieces, our concierge is at your service.
+    </p>
+  `;
+
+  const html = renderEmailShell(
+    `Order Cancelled #${shortOrder}`,
+    `Order #${shortOrder} has been cancelled.`,
+    content
+  );
+
+  await sendEmail(
+    data.to,
+    `Order #${shortOrder} Cancellation Notice — The Curator`,
+    html
+  );
+};

@@ -19,6 +19,9 @@ import {
   Package,
   ChevronLeft,
   ChevronRight,
+  CheckCircle2,
+  FileEdit,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TableImage } from "@/components/admin/TableImage";
@@ -26,6 +29,11 @@ import type { AdminTab } from "@/components/admin/AdminTabs";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { PriceDisplay } from "@/components/admin/PriceDisplay";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import {
+  BulkActionBar,
+  type BulkActionItem,
+} from "@/components/admin/BulkActionBar";
+import { exportToCSV } from "@/lib/exportUtils";
 
 const ProductFormPanel = React.lazy(() =>
   import("@/components/admin/ProductFormPanel").then((module) => ({
@@ -33,15 +41,18 @@ const ProductFormPanel = React.lazy(() =>
   }))
 );
 
-// Optimized Atomic Components
 const ProductRow = React.memo(
   ({
     product,
+    isSelected,
+    onToggleSelect,
     onEdit,
     onArchive,
     onDelete,
   }: {
     product: Product;
+    isSelected: boolean;
+    onToggleSelect: (id: string) => void;
     onEdit: (p: Product) => void;
     onArchive: (id: string, status: string) => void;
     onDelete: (id: string) => void;
@@ -55,10 +66,25 @@ const ProductRow = React.memo(
         onClick={() => onEdit(product)}
         className={cn(
           "group/row relative cursor-pointer border-b border-zinc-50 transition-all hover:bg-zinc-50/50",
+          isSelected && "bg-zinc-50/80",
           (totalStock === 0 || isLowStock) &&
             "border-l-4 border-b-warning/30 border-l-warning bg-warning/5"
         )}
       >
+        <td
+          className="w-12 px-6 py-8"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelect(product.id);
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onToggleSelect(product.id)}
+            className="h-4 w-4 cursor-pointer rounded border-zinc-300 text-zinc-950 focus:ring-zinc-950"
+          />
+        </td>
         <td className="px-8 py-8">
           <div className="flex items-center gap-6">
             <TableImage
@@ -209,6 +235,9 @@ export default function AdminProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkConfirmOpen, setIsBulkConfirmOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [page, setPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -333,6 +362,108 @@ export default function AdminProductsPage() {
     }
   };
 
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleToggleSelectAll = () => {
+    const pageIds = paginatedProducts.map((p) => p.id);
+    const allSelected = pageIds.every((id) => selectedIds.includes(id));
+    if (allSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !pageIds.includes(id)));
+    } else {
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...pageIds])));
+    }
+  };
+
+  const handleBulkAction = async (actionId: string) => {
+    if (selectedIds.length === 0) return;
+
+    if (actionId === "delete") {
+      setIsBulkConfirmOpen(true);
+      return;
+    }
+
+    if (actionId === "export") {
+      const selectedProducts = products.filter((p) =>
+        selectedIds.includes(p.id)
+      );
+      const rows = selectedProducts.map((p) => {
+        const totalStock =
+          p.variants?.reduce((sum, v) => sum + v.stock, 0) ?? 0;
+        return {
+          "Product ID": p.id,
+          Title: p.name,
+          Slug: p.slug,
+          Category: p.category?.name || "Uncategorized",
+          Brand: p.brand?.name || "None",
+          "Price ($)": p.price,
+          Status: p.status,
+          "Total Stock": totalStock,
+          "SKUs Count": p.variants?.length || 0,
+        };
+      });
+      exportToCSV(
+        rows,
+        `selected-products-${new Date().toISOString().split("T")[0]}.csv`
+      );
+      toast.success(`Exported ${rows.length} products to CSV`);
+      return;
+    }
+
+    const statusMap: Record<string, "ACTIVE" | "DRAFT" | "ARCHIVED"> = {
+      active: "ACTIVE",
+      draft: "DRAFT",
+      archive: "ARCHIVED",
+    };
+
+    const targetStatus = statusMap[actionId];
+    if (targetStatus) {
+      try {
+        await adminApi.bulkUpdateProductStatus(selectedIds, targetStatus);
+        toast.success(
+          `Updated ${selectedIds.length} pieces to ${targetStatus}`
+        );
+        setSelectedIds([]);
+        fetchProducts({ current: true });
+      } catch {
+        toast.error("Failed to update pieces in bulk");
+      }
+    }
+  };
+
+  const executeBulkDelete = async () => {
+    setIsBulkDeleting(true);
+    try {
+      const res = await adminApi.bulkDeleteProducts(selectedIds);
+      toast.success(
+        res.data.message || `Processed ${selectedIds.length} pieces`
+      );
+      setSelectedIds([]);
+      setIsBulkConfirmOpen(false);
+      fetchProducts({ current: true });
+    } catch {
+      toast.error("Failed to delete pieces");
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  const productBulkActions: BulkActionItem[] = [
+    { id: "active", label: "Set Active", icon: <CheckCircle2 size={16} /> },
+    { id: "draft", label: "Set Draft", icon: <FileEdit size={16} /> },
+    { id: "archive", label: "Archive", icon: <Archive size={16} /> },
+    { id: "export", label: "Export CSV", icon: <Download size={16} /> },
+    {
+      id: "delete",
+      label: "Delete",
+      variant: "danger",
+      icon: <Trash2 size={16} />,
+    },
+  ];
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6 duration-1000 sm:space-y-8 lg:space-y-12">
       {/* Page Header */}
@@ -391,6 +522,17 @@ export default function AdminProductsPage() {
           <table className="w-full min-w-[900px] border-collapse text-left">
             <thead className="border-b border-zinc-100 bg-zinc-50/50 text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase">
               <tr>
+                <th className="w-12 px-6 py-5">
+                  <input
+                    type="checkbox"
+                    checked={
+                      paginatedProducts.length > 0 &&
+                      paginatedProducts.every((p) => selectedIds.includes(p.id))
+                    }
+                    onChange={handleToggleSelectAll}
+                    className="h-4 w-4 cursor-pointer rounded border-zinc-300 text-zinc-950 focus:ring-zinc-950"
+                  />
+                </th>
                 <th className="px-8 py-5">Piece Specification</th>
                 <th className="px-8 py-5">Classification</th>
                 <th className="px-8 py-5 text-right">Price</th>
@@ -430,6 +572,8 @@ export default function AdminProductsPage() {
                   <ProductRow
                     key={p.id}
                     product={p}
+                    isSelected={selectedIds.includes(p.id)}
+                    onToggleSelect={handleToggleSelect}
                     onEdit={handleEdit}
                     onArchive={handleArchive}
                     onDelete={handleDelete}
@@ -437,7 +581,7 @@ export default function AdminProductsPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-8 py-44 text-center">
+                  <td colSpan={6} className="px-8 py-44 text-center">
                     <div className="mx-auto flex max-w-sm flex-col items-center gap-6">
                       <div className="rounded-full bg-zinc-50 p-8 shadow-inner">
                         <Package
@@ -576,6 +720,26 @@ export default function AdminProductsPage() {
         confirmText="Purge Piece"
         cancelText="Cancel"
         isLoading={isDeleting}
+      />
+
+      <ConfirmDialog
+        isOpen={isBulkConfirmOpen}
+        onClose={() => setIsBulkConfirmOpen(false)}
+        onConfirm={executeBulkDelete}
+        title={`Purge ${selectedIds.length} Pieces from Catalog?`}
+        description="Are you sure you want to delete these pieces? Pieces attached to prior customer orders will be archived safely, and remaining pieces will be deleted."
+        confirmBrand="danger"
+        confirmText={`Delete (${selectedIds.length})`}
+        cancelText="Cancel"
+        isLoading={isBulkDeleting}
+      />
+
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        label="Pieces Selected"
+        actions={productBulkActions}
+        onClear={() => setSelectedIds([])}
+        onAction={handleBulkAction}
       />
     </div>
   );

@@ -19,6 +19,11 @@ const menuItems = [
     icon: "package_2",
   },
   {
+    label: "My Rentals",
+    href: "/account/rentals",
+    icon: "schedule",
+  },
+  {
     label: "Wishlist",
     href: "/account/wishlist",
     icon: "favorite",

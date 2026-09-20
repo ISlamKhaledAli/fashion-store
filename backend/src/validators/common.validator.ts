@@ -34,7 +34,16 @@ export const createDiscountSchema = z.object({
   value: z.number().positive(),
   minOrder: z.number().optional(),
   maxUses: z.number().int().optional(),
-  startDate: z.string().optional().transform(v => v ? new Date(v) : undefined),
-  expiresAt: z.string().optional().transform(v => v ? new Date(v) : undefined),
+  startDate: z
+    .string()
+    .optional()
+    .transform((v) => (v ? new Date(v) : undefined)),
+  expiresAt: z
+    .string()
+    .optional()
+    .transform((v) => (v ? new Date(v) : undefined)),
   isActive: z.boolean().default(true),
+  scope: z.enum(["ALL", "CATEGORY", "PRODUCT"]).default("ALL"),
+  scopeIds: z.array(z.string()).default([]),
+  autoApply: z.boolean().default(false),
 });

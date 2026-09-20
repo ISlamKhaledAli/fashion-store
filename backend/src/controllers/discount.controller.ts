@@ -4,9 +4,13 @@ import { sendResponse } from "../utils/apiResponse";
 import { ValidationError } from "../utils/AppError";
 import { calculateDiscount } from "../utils/pricing";
 
-export const validateDiscount = async (req: Request, res: Response, next: NextFunction) => {
+export const validateDiscount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const { code, orderTotal } = req.body;
+    const { code, orderTotal, items } = req.body;
 
     if (!code) {
       throw new ValidationError("Discount code is required");
@@ -25,7 +29,7 @@ export const validateDiscount = async (req: Request, res: Response, next: NextFu
       });
     }
 
-    const result = calculateDiscount(orderTotal, discount);
+    const result = calculateDiscount(orderTotal, discount, items);
 
     if (!result.isValid) {
       return sendResponse({

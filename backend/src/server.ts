@@ -10,14 +10,18 @@ import logger from "./utils/logger";
 const PORT = env.PORT || 5000;
 
 import { setupCleanupJobs } from "./jobs/cleanupAbandonedOrders";
+import { setupRentalExpiryJobs } from "./jobs/rentalExpiryJob";
+import { setupStockAlertJobs } from "./jobs/stockAlertJob";
 
 export async function startServer() {
   try {
     await prisma.$connect();
     logger.info("✅ Database connected successfully");
 
-    // Start cleanup job (runs every hour)
+    // Start background cron jobs
     setupCleanupJobs();
+    setupRentalExpiryJobs();
+    setupStockAlertJobs();
 
     return app.listen(PORT, () => {
       logger.info(`🚀 Server running on port ${PORT} in ${env.NODE_ENV} mode`);

@@ -19,12 +19,17 @@ import {
   Inbox,
   Mail,
   Star,
+  Clock,
+  RotateCcw,
+  Truck,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/Button";
 import { CloseButton } from "@/components/ui/CloseButton";
+import { NotificationBell } from "./NotificationBell";
 
 interface AdminSidebarProps {
   isCollapsed: boolean;
@@ -36,13 +41,17 @@ interface AdminSidebarProps {
 const navLinks = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
+  { name: "Rentals", href: "/admin/rentals", icon: Clock },
+  { name: "Returns", href: "/admin/returns", icon: RotateCcw },
   { name: "Products", href: "/admin/products", icon: Package },
   { name: "Reviews", href: "/admin/reviews", icon: Star },
+  { name: "Shipping", href: "/admin/shipping", icon: Truck },
   { name: "Content", href: "/admin/content", icon: LayoutTemplate },
   { name: "Messages", href: "/admin/messages", icon: Inbox },
   { name: "Newsletter", href: "/admin/newsletter", icon: Mail },
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { name: "Activity", href: "/admin/activity", icon: Activity },
   { name: "Categories", href: "/admin/categories", icon: FolderTree },
   { name: "Brands", href: "/admin/brands", icon: Tag },
   { name: "Inventory", href: "/admin/inventory", icon: Warehouse },
@@ -94,6 +103,12 @@ export const AdminSidebar = ({
             </motion.div>
           )}
         </AnimatePresence>
+
+        {!isCollapsed && (
+          <div className="mr-2 ml-auto hidden lg:block">
+            <NotificationBell />
+          </div>
+        )}
 
         {/* Mobile close button */}
         <CloseButton

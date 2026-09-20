@@ -15,6 +15,8 @@ model User {
   avatar    String?
   role      Role       @default(CUSTOMER)
   status    UserStatus @default(ACTIVE)
+  tags      String[]   @default([])
+  adminNotes String?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   addresses Address[]
@@ -23,6 +25,9 @@ model User {
   reviews   Review[]
   wishlist  Wishlist[]
   measurements UserMeasurements?
+  rentals        Rental[]
+  notifications  Notification[]
+  returnRequests ReturnRequest[]
 
   @@map("users")
 }
@@ -44,6 +49,7 @@ model Address {
   updatedAt DateTime @default(now()) @updatedAt
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders    Order[]
+  rentals   Rental[]
 
   @@map("addresses")
 }
@@ -92,6 +98,10 @@ model Product {
   featured     Boolean        @default(false)
   features     Json?
   details      Json?
+  isRentable   Boolean        @default(false)
+  rentalPrice  Float?
+  securityDeposit Float?
+  maxRentalDays Int?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   orderItems   OrderItem[]
@@ -102,6 +112,8 @@ model Product {
   reviews      Review[]
   variants     Variant[]
   wishlist     Wishlist[]
+  rentalPeriods RentalPeriod[]
+  rentals      Rental[]
 
   @@index([categoryId])
   @@index([status])
@@ -135,6 +147,7 @@ model Variant {
   sku        String      @unique
   cartItems  CartItem[]
   orderItems OrderItem[]
+  rentals    Rental[]
   product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
@@ -196,12 +209,14 @@ model Order {
   tax             Float         @default(0)
   total           Float
   notes           String?
+  internalNotes   String?
   trackingNumber  String?
   carrier         String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   shippedAt       DateTime?
   items           OrderItem[]
+  returnRequests  ReturnRequest[]
   address         Address?      @relation(fields: [addressId], references: [id])
   user            User          @relation(fields: [userId], references: [id])
 
@@ -269,6 +284,9 @@ model Discount {
   startDate DateTime?
   expiresAt DateTime?
   isActive  Boolean   @default(true)
+  scope     String?   @default("ALL")
+  scopeIds  String[]  @default([])
+  autoApply Boolean   @default(false)
   createdAt DateTime  @default(now())
 
   @@map("discounts")
@@ -392,4 +410,173 @@ model NewsletterSubscriber {
 
   @@map("newsletter_subscribers")
 }
+
+enum RentalStatus {
+  RESERVED
+  ACTIVE
+  RETURN_PENDING
+  RETURNED
+  OVERDUE
+  CANCELLED
+}
+
+enum RentalFulfillment {
+  DELIVERY
+  STORE_PICKUP
+}
+
+model RentalPeriod {
+  id        String   @id @default(cuid())
+  productId String
+  label     String
+  days      Int
+  price     Float
+  isActive  Boolean  @default(true)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rentals   Rental[]
+
+  @@index([productId])
+  @@map("rental_periods")
+}
+
+model Rental {
+  id               String            @id @default(cuid())
+  userId           String
+  variantId        String
+  productId        String
+  rentalPeriodId   String?
+  startDate        DateTime
+  endDate          DateTime
+  actualReturnDate DateTime?
+  fulfillment      RentalFulfillment @default(DELIVERY)
+  pickupLocation   String?
+  addressId        String?
+  rentalPrice      Float
+  securityDeposit  Float             @default(0)
+  depositReturned  Boolean           @default(false)
+  lateFee          Float             @default(0)
+  stripePaymentId  String?
+  paymentStatus    PaymentStatus     @default(UNPAID)
+  status           RentalStatus      @default(RESERVED)
+  notes            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id])
+  variant      Variant       @relation(fields: [variantId], references: [id])
+  product      Product       @relation(fields: [productId], references: [id])
+  rentalPeriod RentalPeriod? @relation(fields: [rentalPeriodId], references: [id])
+  address      Address?      @relation(fields: [addressId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([endDate])
+  @@map("rentals")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String?
+  type      String
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+enum ReturnStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REFUNDED
+  RECEIVED
+}
+
+model ReturnRequest {
+  id             String       @id @default(cuid())
+  orderId        String
+  userId         String
+  reason         String
+  description    String?
+  images         Json?
+  status         ReturnStatus @default(PENDING)
+  adminNotes     String?
+  refundAmount   Float?
+  stripeRefundId String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([status])
+  @@map("return_requests")
+}
+
+model StoreSettings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("store_settings")
+}
+
+model ShippingZone {
+  id           String   @id @default(cuid())
+  name         String
+  countries    Json
+  cities       Json?
+  standardRate Float
+  expressRate  Float?
+  freeAbove    Float?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("shipping_zones")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  userName  String?
+  action    String
+  entity    String
+  entityId  String?
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model Banner {
+  id        String    @id @default(cuid())
+  title     String
+  subtitle  String?
+  imageUrl  String
+  linkUrl   String?
+  badge     String?
+  position  Int       @default(0)
+  isActive  Boolean   @default(true)
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("banners")
+}
+
 

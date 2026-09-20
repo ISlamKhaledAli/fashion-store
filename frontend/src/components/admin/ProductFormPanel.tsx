@@ -1,16 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Trash2, ArrowRight } from "lucide-react";
 import type { Product, Category, Brand, Variant } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { AdminDrawer } from "./AdminDrawer";
-import { Input } from "../ui/Input";
-import { Textarea } from "../ui/Textarea";
 import { adminApi, categoryApi, brandApi } from "@/lib/api";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { ProductVariantsTable } from "./ProductVariantsTable";
 
 // --- Extracted Modular Subcomponents ---
 import type {
@@ -24,6 +19,10 @@ import {
   IdentitySection,
   PricingSection,
   MediaSection,
+  VariantGeneratorSection,
+  FeaturesSection,
+  AccordionsSection,
+  SearchPresenceSection,
   FormSkeleton,
 } from "./product-form";
 
@@ -78,20 +77,6 @@ export const ProductFormPanel = ({
   >([]);
   const [baseStock, setBaseStock] = useState(10);
 
-  const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"];
-  const COMMON_COLORS = [
-    { name: "Black", hex: "#000000" },
-    { name: "White", hex: "#FFFFFF" },
-    { name: "Navy", hex: "#1B2A4A" },
-    { name: "Grey", hex: "#808080" },
-    { name: "Beige", hex: "#D2B48C" },
-    { name: "Brown", hex: "#8B4513" },
-    { name: "Red", hex: "#CC0000" },
-    { name: "Green", hex: "#2D6A2D" },
-    { name: "Blue", hex: "#1A4B8C" },
-    { name: "Camel", hex: "#C19A6B" },
-  ];
-
   const [formData, setFormData] = useState<ProductFormData>({
     description: product?.description ?? "",
     name: product?.name ?? "",
@@ -106,6 +91,10 @@ export const ProductFormPanel = ({
     variants: (product?.variants ?? []) as Partial<Variant>[],
     features: (product?.features ?? []) as ProductFeature[],
     details: (product?.details ?? []) as AccordionItem[],
+    isRentable: product?.isRentable ?? false,
+    rentalPrice: product?.rentalPrice ?? 0,
+    securityDeposit: product?.securityDeposit ?? 0,
+    maxRentalDays: product?.maxRentalDays ?? 14,
   });
 
   const flatCategoryOptions = useMemo(() => {
@@ -180,6 +169,10 @@ export const ProductFormPanel = ({
               variants: full.variants,
               features: full.features || [],
               details: full.details || [],
+              isRentable: full.isRentable ?? false,
+              rentalPrice: full.rentalPrice ?? 0,
+              securityDeposit: full.securityDeposit ?? 0,
+              maxRentalDays: full.maxRentalDays ?? 14,
             });
           }
         } catch (err) {
@@ -200,6 +193,10 @@ export const ProductFormPanel = ({
             variants: product.variants,
             features: product.features || [],
             details: product.details || [],
+            isRentable: product.isRentable ?? false,
+            rentalPrice: product.rentalPrice ?? 0,
+            securityDeposit: product.securityDeposit ?? 0,
+            maxRentalDays: product.maxRentalDays ?? 14,
           });
         } finally {
           setFetching(false);
@@ -221,6 +218,10 @@ export const ProductFormPanel = ({
         variants: [],
         features: [],
         details: [],
+        isRentable: false,
+        rentalPrice: 0,
+        securityDeposit: 0,
+        maxRentalDays: 14,
       });
       setFetching(false);
     }
@@ -798,748 +799,59 @@ export const ProductFormPanel = ({
               getColorHex={getColorHex}
             />
 
-            <section className="space-y-8">
-              <div className="mt-6 border-t border-zinc-100 pt-10">
-                <div className="mb-8 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold tracking-widest text-zinc-900 uppercase">
-                      Curate Color Palette
-                    </h3>
-                    <p className="mt-1 text-[10px] font-bold tracking-[0.2em] text-zinc-400 uppercase">
-                      Select archival shades and sizes to manifest all
-                      combinations
-                    </p>
-                  </div>
-                </div>
-              </div>
+            <VariantGeneratorSection
+              selectedSizes={selectedSizes}
+              selectedColors={selectedColors}
+              baseStock={baseStock}
+              onToggleSize={toggleSize}
+              onToggleColor={toggleColor}
+              onAddCustomColor={addCustomColor}
+              onBaseStockChange={setBaseStock}
+              onGenerateVariants={generateVariants}
+              variants={formData.variants}
+              onVariantsChange={(variants) =>
+                handleFieldChange("variants", variants)
+              }
+              errors={formErrors}
+            />
 
-              <div className="space-y-8 rounded-2xl border border-zinc-100 bg-zinc-50/50 p-8">
-                {/* Size Selection */}
-                <div className="space-y-3">
-                  <label className="block text-[10px] font-black tracking-widest text-zinc-400 uppercase">
-                    Select Archival Sizes
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {SIZE_OPTIONS.map((size) => (
-                      <Button
-                        type="button"
-                        variant="none"
-                        size="none"
-                        key={size}
-                        onClick={() => toggleSize(size)}
-                        className={cn(
-                          "rounded-lg border px-4 py-2 text-[10px] font-bold tracking-widest uppercase transition-all duration-300",
-                          selectedSizes.includes(size)
-                            ? "scale-105 border-black bg-black text-white shadow-md"
-                            : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-400 hover:bg-zinc-50"
-                        )}
-                      >
-                        {size}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
+            <FeaturesSection
+              productName={formData.name}
+              features={formData.features}
+              onChange={(features) => handleFieldChange("features", features)}
+              onGenerateAll={handleGenerateFeatures}
+              isGeneratingAll={isGeneratingFeatures}
+              onGenerateSingle={generateFeatureContent}
+              loadingMap={featureAiLoading}
+              errorMap={featureAiError}
+            />
 
-                {/* Color Selection */}
-                <div className="space-y-3">
-                  <label className="block text-[10px] font-black tracking-widest text-zinc-400 uppercase">
-                    Curate Color Palette
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {COMMON_COLORS.map((color) => (
-                      <Button
-                        type="button"
-                        variant="none"
-                        size="none"
-                        key={color.name}
-                        onClick={() => toggleColor(color)}
-                        className={cn(
-                          "flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[10px] font-bold tracking-widest uppercase transition-all duration-300",
-                          selectedColors.find((c) => c.name === color.name)
-                            ? "scale-105 border-black bg-white text-black shadow-md"
-                            : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-400"
-                        )}
-                      >
-                        <span
-                          className="h-2.5 w-2.5 rounded-full border border-zinc-200"
-                          style={{ backgroundColor: color.hex }}
-                        />
-                        {color.name}
-                      </Button>
-                    ))}
-                  </div>
+            <AccordionsSection
+              productName={formData.name}
+              description={formData.description}
+              onDescriptionChange={(desc) =>
+                handleFieldChange("description", desc)
+              }
+              descriptionError={formErrors?.description}
+              isGeneratingDescription={isGeneratingDescription}
+              generationError={generationError}
+              onGenerateDescription={handleGenerateDescription}
+              isGeneratingAllAccordions={isGeneratingAllAccordions}
+              onGenerateAllAccordions={handleGenerateAllAccordions}
+              details={formData.details}
+              onDetailsChange={(details) =>
+                handleFieldChange("details", details)
+              }
+              onGenerateSingleAccordion={generateAccordionContent}
+              accordionAiLoading={accordionAiLoading}
+              accordionAiError={accordionAiError}
+            />
 
-                  {/* Custom color input */}
-                  <div className="flex gap-3 pt-2">
-                    <input
-                      type="text"
-                      placeholder="Custom label..."
-                      className="flex-1 rounded-lg border border-zinc-200 px-4 py-2 text-[10px] font-bold tracking-widest uppercase outline-none focus:ring-1 focus:ring-black"
-                      id="custom-color-name"
-                    />
-                    <input
-                      type="color"
-                      className="h-10 w-10 cursor-pointer rounded-lg border border-zinc-200 p-1"
-                      id="custom-color-hex"
-                      defaultValue="#000000"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={addCustomColor}
-                      className="h-10 px-4 text-[10px] font-bold tracking-widest uppercase"
-                    >
-                      Add
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Generator Action */}
-                <div className="flex items-center gap-4 border-t border-zinc-100 pt-4">
-                  <div className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-2">
-                    <label className="text-[10px] font-black tracking-widest text-zinc-400 uppercase">
-                      Inventory base:
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={baseStock}
-                      onChange={(e) =>
-                        setBaseStock(parseInt(e.target.value) || 0)
-                      }
-                      className="w-12 border-none p-0 text-center text-xs font-bold outline-none focus:ring-0"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    onClick={generateVariants}
-                    disabled={
-                      selectedSizes.length === 0 || selectedColors.length === 0
-                    }
-                    className="h-11 flex-1 py-4 text-[10px] font-black tracking-[0.2em] uppercase shadow-xl shadow-black/5"
-                  >
-                    Manifest {selectedSizes.length * selectedColors.length}{" "}
-                    Variations
-                  </Button>
-                </div>
-              </div>
-
-              <ProductVariantsTable
-                variants={formData.variants}
-                onChange={(variants) => handleFieldChange("variants", variants)}
-                errors={formErrors}
-              />
-            </section>
-
-            {/* Dynamic Showcase Features Section */}
-            <section className="space-y-8">
-              <div className="mt-6 border-t border-zinc-100 pt-10">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold tracking-widest text-zinc-900 uppercase">
-                      Showcase Features
-                    </h3>
-                    <p className="mt-1 text-[10px] font-bold tracking-[0.2em] text-zinc-400 uppercase">
-                      Add dynamic storytelling cards with Material symbols
-                      (shown in the Sticky Showcase)
-                    </p>
-                  </div>
-                  <div className="group/tooltip relative flex flex-col items-end gap-1">
-                    <Button
-                      type="button"
-                      variant="none"
-                      size="none"
-                      disabled={!formData.name.trim() || isGeneratingFeatures}
-                      onClick={handleGenerateFeatures}
-                      className={cn(
-                        "flex cursor-pointer items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-bold tracking-wide shadow-sm transition duration-200 hover:bg-zinc-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
-                        isGeneratingFeatures
-                          ? "text-zinc-400"
-                          : "text-zinc-700 hover:text-zinc-950"
-                      )}
-                    >
-                      {isGeneratingFeatures ? (
-                        <>
-                          <div className="h-3 w-3 animate-spin rounded-full border border-zinc-300/60 border-t-zinc-700" />
-                          Generating...
-                        </>
-                      ) : (
-                        "✦ Generate Features with AI"
-                      )}
-                    </Button>
-                    {!formData.name.trim() && (
-                      <div className="pointer-events-none absolute right-0 bottom-full z-50 mb-2 hidden rounded bg-zinc-900 px-2.5 py-1.5 text-[10px] font-bold tracking-widest whitespace-nowrap text-white uppercase shadow-lg group-hover/tooltip:block">
-                        Enter a product name first
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                {formData.features?.map((feature, idx) => (
-                  <div
-                    key={idx}
-                    className="group animate-in fade-in relative space-y-4 rounded-xl border border-zinc-200 bg-zinc-50 p-6 duration-300"
-                  >
-                    <Button
-                      type="button"
-                      variant="none"
-                      size="none"
-                      onClick={() => {
-                        const nextFeatures = [...formData.features];
-                        nextFeatures.splice(idx, 1);
-                        handleFieldChange("features", nextFeatures);
-                      }}
-                      className="absolute top-4 right-4 text-zinc-400 transition-colors hover:text-red-500"
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-
-                    <div className="flex flex-col items-end gap-6 md:flex-row">
-                      <div className="shrink-0 space-y-2">
-                        <label className="block text-[10px] font-black tracking-widest text-zinc-400 uppercase">
-                          Icon
-                        </label>
-                        <div className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 bg-white transition-colors focus-within:ring-1 focus-within:ring-black hover:border-zinc-300">
-                          <select
-                            value={feature.icon}
-                            onChange={(e) => {
-                              const nextFeatures = [...formData.features];
-                              nextFeatures[idx].icon = e.target.value;
-                              handleFieldChange("features", nextFeatures);
-                            }}
-                            className="material-symbols-outlined m-0 h-full w-full cursor-pointer appearance-none border-none bg-transparent p-0 text-lg text-zinc-800 outline-none"
-                            style={{
-                              fontVariationSettings: "'FILL' 0, 'wght' 400",
-                              textAlignLast: "center",
-                              textAlign: "center",
-                            }}
-                          >
-                            <option
-                              value="eco"
-                              className="material-symbols-outlined text-zinc-800"
-                            >
-                              eco
-                            </option>
-                            <option
-                              value="architecture"
-                              className="material-symbols-outlined text-zinc-800"
-                            >
-                              architecture
-                            </option>
-                            <option
-                              value="history"
-                              className="material-symbols-outlined text-zinc-800"
-                            >
-                              history
-                            </option>
-                            <option
-                              value="ac_unit"
-                              className="material-symbols-outlined text-zinc-800"
-                            >
-                              ac_unit
-                            </option>
-                            <option
-                              value="shield"
-                              className="material-symbols-outlined text-zinc-800"
-                            >
-                              shield
-                            </option>
-                            <option
-                              value="auto_awesome"
-                              className="material-symbols-outlined text-zinc-800"
-                            >
-                              auto_awesome
-                            </option>
-                            <option
-                              value="apparel"
-                              className="material-symbols-outlined text-zinc-800"
-                            >
-                              apparel
-                            </option>
-                            <option
-                              value="package_2"
-                              className="material-symbols-outlined text-zinc-800"
-                            >
-                              package_2
-                            </option>
-                            <option
-                              value="water_drop"
-                              className="material-symbols-outlined text-zinc-800"
-                            >
-                              water_drop
-                            </option>
-                            <option
-                              value="local_shipping"
-                              className="material-symbols-outlined text-zinc-800"
-                            >
-                              local_shipping
-                            </option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="w-full flex-1 space-y-2">
-                        <Input
-                          label="Feature Title"
-                          value={feature.title}
-                          onChange={(e) => {
-                            const nextFeatures = [...formData.features];
-                            nextFeatures[idx].title = e.target.value;
-                            handleFieldChange("features", nextFeatures);
-                          }}
-                          placeholder="e.g. Anatomical Tailoring"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <label className="block text-[10px] font-black tracking-widest text-zinc-400 uppercase">
-                          Feature Description
-                        </label>
-                        <div className="group/tooltip relative flex flex-col items-start gap-1">
-                          <Button
-                            type="button"
-                            variant="none"
-                            size="none"
-                            disabled={
-                              !feature.title.trim() || featureAiLoading[idx]
-                            }
-                            onClick={() =>
-                              generateFeatureContent(idx, feature.title)
-                            }
-                            className={cn(
-                              "flex cursor-pointer items-center gap-1.5 rounded border border-zinc-200 bg-white px-2 py-0.5 text-[10px] font-bold tracking-wide shadow-sm transition duration-200 hover:bg-zinc-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
-                              featureAiLoading[idx]
-                                ? "text-zinc-400"
-                                : "text-zinc-700 hover:text-zinc-950"
-                            )}
-                          >
-                            {featureAiLoading[idx] ? (
-                              <>
-                                <div className="h-2.5 w-2.5 animate-spin rounded-full border border-zinc-300/60 border-t-zinc-700" />
-                                Generating...
-                              </>
-                            ) : (
-                              "✦ Generate with AI"
-                            )}
-                          </Button>
-                          {!feature.title.trim() && (
-                            <div className="pointer-events-none absolute bottom-full left-0 z-50 mb-2 hidden rounded bg-zinc-900 px-2 py-1 text-[10px] font-bold tracking-widest whitespace-nowrap text-white uppercase shadow-lg group-hover/tooltip:block">
-                              Enter a feature title first
-                            </div>
-                          )}
-                          {featureAiError[idx] && (
-                            <span className="text-[9px] leading-none font-bold tracking-wider text-red-500 uppercase">
-                              Generation failed. Try again.
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <Textarea
-                        value={feature.description}
-                        onChange={(e) => {
-                          const nextFeatures = [...formData.features];
-                          nextFeatures[idx].description = e.target.value;
-                          handleFieldChange("features", nextFeatures);
-                        }}
-                        placeholder="e.g. Sourced from the finest Italian mills..."
-                        rows={2}
-                      />
-                    </div>
-                  </div>
-                ))}
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    handleFieldChange("features", [
-                      ...(formData.features || []),
-                      { icon: "eco", title: "", description: "" },
-                    ]);
-                  }}
-                  className="h-11 w-full py-4 text-[10px] font-black tracking-[0.2em] uppercase"
-                >
-                  + Add Showcase Feature Card
-                </Button>
-              </div>
-            </section>
-
-            {/* Dynamic Accordions Section */}
-            <section className="space-y-8">
-              <div className="mt-6 border-t border-zinc-100 pt-10">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold tracking-widest text-zinc-900 uppercase">
-                      Detail Accordions
-                    </h3>
-                    <p className="mt-1 text-[10px] font-bold tracking-[0.2em] text-zinc-400 uppercase">
-                      Add custom sections for Materials, Care, Shipping, or
-                      general product details
-                    </p>
-                  </div>
-                  <div className="group/tooltip relative flex flex-col items-end gap-1">
-                    <Button
-                      type="button"
-                      variant="none"
-                      size="none"
-                      disabled={
-                        !formData.name.trim() || isGeneratingAllAccordions
-                      }
-                      onClick={handleGenerateAllAccordions}
-                      className={cn(
-                        "flex cursor-pointer items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-bold tracking-wide shadow-sm transition duration-200 hover:bg-zinc-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
-                        isGeneratingAllAccordions
-                          ? "text-zinc-400"
-                          : "text-zinc-700 hover:text-zinc-950"
-                      )}
-                    >
-                      {isGeneratingAllAccordions ? (
-                        <>
-                          <div className="h-3 w-3 animate-spin rounded-full border border-zinc-300/60 border-t-zinc-700" />
-                          Generating...
-                        </>
-                      ) : (
-                        "✦ Generate Standard Sections with AI"
-                      )}
-                    </Button>
-                    {!formData.name.trim() && (
-                      <div className="pointer-events-none absolute right-0 bottom-full z-50 mb-2 hidden rounded bg-zinc-900 px-2.5 py-1.5 text-[10px] font-bold tracking-widest whitespace-nowrap text-white uppercase shadow-lg group-hover/tooltip:block">
-                        Enter a product name first
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                {/* Permanent First Accordion Item: Editorial Description */}
-                <div className="group relative space-y-4 rounded-xl border border-zinc-200 bg-zinc-50 p-6">
-                  <div className="flex items-center gap-3">
-                    <label className="block text-[10px] font-black tracking-widest text-zinc-400 uppercase">
-                      EDITORIAL DESCRIPTION
-                    </label>
-                    <div className="group/tooltip relative flex flex-col items-start gap-1">
-                      <Button
-                        type="button"
-                        variant="none"
-                        size="none"
-                        disabled={
-                          !formData.name.trim() || isGeneratingDescription
-                        }
-                        onClick={handleGenerateDescription}
-                        className={cn(
-                          "flex cursor-pointer items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-bold tracking-wide shadow-sm transition duration-200 hover:bg-zinc-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
-                          isGeneratingDescription
-                            ? "text-zinc-400"
-                            : "text-zinc-700 hover:text-zinc-950"
-                        )}
-                      >
-                        {isGeneratingDescription ? (
-                          <>
-                            <div className="h-3 w-3 animate-spin rounded-full border border-zinc-300/60 border-t-zinc-700" />
-                            Generating...
-                          </>
-                        ) : (
-                          "✦ Generate with AI"
-                        )}
-                      </Button>
-                      {!formData.name.trim() && (
-                        <div className="pointer-events-none absolute bottom-full left-0 z-50 mb-2 hidden rounded bg-zinc-900 px-2.5 py-1.5 text-[10px] font-bold tracking-widest whitespace-nowrap text-white uppercase shadow-lg group-hover/tooltip:block">
-                          Enter a product name first
-                        </div>
-                      )}
-                      {generationError && (
-                        <span className="text-[10px] leading-none font-bold tracking-wider text-red-500 uppercase">
-                          Generation failed. Try again.
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <p className="-mt-2 text-[10px] font-bold tracking-widest text-zinc-400 uppercase">
-                    MAIN PRODUCT DESCRIPTION — ALWAYS VISIBLE ON PRODUCT PAGE
-                  </p>
-                  <Textarea
-                    value={formData.description}
-                    onChange={(e) =>
-                      handleFieldChange("description", e.target.value)
-                    }
-                    rows={5}
-                    placeholder="Crafted from Italian wool..."
-                    error={formErrors?.description}
-                    required
-                  />
-                </div>
-
-                {formData.details?.map((detail, idx) => (
-                  <div
-                    key={idx}
-                    className="group animate-in fade-in relative space-y-4 rounded-xl border border-zinc-200 bg-zinc-50 p-6 duration-300"
-                  >
-                    <Button
-                      type="button"
-                      variant="none"
-                      size="none"
-                      onClick={() => {
-                        const nextDetails = [...formData.details];
-                        nextDetails.splice(idx, 1);
-                        handleFieldChange("details", nextDetails);
-                      }}
-                      className="absolute top-4 right-4 text-zinc-400 transition-colors hover:text-red-500"
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-
-                    <div className="space-y-2">
-                      <label className="block text-[10px] font-black tracking-widest text-zinc-400 uppercase">
-                        Accordion Section Title
-                      </label>
-                      <div style={{ position: "relative" }}>
-                        <input
-                          type="text"
-                          value={detail.title}
-                          onChange={(e) =>
-                            updateAccordion(idx, "title", e.target.value)
-                          }
-                          onFocus={() =>
-                            updateAccordion(idx, "titleInputFocused", true)
-                          }
-                          onBlur={() =>
-                            setTimeout(
-                              () =>
-                                updateAccordion(
-                                  idx,
-                                  "titleInputFocused",
-                                  false
-                                ),
-                              150
-                            )
-                          }
-                          placeholder="e.g. Care Instructions"
-                          className="flex h-11 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                        />
-
-                        {/* Dropdown arrow icon */}
-                        <i
-                          className="ti ti-chevron-down"
-                          style={{
-                            position: "absolute",
-                            right: "10px",
-                            top: "50%",
-                            transform: "translateY(-50%)",
-                            fontSize: "14px",
-                            color: "#71717a",
-                            pointerEvents: "none",
-                          }}
-                          aria-hidden="true"
-                        />
-
-                        {/* Dropdown list — shows on focus */}
-                        {detail.titleInputFocused && (
-                          <ul
-                            style={{
-                              position: "absolute",
-                              top: "calc(100% + 4px)",
-                              left: 0,
-                              right: 0,
-                              background: "#ffffff",
-                              border: "0.5px solid #e4e4e7",
-                              borderRadius: "6px",
-                              zIndex: 50,
-                              margin: 0,
-                              padding: "4px 0",
-                              listStyle: "none",
-                              boxShadow:
-                                "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
-                            }}
-                          >
-                            {ACCORDION_PRESETS.filter(
-                              (preset) =>
-                                preset
-                                  .toLowerCase()
-                                  .includes(detail.title.toLowerCase()) ||
-                                detail.title === ""
-                            ).map((preset) => (
-                              <li
-                                key={preset}
-                                onMouseDown={() =>
-                                  updateAccordion(idx, "title", preset)
-                                }
-                                style={{
-                                  padding: "8px 12px",
-                                  fontSize: "13px",
-                                  cursor: "pointer",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "space-between",
-                                  color: "#18181b",
-                                }}
-                                onMouseEnter={(e) =>
-                                  (e.currentTarget.style.background = "#f4f4f5")
-                                }
-                                onMouseLeave={(e) =>
-                                  (e.currentTarget.style.background =
-                                    "transparent")
-                                }
-                              >
-                                <span>{preset}</span>
-                                <span
-                                  style={{
-                                    fontSize: "11px",
-                                    color: "#71717a",
-                                    border: "0.5px solid #e4e4e7",
-                                    borderRadius: "4px",
-                                    padding: "1px 6px",
-                                  }}
-                                >
-                                  + add
-                                </span>
-                              </li>
-                            ))}
-
-                            {/* Show "Use custom: ..." if typed value is not in presets */}
-                            {detail.title.trim() !== "" &&
-                              !ACCORDION_PRESETS.includes(detail.title) && (
-                                <li
-                                  onMouseDown={() =>
-                                    updateAccordion(idx, "title", detail.title)
-                                  }
-                                  style={{
-                                    padding: "8px 12px",
-                                    fontSize: "13px",
-                                    cursor: "pointer",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    color: "#71717a",
-                                    borderTop: "0.5px solid #e4e4e7",
-                                  }}
-                                  onMouseEnter={(e) =>
-                                    (e.currentTarget.style.background =
-                                      "#f4f4f5")
-                                  }
-                                  onMouseLeave={(e) =>
-                                    (e.currentTarget.style.background =
-                                      "transparent")
-                                  }
-                                >
-                                  <span>Use: &quot;{detail.title}&quot;</span>
-                                  <i
-                                    className="ti ti-corner-down-left"
-                                    style={{ fontSize: "13px" }}
-                                    aria-hidden="true"
-                                  />
-                                </li>
-                              )}
-                          </ul>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <label className="block text-[10px] font-black tracking-widest text-zinc-400 uppercase">
-                          Accordion Content
-                        </label>
-                        <div className="group/tooltip relative flex flex-col items-start gap-1">
-                          <Button
-                            type="button"
-                            variant="none"
-                            size="none"
-                            disabled={
-                              !detail.title.trim() || accordionAiLoading[idx]
-                            }
-                            onClick={() =>
-                              generateAccordionContent(idx, detail.title)
-                            }
-                            className={cn(
-                              "flex cursor-pointer items-center gap-1.5 rounded border border-zinc-200 bg-white px-2 py-0.5 text-[10px] font-bold tracking-wide shadow-sm transition duration-200 hover:bg-zinc-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100",
-                              accordionAiLoading[idx]
-                                ? "text-zinc-400"
-                                : "text-zinc-700 hover:text-zinc-950"
-                            )}
-                          >
-                            {accordionAiLoading[idx] ? (
-                              <>
-                                <div className="h-2.5 w-2.5 animate-spin rounded-full border border-zinc-300/60 border-t-zinc-700" />
-                                Generating...
-                              </>
-                            ) : (
-                              "✦ Generate with AI"
-                            )}
-                          </Button>
-                          {!detail.title.trim() && (
-                            <div className="pointer-events-none absolute bottom-full left-0 z-50 mb-2 hidden rounded bg-zinc-900 px-2 py-1 text-[10px] font-bold tracking-widest whitespace-nowrap text-white uppercase shadow-lg group-hover/tooltip:block">
-                              Enter a section title first
-                            </div>
-                          )}
-                          {accordionAiError[idx] && (
-                            <span className="text-[9px] leading-none font-bold tracking-wider text-red-500 uppercase">
-                              Generation failed. Try again.
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <Textarea
-                        value={detail.content}
-                        onChange={(e) => {
-                          const nextDetails = [...formData.details];
-                          nextDetails[idx].content = e.target.value;
-                          handleFieldChange("details", nextDetails);
-                        }}
-                        placeholder="Detail terms and specifications..."
-                        rows={3}
-                      />
-                    </div>
-                  </div>
-                ))}
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    handleFieldChange("details", [
-                      ...(formData.details || []),
-                      { title: "", content: "" },
-                    ]);
-                  }}
-                  className="h-11 w-full py-4 text-[10px] font-black tracking-[0.2em] uppercase"
-                >
-                  + Add Accordion Item
-                </Button>
-              </div>
-            </section>
-
-            <section className="space-y-8">
-              <div className="flex items-center gap-4">
-                <div className="h-[1px] flex-1 bg-zinc-100" />
-                <h4 className="text-[10px] font-bold tracking-[0.2em] text-zinc-400 uppercase">
-                  Search Presence
-                </h4>
-                <div className="h-[1px] flex-1 bg-zinc-100" />
-              </div>
-
-              <div className="space-y-3 rounded-xl border border-zinc-100 bg-zinc-50/50 p-8 shadow-inner">
-                <p className="cursor-pointer truncate text-xl font-medium tracking-tight text-[#1a0dab] hover:underline">
-                  {formData.name || "Product Archive Piece"} | Editorial curator
-                </p>
-                <div className="flex items-center gap-1.5 text-xs font-medium text-[#006621]">
-                  <span>thecurator.com</span>
-                  <ArrowRight size={10} className="text-zinc-400" />
-                  <span className="truncate">
-                    {formData.slug || "item-pathway"}
-                  </span>
-                </div>
-                <p className="line-clamp-2 font-serif text-[13px] leading-relaxed text-zinc-500 italic">
-                  {formData.description ||
-                    "Refining the intersection of modern utility and timeless editorial aesthetics... "}
-                </p>
-              </div>
-            </section>
+            <SearchPresenceSection
+              name={formData.name}
+              slug={formData.slug}
+              description={formData.description}
+            />
           </>
         )}
       </form>

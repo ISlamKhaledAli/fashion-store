@@ -1,21 +1,27 @@
 /**
  * Centralized utility for all mathematical financial checkout equations.
- * 
+ *
  * Enforcing 10% explicit default tax rate constraints locally.
  */
 
-export const TAX_RATE = 0.10;
+export const TAX_RATE = 0.1;
 
 export interface PricingOptions {
   subtotal: number;
   discountAmount?: number;
   shippingMethod?: "standard" | "express" | "overnight" | string;
+  customShippingRate?: number;
 }
 
 export const SHIPPING_METHODS = [
   { id: "standard", name: "Standard", time: "3-5 business days", rate: 10 },
   { id: "express", name: "Express", time: "1-2 business days", rate: 9.99 },
-  { id: "overnight", name: "Overnight", time: "Next day delivery", rate: 24.99 },
+  {
+    id: "overnight",
+    name: "Overnight",
+    time: "Next day delivery",
+    rate: 24.99,
+  },
 ];
 
 export interface DiscountResult {
@@ -38,18 +44,38 @@ export const calculateDiscount = (
     usedCount: number;
     expiresAt?: Date | null;
     isActive: boolean;
-  }
+    scope?: string | null;
+    scopeIds?: string[];
+  },
+  items?: Array<{
+    productId?: string;
+    categoryId?: string;
+    price: number;
+    quantity: number;
+  }>
 ): DiscountResult => {
   if (!discount.isActive) {
-    return { discountAmount: 0, isValid: false, message: "Invalid or inactive discount code" };
+    return {
+      discountAmount: 0,
+      isValid: false,
+      message: "Invalid or inactive discount code",
+    };
   }
 
   if (discount.expiresAt && new Date() > new Date(discount.expiresAt)) {
-    return { discountAmount: 0, isValid: false, message: "Discount code has expired" };
+    return {
+      discountAmount: 0,
+      isValid: false,
+      message: "Discount code has expired",
+    };
   }
 
   if (discount.maxUses && discount.usedCount >= discount.maxUses) {
-    return { discountAmount: 0, isValid: false, message: "Discount usage limit reached" };
+    return {
+      discountAmount: 0,
+      isValid: false,
+      message: "Discount usage limit reached",
+    };
   }
 
   if (discount.minOrder && subtotal < discount.minOrder) {
@@ -60,12 +86,47 @@ export const calculateDiscount = (
     };
   }
 
+  // Calculate eligible subtotal if scoped to specific products or categories
+  let applicableSubtotal = subtotal;
+  if (
+    items &&
+    items.length > 0 &&
+    discount.scope &&
+    discount.scope !== "ALL" &&
+    discount.scopeIds &&
+    discount.scopeIds.length > 0
+  ) {
+    const scopeSet = new Set(discount.scopeIds);
+    const eligibleItems = items.filter((item) => {
+      if (discount.scope === "PRODUCT" && item.productId) {
+        return scopeSet.has(item.productId);
+      }
+      if (discount.scope === "CATEGORY" && item.categoryId) {
+        return scopeSet.has(item.categoryId);
+      }
+      return false;
+    });
+
+    if (eligibleItems.length === 0) {
+      return {
+        discountAmount: 0,
+        isValid: false,
+        message: `Promotion code is only applicable to selected ${discount.scope.toLowerCase()}s`,
+      };
+    }
+
+    applicableSubtotal = eligibleItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+  }
+
   let discountAmount = 0;
   const type = discount.type.toLowerCase();
   if (type === "percentage" || type === "percent") {
-    discountAmount = subtotal * (discount.value / 100);
+    discountAmount = applicableSubtotal * (discount.value / 100);
   } else if (type === "fixed") {
-    discountAmount = Math.min(discount.value, subtotal);
+    discountAmount = Math.min(discount.value, applicableSubtotal);
   }
 
   return {
@@ -77,18 +138,28 @@ export const calculateDiscount = (
 /**
  * Calculates correct derived mathematical subsets applying limits against subtotal bounds.
  */
-export const calculateOrderTotals = ({ subtotal, discountAmount = 0, shippingMethod = "standard" }: PricingOptions) => {
-  const method = SHIPPING_METHODS.find(m => m.id === shippingMethod) || SHIPPING_METHODS[0];
-  const shippingCost = method.rate;
+export const calculateOrderTotals = ({
+  subtotal,
+  discountAmount = 0,
+  shippingMethod = "standard",
+  customShippingRate,
+}: PricingOptions) => {
+  const method =
+    SHIPPING_METHODS.find((m) => m.id === shippingMethod) ||
+    SHIPPING_METHODS[0];
+  const shippingCost =
+    customShippingRate !== undefined
+      ? Math.max(0, customShippingRate)
+      : method.rate;
 
-  // Prevent illegal discount amounts overriding subtotal costs intrinsically 
+  // Prevent illegal discount amounts overriding subtotal costs intrinsically
   const appliedDiscount = Math.min(Math.max(0, discountAmount), subtotal);
-  
+
   const discountedSubtotal = subtotal - appliedDiscount;
-  
-  // Explicitly mapping tax exclusively onto the POST-discount subtotal payload 
+
+  // Explicitly mapping tax exclusively onto the POST-discount subtotal payload
   const tax = discountedSubtotal * TAX_RATE;
-  
+
   const total = discountedSubtotal + tax + shippingCost;
 
   return {
@@ -97,6 +168,6 @@ export const calculateOrderTotals = ({ subtotal, discountAmount = 0, shippingMet
     discountedSubtotal: Math.round(discountedSubtotal * 100) / 100,
     tax: Math.round(tax * 100) / 100,
     shippingCost: Math.round(shippingCost * 100) / 100,
-    total: Math.round(total * 100) / 100
+    total: Math.round(total * 100) / 100,
   };
 };

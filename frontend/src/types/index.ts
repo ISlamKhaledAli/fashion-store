@@ -6,6 +6,8 @@ export interface User {
   role: "CUSTOMER" | "ADMIN";
   avatar?: string;
   status: "ACTIVE" | "BANNED";
+  tags?: string[];
+  adminNotes?: string | null;
 }
 
 export interface Category {
@@ -73,6 +75,11 @@ export interface Product {
   status?: string;
   features?: { icon: string; title: string; description: string }[];
   details?: { title: string; content: string }[];
+  isRentable?: boolean;
+  rentalPrice?: number | null;
+  securityDeposit?: number | null;
+  maxRentalDays?: number | null;
+  rentalPeriods?: RentalPeriod[];
   createdAt: string;
 }
 
@@ -150,6 +157,7 @@ export interface Order {
   items: OrderItem[];
   trackingNumber?: string;
   carrier?: string;
+  internalNotes?: string | null;
   createdAt: string;
 }
 
@@ -224,7 +232,17 @@ export interface AdminCustomer {
   totalSpent: number;
   joinDate: string;
   status: "ACTIVE" | "BANNED";
+  tags?: string[];
+  adminNotes?: string | null;
   orders?: CustomerOrder[];
+}
+
+export interface Customer360Profile extends Omit<AdminCustomer, "orders"> {
+  addresses?: Address[];
+  orders?: (CustomerOrder | Order)[];
+  reviews?: Review[];
+  rentals?: Rental[];
+  measurements?: UserMeasurements | null;
 }
 
 export interface HeroContent {
@@ -450,4 +468,170 @@ export interface AnnouncementBarContent {
   bgColor?: string;
   textColor?: string;
   closable?: boolean;
+}
+
+// ─── RENTAL TYPES ───
+
+export interface RentalPeriod {
+  id: string;
+  productId: string;
+  label: string;
+  days: number;
+  price: number;
+  isActive: boolean;
+}
+
+export type RentalStatus =
+  | "RESERVED"
+  | "ACTIVE"
+  | "RETURN_PENDING"
+  | "RETURNED"
+  | "OVERDUE"
+  | "CANCELLED";
+
+export type RentalFulfillment = "DELIVERY" | "STORE_PICKUP";
+
+export interface Rental {
+  id: string;
+  userId: string;
+  variantId: string;
+  productId: string;
+  rentalPeriodId?: string | null;
+  startDate: string;
+  endDate: string;
+  actualReturnDate?: string | null;
+  fulfillment: RentalFulfillment;
+  pickupLocation?: string | null;
+  addressId?: string | null;
+  rentalPrice: number;
+  securityDeposit: number;
+  depositReturned: boolean;
+  lateFee: number;
+  stripePaymentId?: string | null;
+  paymentStatus: "UNPAID" | "PAID" | "FAILED" | "REFUNDED";
+  status: RentalStatus;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  product?: Product;
+  variant?: Variant;
+  rentalPeriod?: RentalPeriod | null;
+  address?: Address | null;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+  };
+}
+
+export interface RentalAvailabilityResponse {
+  isRentable: boolean;
+  available: boolean;
+  reason?: string;
+  totalStock?: number;
+  activeBookingsInRange?: number;
+  rentalPeriods?: RentalPeriod[];
+  dailyPrice?: number | null;
+  securityDeposit?: number;
+}
+
+// ─── NOTIFICATION TYPES ───
+
+export interface Notification {
+  id: string;
+  userId?: string | null;
+  type: string;
+  title: string;
+  message: string;
+  data?: Record<string, unknown> | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+// ─── RETURN TYPES ───
+
+export type ReturnStatus =
+  "PENDING" | "APPROVED" | "REJECTED" | "REFUNDED" | "RECEIVED";
+
+export interface ReturnRequest {
+  id: string;
+  orderId: string;
+  userId: string;
+  reason: string;
+  description?: string | null;
+  images?: string[];
+  status: ReturnStatus;
+  adminNotes?: string | null;
+  refundAmount?: number | null;
+  stripeRefundId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  order?: Order;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
+// ─── SHIPPING ZONES & STORE SETTINGS ───
+
+export interface ShippingZone {
+  id: string;
+  name: string;
+  countries: string[];
+  cities?: string[] | null;
+  standardRate: number;
+  expressRate?: number | null;
+  freeAbove?: number | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StoreSalon {
+  name: string;
+  address: string;
+}
+
+export interface StoreSettingsMap {
+  lowStockThreshold: number;
+  abandonedCartEmailDelay: number;
+  abandonedCartDiscountPercent: number;
+  enableSecurityDeposit: boolean;
+  defaultLateFeePerDay: number;
+  maxRentalExtensionDays: number;
+  enableAbandonedCartRecovery: boolean;
+  storeSalons: StoreSalon[];
+  [key: string]: unknown;
+}
+
+// ─── AUDIT LOGS & BANNERS ───
+
+export interface AuditLog {
+  id: string;
+  userId?: string | null;
+  userName?: string | null;
+  action: string;
+  entity: string;
+  entityId?: string | null;
+  details?: Record<string, unknown> | null;
+  ipAddress?: string | null;
+  createdAt: string;
+}
+
+export interface Banner {
+  id: string;
+  title: string;
+  subtitle?: string | null;
+  imageUrl: string;
+  linkUrl?: string | null;
+  badge?: string | null;
+  position: number;
+  isActive: boolean;
+  startDate?: string | null;
+  endDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }

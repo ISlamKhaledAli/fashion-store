@@ -20,7 +20,9 @@ import {
   Ruler,
   Globe,
   Megaphone,
+  Image as ImageIcon,
 } from "lucide-react";
+import { BannerManager } from "@/components/admin/BannerManager";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -45,6 +47,7 @@ import type {
 } from "@/types";
 
 type ContentTab =
+  | "banners"
   | "announcement"
   | "home"
   | "about"
@@ -637,6 +640,7 @@ export default function AdminContentPage() {
       {/* Main Tabs Navigation */}
       <div className="mb-8 flex flex-wrap gap-2 border-b border-zinc-200 pb-3 dark:border-zinc-800">
         {[
+          { id: "banners", label: "Hero Banners", icon: ImageIcon },
           { id: "announcement", label: "Announcement Bar", icon: Megaphone },
           { id: "home", label: "Landing & Hero", icon: Sparkles },
           { id: "about", label: "About Atelier", icon: Info },
@@ -666,6 +670,13 @@ export default function AdminContentPage() {
           );
         })}
       </div>
+
+      {/* Tab: Promotional Banners */}
+      {activeTab === "banners" && (
+        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8 dark:border-zinc-800 dark:bg-zinc-900">
+          <BannerManager />
+        </div>
+      )}
 
       {/* Tab 0: Announcement Bar */}
       {activeTab === "announcement" && (

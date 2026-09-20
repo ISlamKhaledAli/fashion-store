@@ -1,13 +1,20 @@
 import { Request, Response, NextFunction } from "express";
-import { Prisma } from "@prisma/client";
+import { Prisma, RentalStatus, PaymentStatus } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { sendResponse } from "../utils/apiResponse";
 import { getPagination, calculatePagination } from "../utils/pagination";
 import { createDiscountSchema } from "../validators/common.validator";
-import { NotFoundError } from "../utils/AppError";
+import { NotFoundError, ValidationError } from "../utils/AppError";
 import { isNotFoundError } from "../utils/prismaErrors";
-import { sendShippingNotificationEmail } from "../services/email";
+import {
+  sendShippingNotificationEmail,
+  sendOrderProcessingEmail,
+  sendOrderDeliveredEmail,
+  sendOrderCancelledEmail,
+} from "../services/email";
+import stripe from "../services/stripe";
 import logger from "../utils/logger";
+import { logAudit } from "../utils/auditLogger";
 
 export const getAdminCategories = async (
   req: Request,
@@ -178,7 +185,51 @@ export const updateOrderStatus = async (
           err
         );
       });
+    } else if (status === "PROCESSING" && order.user?.email) {
+      sendOrderProcessingEmail({
+        to: order.user.email,
+        orderNumber: order.id,
+        customerName: order.user.name,
+      }).catch((err) => {
+        logger.warn(
+          `Failed to send processing email for order ${order.id}:`,
+          err
+        );
+      });
+    } else if (status === "DELIVERED" && order.user?.email) {
+      sendOrderDeliveredEmail({
+        to: order.user.email,
+        orderNumber: order.id,
+        customerName: order.user.name,
+      }).catch((err) => {
+        logger.warn(
+          `Failed to send delivery email for order ${order.id}:`,
+          err
+        );
+      });
+    } else if (status === "CANCELLED" && order.user?.email) {
+      sendOrderCancelledEmail({
+        to: order.user.email,
+        orderNumber: order.id,
+        customerName: order.user.name,
+      }).catch((err) => {
+        logger.warn(
+          `Failed to send cancellation email for order ${order.id}:`,
+          err
+        );
+      });
     }
+
+    logAudit(req, {
+      action: "ORDER_STATUS_UPDATE",
+      entity: "Order",
+      entityId: order.id,
+      details: {
+        status: order.status,
+        trackingNumber: order.trackingNumber,
+        carrier: order.carrier,
+      },
+    });
 
     return sendResponse({ res, status: 200, success: true, data: order });
   } catch (error) {
@@ -216,6 +267,12 @@ export const bulkUpdateOrdersStatus = async (
       });
     });
 
+    logAudit(req, {
+      action: "ORDER_STATUS_BULK_UPDATE",
+      entity: "Order",
+      details: { count: result.count, status, ids },
+    });
+
     return sendResponse({ res, status: 200, success: true, data: result });
   } catch (error) {
     next(error);
@@ -243,6 +300,12 @@ export const bulkDeleteOrders = async (
       return await tx.order.deleteMany({
         where: { id: { in: ids } },
       });
+    });
+
+    logAudit(req, {
+      action: "ORDER_BULK_DELETE",
+      entity: "Order",
+      details: { count: result.count, ids },
     });
 
     return sendResponse({ res, status: 200, success: true, data: result });
@@ -297,6 +360,8 @@ export const getCustomers = async (
         phone: user.phone,
         avatar: user.avatar,
         status: user.status,
+        tags: user.tags || [],
+        adminNotes: user.adminNotes || null,
         joinDate: user.createdAt,
         totalOrders: user._count.orders,
         totalSpent,
@@ -334,6 +399,13 @@ export const updateCustomerStatus = async (
       data: { status },
     });
 
+    logAudit(req, {
+      action: "CUSTOMER_STATUS_UPDATE",
+      entity: "User",
+      entityId: user.id,
+      details: { status: user.status, email: user.email },
+    });
+
     return sendResponse({ res, status: 200, success: true, data: user });
   } catch (error) {
     next(error);
@@ -351,6 +423,12 @@ export const deleteCustomer = async (
     // Optional: Check if user has orders before deleting, or use cascade
     await prisma.user.delete({
       where: { id: String(id) },
+    });
+
+    logAudit(req, {
+      action: "CUSTOMER_DELETE",
+      entity: "User",
+      entityId: String(id),
     });
 
     return sendResponse({
@@ -712,6 +790,13 @@ export const updateInventoryStock = async (
       data: { stock: parseInt(stock) },
     });
 
+    logAudit(req, {
+      action: "INVENTORY_STOCK_UPDATE",
+      entity: "Variant",
+      entityId: variant.id,
+      details: { newStock: variant.stock, sku: variant.sku },
+    });
+
     return sendResponse({
       res,
       status: 200,
@@ -732,6 +817,18 @@ export const createDiscount = async (
   try {
     const validatedData = createDiscountSchema.parse(req.body);
     const discount = await prisma.discount.create({ data: validatedData });
+
+    logAudit(req, {
+      action: "DISCOUNT_CREATE",
+      entity: "Discount",
+      entityId: discount.id,
+      details: {
+        code: discount.code,
+        type: discount.type,
+        value: discount.value,
+      },
+    });
+
     return sendResponse({ res, status: 201, success: true, data: discount });
   } catch (error) {
     next(error);
@@ -790,6 +887,13 @@ export const updateDiscount = async (
       data: validatedData,
     });
 
+    logAudit(req, {
+      action: "DISCOUNT_UPDATE",
+      entity: "Discount",
+      entityId: discount.id,
+      details: { code: discount.code },
+    });
+
     return sendResponse({ res, status: 200, success: true, data: discount });
   } catch (error) {
     if (isNotFoundError(error)) {
@@ -807,6 +911,13 @@ export const deleteDiscount = async (
   try {
     const { id } = req.params;
     await prisma.discount.delete({ where: { id: String(id) } });
+
+    logAudit(req, {
+      action: "DISCOUNT_DELETE",
+      entity: "Discount",
+      entityId: String(id),
+    });
+
     return sendResponse({
       res,
       status: 200,
@@ -849,6 +960,781 @@ export const getGeographicData = async (
 
     return sendResponse({ res, status: 200, success: true, data });
   } catch (error) {
+    next(error);
+  }
+};
+
+// ─── ADMIN RENTAL MANAGEMENT ───
+
+export const getAdminRentals = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { status, search, page = "1", limit = "20" } = req.query;
+    const pageNum = Math.max(1, parseInt(page as string) || 1);
+    const limitNum = Math.min(
+      100,
+      Math.max(1, parseInt(limit as string) || 20)
+    );
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: any = {};
+    if (
+      status &&
+      Object.values(RentalStatus).includes(status as RentalStatus)
+    ) {
+      where.status = status as RentalStatus;
+    }
+
+    if (search) {
+      const q = String(search).trim();
+      where.OR = [
+        { user: { name: { contains: q, mode: "insensitive" } } },
+        { user: { email: { contains: q, mode: "insensitive" } } },
+        { product: { name: { contains: q, mode: "insensitive" } } },
+      ];
+    }
+
+    const [rentals, total] = await Promise.all([
+      prisma.rental.findMany({
+        where,
+        include: {
+          user: { select: { id: true, name: true, email: true, phone: true } },
+          product: { include: { images: true } },
+          variant: true,
+          rentalPeriod: true,
+          address: true,
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limitNum,
+      }),
+      prisma.rental.count({ where }),
+    ]);
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      data: rentals,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateAdminRentalStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = String(req.params.id);
+    const { status, notes, lateFee } = req.body;
+
+    if (!status || !Object.values(RentalStatus).includes(status)) {
+      throw new ValidationError("Valid rental status is required");
+    }
+
+    const rental = await prisma.rental.findUnique({
+      where: { id },
+      include: { variant: true, user: true, product: true },
+    });
+
+    if (!rental) {
+      throw new NotFoundError("Rental reservation not found");
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      // If moving to RETURNED or CANCELLED from RESERVED/ACTIVE, restore inventory stock
+      if (
+        (status === RentalStatus.RETURNED ||
+          status === RentalStatus.CANCELLED) &&
+        rental.status !== RentalStatus.RETURNED &&
+        rental.status !== RentalStatus.CANCELLED
+      ) {
+        await tx.variant.update({
+          where: { id: rental.variantId },
+          data: { stock: { increment: 1 } },
+        });
+      }
+
+      return await tx.rental.update({
+        where: { id },
+        data: {
+          status: status as RentalStatus,
+          notes: notes ?? rental.notes,
+          lateFee: lateFee !== undefined ? Number(lateFee) : rental.lateFee,
+          actualReturnDate:
+            status === RentalStatus.RETURNED
+              ? new Date()
+              : rental.actualReturnDate,
+        },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          product: true,
+          variant: true,
+        },
+      });
+    });
+
+    // Notify user
+    await prisma.notification.create({
+      data: {
+        userId: rental.userId,
+        type: "RENTAL_STATUS_UPDATE",
+        title: `Rental Update: ${status}`,
+        message: `Your rental for "${rental.product.name}" is now marked as ${status}.`,
+        data: { rentalId: rental.id, status },
+      },
+    });
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: `Rental status updated to ${status}`,
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const refundRentalDeposit = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = String(req.params.id);
+
+    const rental = await prisma.rental.findUnique({
+      where: { id },
+      include: { user: true, product: true },
+    });
+
+    if (!rental) {
+      throw new NotFoundError("Rental reservation not found");
+    }
+
+    if (rental.depositReturned) {
+      throw new ValidationError("Security deposit has already been refunded");
+    }
+
+    if (rental.securityDeposit <= 0) {
+      throw new ValidationError("No security deposit was held for this rental");
+    }
+
+    if (rental.stripePaymentId) {
+      try {
+        await stripe.refunds.create({
+          payment_intent: rental.stripePaymentId,
+          amount: Math.round(rental.securityDeposit * 100),
+        });
+      } catch (err) {
+        logger.warn("Stripe deposit refund warning:", err);
+      }
+    }
+
+    const updated = await prisma.rental.update({
+      where: { id },
+      data: { depositReturned: true },
+    });
+
+    await prisma.notification.create({
+      data: {
+        userId: rental.userId,
+        type: "DEPOSIT_RETURNED",
+        title: "Security Deposit Refunded",
+        message: `Your deposit of $${rental.securityDeposit.toFixed(2)} for "${rental.product.name}" has been refunded.`,
+        data: { rentalId: rental.id, amount: rental.securityDeposit },
+      },
+    });
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Security deposit refunded successfully",
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const addRentalLateFee = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = String(req.params.id);
+    const { fee } = req.body;
+
+    if (fee === undefined || Number(fee) < 0) {
+      throw new ValidationError("Valid late fee amount is required");
+    }
+
+    const updated = await prisma.rental.update({
+      where: { id },
+      data: { lateFee: Number(fee) },
+    });
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Late fee updated",
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getRentalAnalytics = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const [
+      totalRentals,
+      activeRentals,
+      overdueRentals,
+      returnedRentals,
+      rentals,
+    ] = await Promise.all([
+      prisma.rental.count(),
+      prisma.rental.count({ where: { status: RentalStatus.ACTIVE } }),
+      prisma.rental.count({ where: { status: RentalStatus.OVERDUE } }),
+      prisma.rental.count({ where: { status: RentalStatus.RETURNED } }),
+      prisma.rental.findMany({
+        select: {
+          rentalPrice: true,
+          securityDeposit: true,
+          depositReturned: true,
+          lateFee: true,
+        },
+      }),
+    ]);
+
+    const totalRentalRevenue = rentals.reduce(
+      (sum, r) => sum + r.rentalPrice + r.lateFee,
+      0
+    );
+    const depositsHeld = rentals
+      .filter((r) => !r.depositReturned)
+      .reduce((sum, r) => sum + r.securityDeposit, 0);
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      data: {
+        totalRentals,
+        activeRentals,
+        overdueRentals,
+        returnedRentals,
+        totalRentalRevenue: Math.round(totalRentalRevenue * 100) / 100,
+        depositsHeld: Math.round(depositsHeld * 100) / 100,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── ADMIN STORE SETTINGS ───
+
+const DEFAULT_SETTINGS: Record<string, any> = {
+  lowStockThreshold: 5,
+  abandonedCartEmailDelay: 60,
+  abandonedCartDiscountPercent: 5,
+  enableSecurityDeposit: true,
+  defaultLateFeePerDay: 15,
+  maxRentalExtensionDays: 7,
+  enableAbandonedCartRecovery: true,
+  storeSalons: [
+    { name: "Cairo Flagship Salon", address: "15 Brazil St, Zamalek, Cairo" },
+    { name: "Alexandria Boutique", address: "Glim Bay, Alexandria" },
+  ],
+};
+
+export const getStoreSettings = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const stored = await prisma.storeSettings.findMany();
+    const settingsMap: Record<string, any> = { ...DEFAULT_SETTINGS };
+
+    for (const s of stored) {
+      settingsMap[s.key] = s.value;
+    }
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      data: settingsMap,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateStoreSetting = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const key = String(req.params.key);
+    const { value } = req.body;
+
+    if (value === undefined) {
+      throw new ValidationError("Value is required");
+    }
+
+    const updated = await prisma.storeSettings.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value },
+    });
+
+    logAudit(req, {
+      action: "STORE_SETTING_UPDATE",
+      entity: "StoreSettings",
+      entityId: key,
+      details: { key, value },
+    });
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: `Setting ${key} updated successfully`,
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── SHIPPING ZONES MANAGEMENT ───
+
+export const getShippingZones = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const zones = await prisma.shippingZone.findMany({
+      orderBy: { createdAt: "asc" },
+    });
+    return sendResponse({ res, status: 200, success: true, data: zones });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createShippingZone = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const {
+      name,
+      countries,
+      cities,
+      standardRate,
+      expressRate,
+      freeAbove,
+      isActive,
+    } = req.body;
+
+    if (!name || standardRate === undefined) {
+      throw new ValidationError("Name and standard rate are required");
+    }
+
+    const zone = await prisma.shippingZone.create({
+      data: {
+        name,
+        countries: countries || ["EG"],
+        cities: cities || null,
+        standardRate: Number(standardRate),
+        expressRate: expressRate !== undefined ? Number(expressRate) : null,
+        freeAbove: freeAbove !== undefined ? Number(freeAbove) : null,
+        isActive: isActive !== undefined ? Boolean(isActive) : true,
+      },
+    });
+
+    return sendResponse({
+      res,
+      status: 201,
+      success: true,
+      message: "Shipping zone created successfully",
+      data: zone,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateShippingZone = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = String(req.params.id);
+    const {
+      name,
+      countries,
+      cities,
+      standardRate,
+      expressRate,
+      freeAbove,
+      isActive,
+    } = req.body;
+
+    const data: any = {};
+    if (name !== undefined) data.name = name;
+    if (countries !== undefined) data.countries = countries;
+    if (cities !== undefined) data.cities = cities;
+    if (standardRate !== undefined) data.standardRate = Number(standardRate);
+    if (expressRate !== undefined) data.expressRate = Number(expressRate);
+    if (freeAbove !== undefined) data.freeAbove = Number(freeAbove);
+    if (isActive !== undefined) data.isActive = Boolean(isActive);
+
+    const updated = await prisma.shippingZone.update({
+      where: { id },
+      data,
+    });
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Shipping zone updated successfully",
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteShippingZone = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const id = String(req.params.id);
+    await prisma.shippingZone.delete({ where: { id } });
+
+    logAudit(req, {
+      action: "SHIPPING_ZONE_DELETE",
+      entity: "ShippingZone",
+      entityId: id,
+    });
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Shipping zone deleted",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAuditLogs = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { action, entity, search, page, limit } = req.query;
+    const {
+      skip,
+      limit: take,
+      page: currentPage,
+    } = getPagination({
+      page: Number(page),
+      limit: Number(limit) || 20,
+    });
+
+    const where: Prisma.AuditLogWhereInput = {};
+    if (action && typeof action === "string") {
+      where.action = action;
+    }
+    if (entity && typeof entity === "string") {
+      where.entity = entity;
+    }
+    if (search && typeof search === "string") {
+      where.OR = [
+        { userName: { contains: search, mode: "insensitive" } },
+        { action: { contains: search, mode: "insensitive" } },
+        { entity: { contains: search, mode: "insensitive" } },
+        { entityId: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    const [logs, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        take,
+        skip,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.auditLog.count({ where }),
+    ]);
+
+    const pagination = calculatePagination(total, currentPage, take);
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      data: logs,
+      pagination,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateOrderInternalNotes = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const { internalNotes } = req.body;
+
+    const order = await prisma.order.update({
+      where: { id: String(id) },
+      data: { internalNotes: internalNotes ?? null },
+    });
+
+    logAudit(req, {
+      action: "ORDER_NOTES_UPDATE",
+      entity: "Order",
+      entityId: order.id,
+      details: { internalNotes },
+    });
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Internal notes saved",
+      data: order,
+    });
+  } catch (error) {
+    if (isNotFoundError(error)) {
+      return next(new NotFoundError("Order not found"));
+    }
+    next(error);
+  }
+};
+
+export const cancelOrder = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const { reason, restock = true } = req.body;
+
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: String(id) },
+      include: {
+        items: true,
+        user: { select: { email: true, name: true } },
+      },
+    });
+
+    if (!existingOrder) {
+      throw new NotFoundError("Order not found");
+    }
+
+    if (existingOrder.status === "CANCELLED") {
+      throw new ValidationError("Order is already cancelled");
+    }
+
+    const updatedOrder = await prisma.$transaction(async (tx) => {
+      // Restock inventory if requested
+      if (restock && existingOrder.items.length > 0) {
+        for (const item of existingOrder.items) {
+          if (item.variantId) {
+            await tx.variant.update({
+              where: { id: item.variantId },
+              data: { stock: { increment: item.quantity } },
+            });
+          }
+        }
+      }
+
+      return await tx.order.update({
+        where: { id: String(id) },
+        data: {
+          status: "CANCELLED",
+          internalNotes: reason
+            ? `${existingOrder.internalNotes ? existingOrder.internalNotes + "\n" : ""}Cancellation Reason: ${reason}`
+            : existingOrder.internalNotes,
+        },
+        include: {
+          user: { select: { email: true, name: true } },
+        },
+      });
+    });
+
+    if (updatedOrder.user?.email) {
+      sendOrderCancelledEmail({
+        to: updatedOrder.user.email,
+        orderNumber: updatedOrder.id,
+        customerName: updatedOrder.user.name,
+        reason,
+      }).catch((err) => {
+        logger.warn(`Failed to send cancellation email for order ${id}:`, err);
+      });
+    }
+
+    logAudit(req, {
+      action: "ORDER_CANCEL",
+      entity: "Order",
+      entityId: updatedOrder.id,
+      details: { reason, restock },
+    });
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Order cancelled successfully",
+      data: updatedOrder,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCustomer360 = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+
+    const customer = await prisma.user.findUnique({
+      where: { id: String(id) },
+      include: {
+        addresses: true,
+        orders: {
+          include: {
+            items: {
+              include: {
+                product: { select: { name: true, images: true } },
+                variant: { select: { size: true, color: true, sku: true } },
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        },
+        reviews: {
+          include: { product: { select: { name: true } } },
+          orderBy: { createdAt: "desc" },
+        },
+        rentals: {
+          orderBy: { createdAt: "desc" },
+        },
+        measurements: true,
+      },
+    });
+
+    if (!customer) {
+      throw new NotFoundError("Customer not found");
+    }
+
+    const totalSpent = customer.orders.reduce((acc, o) => acc + o.total, 0);
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      data: {
+        ...customer,
+        totalSpent,
+        totalOrders: customer.orders.length,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateCustomerDetails = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const { tags, adminNotes, status } = req.body;
+
+    const data: Prisma.UserUpdateInput = {};
+    if (tags !== undefined && Array.isArray(tags)) {
+      data.tags = tags;
+    }
+    if (adminNotes !== undefined) {
+      data.adminNotes = adminNotes;
+    }
+    if (status !== undefined) {
+      data.status = status;
+    }
+
+    const user = await prisma.user.update({
+      where: { id: String(id) },
+      data,
+    });
+
+    logAudit(req, {
+      action: "CUSTOMER_DETAILS_UPDATE",
+      entity: "User",
+      entityId: user.id,
+      details: { tags, adminNotes, status },
+    });
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Customer profile updated",
+      data: user,
+    });
+  } catch (error) {
+    if (isNotFoundError(error)) {
+      return next(new NotFoundError("Customer not found"));
+    }
     next(error);
   }
 };

@@ -18,6 +18,15 @@ import type {
   NewsletterSubscriber,
   NewsletterListResponse,
   NewsletterStatus,
+  Rental,
+  RentalAvailabilityResponse,
+  Notification,
+  ReturnRequest,
+  ShippingZone,
+  StoreSettingsMap,
+  AuditLog,
+  Customer360Profile,
+  Banner,
 } from "@/types";
 
 export const authApi = {
@@ -168,6 +177,13 @@ export const adminApi = {
     const payload = typeof data === "string" ? { status: data } : data;
     return api.put<ApiResponse<Order>>(`/admin/orders/${id}`, payload);
   },
+  updateOrderInternalNotes: (id: string, internalNotes: string) =>
+    api.put<ApiResponse<Order>>(`/admin/orders/${id}/notes`, { internalNotes }),
+  cancelOrder: (id: string, reason?: string, restock: boolean = true) =>
+    api.post<ApiResponse<Order>>(`/admin/orders/${id}/cancel`, {
+      reason,
+      restock,
+    }),
   bulkUpdateOrderStatus: (ids: string[], status: OrderStatus) =>
     api.post<ApiResponse<unknown>>("/admin/orders/bulk-status", {
       ids,
@@ -177,10 +193,40 @@ export const adminApi = {
     api.post<ApiResponse<unknown>>("/admin/orders/bulk-delete", { ids }),
   getCustomers: (params?: Record<string, unknown>) =>
     api.get<ApiResponse<AdminCustomer[]>>("/admin/customers", { params }),
+  getCustomer360: (id: string) =>
+    api.get<ApiResponse<Customer360Profile>>(`/admin/customers/${id}/360`),
+  updateCustomerDetails: (
+    id: string,
+    data: {
+      tags?: string[];
+      adminNotes?: string | null;
+      status?: "ACTIVE" | "BANNED";
+    }
+  ) => api.put<ApiResponse<unknown>>(`/admin/customers/${id}/details`, data),
   updateCustomerStatus: (id: string, status: "ACTIVE" | "BANNED") =>
     api.put<ApiResponse<unknown>>(`/admin/customers/${id}/status`, { status }),
   getProducts: (params?: Record<string, unknown>) =>
     api.get<ApiResponse<Product[]>>("/admin/products", { params }),
+  bulkUpdateProductStatus: (
+    ids: string[],
+    status: "ACTIVE" | "DRAFT" | "ARCHIVED"
+  ) =>
+    api.post<ApiResponse<unknown>>("/admin/products/bulk-status", {
+      ids,
+      status,
+    }),
+  bulkDeleteProducts: (ids: string[]) =>
+    api.post<ApiResponse<{ deletedCount: number; archivedCount: number }>>(
+      "/admin/products/bulk-delete",
+      { ids }
+    ),
+  getAuditLogs: (params?: {
+    action?: string;
+    entity?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) => api.get<ApiResponse<AuditLog[]>>("/admin/audit-logs", { params }),
   getBrands: () => api.get<ApiResponse<Brand[]>>("/brands"),
   getProductById: (id: string) =>
     api.get<ApiResponse<Product>>(`/products/admin/${id}`),
@@ -354,4 +400,130 @@ export const newsletterApi = {
   delete: (id: string) => api.delete<ApiResponse<null>>(`/newsletter/${id}`),
   export: () =>
     api.get<ApiResponse<NewsletterSubscriber[]>>("/newsletter/export"),
+};
+
+export const rentalApi = {
+  checkAvailability: (
+    variantId: string,
+    params?: { startDate?: string; endDate?: string }
+  ) =>
+    api.get<ApiResponse<RentalAvailabilityResponse>>(
+      `/rentals/availability/${variantId}`,
+      { params }
+    ),
+  create: (data: {
+    variantId: string;
+    productId: string;
+    rentalPeriodId?: string;
+    startDate: string;
+    endDate: string;
+    fulfillment?: string;
+    pickupLocation?: string;
+    addressId?: string;
+    notes?: string;
+  }) =>
+    api.post<ApiResponse<{ rental: Rental; clientSecret?: string | null }>>(
+      "/rentals",
+      data
+    ),
+  getMyRentals: () => api.get<ApiResponse<Rental[]>>("/rentals"),
+  getById: (id: string) => api.get<ApiResponse<Rental>>(`/rentals/${id}`),
+  requestReturn: (id: string, data?: { notes?: string }) =>
+    api.post<ApiResponse<Rental>>(`/rentals/${id}/return`, data || {}),
+  cancel: (id: string) => api.put<ApiResponse<Rental>>(`/rentals/${id}/cancel`),
+};
+
+export const notificationApi = {
+  getAll: (params?: { unreadOnly?: boolean; page?: number; limit?: number }) =>
+    api.get<ApiResponse<Notification[]>>("/notifications", { params }),
+  getUnreadCount: () =>
+    api.get<ApiResponse<{ unreadCount: number }>>(
+      "/notifications/unread-count"
+    ),
+  markAsRead: (id: string) =>
+    api.put<ApiResponse<Notification>>(`/notifications/${id}/read`),
+  markAllAsRead: () =>
+    api.put<ApiResponse<{ message: string }>>("/notifications/read-all"),
+};
+
+export const returnApi = {
+  create: (data: {
+    orderId: string;
+    reason: string;
+    description?: string;
+    images?: string[];
+  }) => api.post<ApiResponse<ReturnRequest>>("/returns", data),
+  getMyReturns: () => api.get<ApiResponse<ReturnRequest[]>>("/returns"),
+  getAdminReturns: (params?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) => api.get<ApiResponse<ReturnRequest[]>>("/returns/admin", { params }),
+  updateAdminStatus: (
+    id: string,
+    data: { status: string; adminNotes?: string; refundAmount?: number }
+  ) => api.put<ApiResponse<ReturnRequest>>(`/returns/admin/${id}/status`, data),
+  processAdminRefund: (id: string, data?: { amount?: number }) =>
+    api.post<ApiResponse<ReturnRequest>>(
+      `/returns/admin/${id}/refund`,
+      data || {}
+    ),
+};
+
+export const adminRentalApi = {
+  getAll: (params?: {
+    status?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) => api.get<ApiResponse<Rental[]>>("/admin/rentals", { params }),
+  updateStatus: (
+    id: string,
+    data: { status: string; notes?: string; lateFee?: number }
+  ) => api.put<ApiResponse<Rental>>(`/admin/rentals/${id}/status`, data),
+  refundDeposit: (id: string) =>
+    api.post<ApiResponse<Rental>>(`/admin/rentals/${id}/deposit`),
+  addLateFee: (id: string, fee: number) =>
+    api.post<ApiResponse<Rental>>(`/admin/rentals/${id}/late-fee`, { fee }),
+  getAnalytics: () =>
+    api.get<
+      ApiResponse<{
+        totalRentals: number;
+        activeRentals: number;
+        overdueRentals: number;
+        returnedRentals: number;
+        totalRentalRevenue: number;
+        depositsHeld: number;
+      }>
+    >("/admin/rentals/analytics"),
+};
+
+export const adminSettingsApi = {
+  getSettings: () => api.get<ApiResponse<StoreSettingsMap>>("/admin/settings"),
+  updateSetting: (key: string, value: unknown) =>
+    api.put<ApiResponse<unknown>>(`/admin/settings/${key}`, { value }),
+};
+
+export const adminShippingApi = {
+  getZones: () => api.get<ApiResponse<ShippingZone[]>>("/admin/shipping-zones"),
+  createZone: (data: Partial<ShippingZone>) =>
+    api.post<ApiResponse<ShippingZone>>("/admin/shipping-zones", data),
+  updateZone: (id: string, data: Partial<ShippingZone>) =>
+    api.put<ApiResponse<ShippingZone>>(`/admin/shipping-zones/${id}`, data),
+  deleteZone: (id: string) =>
+    api.delete<ApiResponse<null>>(`/admin/shipping-zones/${id}`),
+};
+
+export const bannerApi = {
+  getBanners: () => api.get<ApiResponse<Banner[]>>("/banners"),
+};
+
+export const adminBannerApi = {
+  getBanners: () => api.get<ApiResponse<Banner[]>>("/admin/banners"),
+  createBanner: (data: Partial<Banner>) =>
+    api.post<ApiResponse<Banner>>("/admin/banners", data),
+  updateBanner: (id: string, data: Partial<Banner>) =>
+    api.put<ApiResponse<Banner>>(`/admin/banners/${id}`, data),
+  deleteBanner: (id: string) =>
+    api.delete<ApiResponse<null>>(`/admin/banners/${id}`),
 };

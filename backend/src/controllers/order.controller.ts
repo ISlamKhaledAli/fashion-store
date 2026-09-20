@@ -173,7 +173,11 @@ export const createOrder = async (
             throw new ValidationError("Invalid promo code");
           }
 
-          const result = calculateDiscount(subtotal, discountRecord);
+          const result = calculateDiscount(
+            subtotal,
+            discountRecord,
+            finalizedItems
+          );
           if (!result.isValid) {
             throw new ValidationError(result.message || "Invalid promo code");
           }
