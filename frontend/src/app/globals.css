@@ -6,6 +6,7 @@
 @theme {
   /* Colors - Derived from HTML Design System */
   --color-primary: #030304;
+  --color-primary-foreground: #ffffff;
   --color-on-primary: #ffffff;
   --color-primary-container: #1d1d1f;
   --color-on-primary-container: #868587;
@@ -200,4 +201,26 @@ tr:hover .vibrant-img,
 [data-active="true"] .vibrant-img {
   filter: grayscale(0%) brightness(100%);
   transform: scale(1.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Global Interactive Cursor System
+   ═══════════════════════════════════════════════════════════════ */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  input[type="button"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
+  select:not(:disabled),
+  summary,
+  a {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [role="button"][aria-disabled="true"],
+  input:disabled {
+    cursor: not-allowed;
+  }
 }

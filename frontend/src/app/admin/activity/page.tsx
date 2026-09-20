@@ -158,10 +158,10 @@ export default function AdminActivityPage() {
                   type="button"
                   onClick={() => handleEntityChange(opt.value)}
                   className={cn(
-                    "rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors",
+                    "cursor-pointer rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors",
                     isSelected
-                      ? "text-primary-foreground bg-primary shadow-sm"
-                      : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? "bg-zinc-950 text-white shadow-sm dark:bg-white dark:text-zinc-950"
+                      : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-950 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-100"
                   )}
                 >
                   {opt.label}
