@@ -3,9 +3,15 @@
 import React, { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { AccountSidebar } from "@/components/account/AccountSidebar";
-import { orderApi, wishlistApi, sizeApi } from "@/lib/api";
+import {
+  orderApi,
+  wishlistApi,
+  sizeApi,
+  rentalApi,
+  returnApi,
+} from "@/lib/api";
 import type { Order, UserMeasurements, WishlistItem } from "@/types";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
@@ -18,6 +24,8 @@ export default function AccountPage() {
   const { user } = useAuthStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  const [activeRentalsCount, setActiveRentalsCount] = useState<number>(0);
+  const [activeReturnsCount, setActiveReturnsCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   const [measurements, setMeasurements] = useState<UserMeasurements | null>(
@@ -32,10 +40,22 @@ export default function AccountPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [ordersRes, wishlistRes, measurementsRes] = await Promise.all([
+        const [
+          ordersRes,
+          wishlistRes,
+          measurementsRes,
+          rentalsRes,
+          returnsRes,
+        ] = await Promise.all([
           orderApi.getMine({ limit: 5 }),
           wishlistApi.getAll(),
           sizeApi.getMeasurements(),
+          rentalApi
+            .getMyRentals()
+            .catch(() => ({ data: { success: false, data: [] } })),
+          returnApi
+            .getMyReturns()
+            .catch(() => ({ data: { success: false, data: [] } })),
         ]);
 
         if (ordersRes.data.success) setOrders(ordersRes.data.data);
@@ -43,6 +63,18 @@ export default function AccountPage() {
         if (measurementsRes.data.success) {
           setMeasurements(measurementsRes.data.data);
           setFormData(measurementsRes.data.data || {});
+        }
+        if (rentalsRes.data.success && Array.isArray(rentalsRes.data.data)) {
+          const active = rentalsRes.data.data.filter((r) =>
+            ["CONFIRMED", "ACTIVE", "EXTENDED"].includes(r.status)
+          ).length;
+          setActiveRentalsCount(active);
+        }
+        if (returnsRes.data.success && Array.isArray(returnsRes.data.data)) {
+          const pending = returnsRes.data.data.filter((r) =>
+            ["PENDING", "APPROVED", "RECEIVED"].includes(r.status)
+          ).length;
+          setActiveReturnsCount(pending);
         }
       } catch (err) {
         console.error("Failed to fetch account data", err);
@@ -143,30 +175,28 @@ export default function AccountPage() {
           </header>
 
           {/* Metric Cards */}
-          <section className="mb-16 grid grid-cols-1 gap-6 md:grid-cols-4">
+          <section className="mb-16 grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
             <MetricCard
               label="Total Orders"
               value={loading ? undefined : orders.length.toString()}
+              href="/account/orders"
             />
             <MetricCard
-              label="Pending Delivery"
-              value={
-                loading
-                  ? undefined
-                  : orders
-                      .filter(
-                        (o) =>
-                          o.status === "PENDING" ||
-                          o.status === "PROCESSING" ||
-                          o.status === "SHIPPED"
-                      )
-                      .length.toString()
-              }
-              hasIndicator
+              label="Active Rentals"
+              value={loading ? undefined : activeRentalsCount.toString()}
+              hasIndicator={activeRentalsCount > 0}
+              href="/account/rentals"
+            />
+            <MetricCard
+              label="Active Returns"
+              value={loading ? undefined : activeReturnsCount.toString()}
+              hasIndicator={activeReturnsCount > 0}
+              href="/account/returns"
             />
             <MetricCard
               label="Wishlist Items"
               value={loading ? undefined : wishlist.length.toString()}
+              href="/account/wishlist"
             />
             <MetricCard
               label="Reward Points"
@@ -576,21 +606,28 @@ function MetricCard({
   label,
   value,
   hasIndicator,
+  href,
 }: {
   label: string;
   value?: string;
   hasIndicator?: boolean;
+  href?: string;
 }) {
-  return (
-    <div className="group cursor-default rounded-sm border border-outline-variant/5 bg-surface-container-lowest p-8 shadow-sm transition-all hover:border-outline-variant/20 hover:shadow-md">
-      <p className="mb-3 text-[10px] font-bold tracking-[0.2em] text-on-surface-variant uppercase">
+  const content = (
+    <div
+      className={cn(
+        "group rounded-sm border border-outline-variant/5 bg-surface-container-lowest p-6 shadow-xs transition-all hover:border-outline-variant/20 hover:shadow-md",
+        href && "cursor-pointer"
+      )}
+    >
+      <p className="mb-2 text-[10px] font-bold tracking-[0.2em] text-on-surface-variant uppercase">
         {label}
       </p>
       <div className="flex items-center gap-3">
         {value === undefined ? (
           <Skeleton className="h-8 w-12" />
         ) : (
-          <p className="text-3xl font-medium tracking-tighter text-on-surface">
+          <p className="text-2xl font-medium tracking-tighter text-on-surface sm:text-3xl">
             {value}
           </p>
         )}
@@ -600,6 +637,11 @@ function MetricCard({
       </div>
     </div>
   );
+
+  if (href) {
+    return <Link href={href}>{content}</Link>;
+  }
+  return content;
 }
 
 function QuickReorderItem({

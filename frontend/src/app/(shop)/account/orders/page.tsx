@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ReturnRequestModal } from "@/components/account/ReturnRequestModal";
 
 const statuses = ["ALL", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"];
 
@@ -23,6 +24,25 @@ export default function OrdersPage() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [orderForReturn, setOrderForReturn] = useState<Order | null>(null);
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+
+  const fetchOrders = React.useCallback(async () => {
+    try {
+      const res = await orderApi.getMine();
+      if (res.data.success) {
+        setOrders(res.data.data as Order[]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch orders", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   const handleConfirmCancel = async () => {
     if (!orderToCancel) return;
@@ -45,27 +65,8 @@ export default function OrdersPage() {
     }
   };
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const res = await orderApi.getMine();
-        if (res.data.success) {
-          setOrders(res.data.data as Order[]);
-        }
-      } catch (err) {
-        console.error("Failed to fetch orders", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, []);
-
   const handleTrackOrder = (e: React.MouseEvent, order: Order) => {
     e.stopPropagation();
-    // If order has tracking number, open tracking URL
-    // Otherwise show toast with order status
     if (order.trackingNumber) {
       const carrier = (order.carrier || "").toLowerCase();
       let trackingUrl = `https://track.aftership.com/${order.trackingNumber}`;
@@ -92,19 +93,8 @@ export default function OrdersPage() {
 
   const handleReturn = (e: React.MouseEvent, order: Order) => {
     e.stopPropagation();
-    toast.info(
-      `Return Request for Order #${order.id.slice(-4).toUpperCase()}`,
-      {
-        description:
-          "Complimentary courier collection can be arranged via concierge@thecurator.com.",
-        action: {
-          label: "Return Policy",
-          onClick: () => {
-            window.location.href = "/returns";
-          },
-        },
-      }
-    );
+    setOrderForReturn(order);
+    setIsReturnModalOpen(true);
   };
 
   const filteredOrders =
@@ -197,6 +187,15 @@ export default function OrdersPage() {
           confirmText="Cancel Order"
           cancelText="Keep Order"
           isLoading={cancelling}
+        />
+        <ReturnRequestModal
+          order={orderForReturn}
+          isOpen={isReturnModalOpen}
+          onClose={() => {
+            setIsReturnModalOpen(false);
+            setOrderForReturn(null);
+          }}
+          onSuccess={fetchOrders}
         />
       </div>
     </ProtectedRoute>

@@ -1,9 +1,45 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { ArrowRight, RotateCcw } from "lucide-react";
 import { PolicyLayout } from "@/components/shop/PolicyLayout";
+import { contentApi } from "@/lib/api";
+import type { PolicyPageContent } from "@/types";
 
 const sections = [
+  {
+    id: "online-portal",
+    title: "Initiate Return Online",
+    content: (
+      <div className="space-y-3 rounded-xl border border-primary/20 bg-surface-container-low p-6">
+        <h4 className="flex items-center gap-2 font-semibold text-on-surface">
+          <RotateCcw size={16} className="text-primary" />
+          Ready to Request a Return or Exchange?
+        </h4>
+        <p className="text-sm text-on-surface-variant">
+          You can request a complimentary courier pickup directly from your
+          customer account portal. Select any delivered order, specify your
+          reason, and our concierge atelier will coordinate collection.
+        </p>
+        <div className="flex flex-wrap gap-3 pt-2">
+          <Link
+            href="/account/orders"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition-opacity hover:opacity-90"
+          >
+            <span>Go to My Orders</span>
+            <ArrowRight size={14} />
+          </Link>
+          <Link
+            href="/account/returns"
+            className="inline-flex items-center gap-2 rounded-lg border border-outline-variant/30 px-4 py-2 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
+          >
+            <span>Track Existing Returns</span>
+          </Link>
+        </div>
+      </div>
+    ),
+  },
   {
     id: "return-window",
     title: "14-Day Return Window",
@@ -118,10 +154,6 @@ const sections = [
     ),
   },
 ];
-
-import { useState, useEffect } from "react";
-import { contentApi } from "@/lib/api";
-import type { PolicyPageContent } from "@/types";
 
 export default function ReturnsPolicyPage() {
   const [content, setContent] = useState<PolicyPageContent | null>(null);

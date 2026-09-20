@@ -24,6 +24,11 @@ const menuItems = [
     icon: "schedule",
   },
   {
+    label: "My Returns",
+    href: "/account/returns",
+    icon: "assignment_return",
+  },
+  {
     label: "Wishlist",
     href: "/account/wishlist",
     icon: "favorite",

@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/Button";
 import { useSearchStore } from "@/store/searchStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { SearchOverlay } from "./SearchOverlay";
+import { CustomerNotificationBell } from "./CustomerNotificationBell";
 import { contentApi } from "@/lib/api";
 import type { NavLinkItem } from "@/types";
 
@@ -160,6 +161,8 @@ export const Navbar = () => {
             )}
           </AnimatePresence>
         </Button>
+
+        {isMounted && isAuthenticated && <CustomerNotificationBell />}
 
         <Link
           href={accountHref}

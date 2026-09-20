@@ -7,9 +7,16 @@ import { RevenueChart } from "@/components/admin/RevenueChart";
 import { OrdersDonut } from "@/components/admin/OrdersDonut";
 import { RecentOrdersTable } from "@/components/admin/RecentOrdersTable";
 import { OrderDetailPanel } from "@/components/admin/OrderDetailPanel";
-import { adminApi } from "@/lib/api";
+import { adminApi, returnApi, adminRentalApi } from "@/lib/api";
 import type { Order, OrderStatus } from "@/types";
-import { Settings, ExternalLink } from "lucide-react";
+import {
+  Settings,
+  ExternalLink,
+  RotateCcw,
+  Clock,
+  ArrowRight,
+} from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { ReportModal } from "@/components/admin/ReportModal";
@@ -76,6 +83,8 @@ export default function AdminDashboard() {
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [customersData, setCustomersData] = useState<CustomerSummary[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [pendingReturnsCount, setPendingReturnsCount] = useState(0);
+  const [activeRentalsCount, setActiveRentalsCount] = useState(0);
 
   // 1. Initial Data Fetch
   useEffect(() => {
@@ -84,13 +93,27 @@ export default function AdminDashboard() {
     const fetchOverview = async () => {
       setLoading(true);
       try {
-        const [analyticsRes, ordersRes, customersRes] = await Promise.all([
-          adminApi.getAnalytics(),
-          adminApi.getOrders({ limit: 5 }),
-          adminApi.getCustomers({ limit: 3 }),
-        ]);
+        const [analyticsRes, ordersRes, customersRes, returnsRes, rentalsRes] =
+          await Promise.all([
+            adminApi.getAnalytics(),
+            adminApi.getOrders({ limit: 5 }),
+            adminApi.getCustomers({ limit: 3 }),
+            returnApi
+              .getAdminReturns({ status: "PENDING", limit: 100 })
+              .catch(() => ({ data: { success: false, data: [] } })),
+            adminRentalApi
+              .getAll({ status: "ACTIVE", limit: 100 })
+              .catch(() => ({ data: { success: false, data: [] } })),
+          ]);
 
         if (cancelled) return;
+
+        if (returnsRes.data?.success && Array.isArray(returnsRes.data.data)) {
+          setPendingReturnsCount(returnsRes.data.data.length);
+        }
+        if (rentalsRes.data?.success && Array.isArray(rentalsRes.data.data)) {
+          setActiveRentalsCount(rentalsRes.data.data.length);
+        }
 
         if (analyticsRes.data.success) {
           const data = analyticsRes.data.data as AnalyticsOverview & {
@@ -229,6 +252,38 @@ export default function AdminDashboard() {
           </Button>
         </div>
       </div>
+
+      {/* Operational Highlights Pill Banner */}
+      {(pendingReturnsCount > 0 || activeRentalsCount > 0) && (
+        <div className="flex flex-wrap items-center gap-3">
+          {pendingReturnsCount > 0 && (
+            <Link
+              href="/admin/returns?status=PENDING"
+              className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300"
+            >
+              <RotateCcw size={14} className="text-amber-600" />
+              <span>
+                {pendingReturnsCount} Return Request
+                {pendingReturnsCount > 1 ? "s" : ""} Requiring Review
+              </span>
+              <ArrowRight size={13} />
+            </Link>
+          )}
+          {activeRentalsCount > 0 && (
+            <Link
+              href="/admin/rentals?status=ACTIVE"
+              className="flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-xs font-semibold text-blue-800 transition-colors hover:bg-blue-100 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300"
+            >
+              <Clock size={14} className="text-blue-600" />
+              <span>
+                {activeRentalsCount} Active Rental
+                {activeRentalsCount > 1 ? "s" : ""} in Circulation
+              </span>
+              <ArrowRight size={13} />
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
