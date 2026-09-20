@@ -11,10 +11,14 @@ import {
   UserX,
   Users,
   CheckCircle2,
+  Send,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
+import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { newsletterApi } from "@/lib/api";
 import type {
@@ -37,6 +41,13 @@ export default function AdminNewsletterPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Broadcast Modal State
+  const [broadcastModalOpen, setBroadcastModalOpen] = useState(false);
+  const [subject, setSubject] = useState("");
+  const [previewText, setPreviewText] = useState("");
+  const [content, setContent] = useState("");
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
 
   const fetchSubscribers = () => {
     setIsLoading(true);
@@ -177,6 +188,35 @@ export default function AdminNewsletterPage() {
     }
   };
 
+  const handleSendBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subject.trim() || !content.trim()) {
+      toast.error("Subject and content are required");
+      return;
+    }
+    try {
+      setIsBroadcasting(true);
+      const res = await newsletterApi.broadcast({
+        subject: subject.trim(),
+        previewText: previewText.trim() || undefined,
+        content: content.trim(),
+      });
+      if (res.data?.success) {
+        toast.success(
+          res.data.message || "Editorial dispatch transmitted successfully"
+        );
+        setBroadcastModalOpen(false);
+        setSubject("");
+        setPreviewText("");
+        setContent("");
+      }
+    } catch {
+      toast.error("Failed to dispatch newsletter campaign");
+    } finally {
+      setIsBroadcasting(false);
+    }
+  };
+
   const formatDate = (iso: string) => {
     try {
       return new Intl.DateTimeFormat("en-US", {
@@ -218,7 +258,7 @@ export default function AdminNewsletterPage() {
           </Button>
 
           <Button
-            variant="primary"
+            variant="outline"
             size="sm"
             onClick={handleExportCSV}
             disabled={isExporting || subscribers.length === 0}
@@ -226,6 +266,16 @@ export default function AdminNewsletterPage() {
           >
             <Download size={14} className={isExporting ? "animate-spin" : ""} />
             Export CSV
+          </Button>
+
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setBroadcastModalOpen(true)}
+            className="flex items-center gap-2 text-xs"
+          >
+            <Plus size={14} />
+            Compose Dispatch
           </Button>
         </div>
       </div>
@@ -453,6 +503,79 @@ export default function AdminNewsletterPage() {
         cancelText="Keep"
         confirmBrand="danger"
       />
+
+      {/* Broadcast Editorial Dispatch Modal */}
+      <Modal
+        isOpen={broadcastModalOpen}
+        onClose={() => setBroadcastModalOpen(false)}
+        title="Compose Atelier Editorial Dispatch"
+      >
+        <form onSubmit={handleSendBroadcast} className="space-y-4 pt-2">
+          <p className="text-xs leading-relaxed text-zinc-500">
+            Transmit an exclusive editorial publication or promotional drop
+            dispatch to all active subscribers ({stats.active} verified
+            recipients).
+          </p>
+
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+              Email Subject Line
+            </label>
+            <Input
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="e.g. Private Viewing: The Archival Velvet Collection"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+              Preview Snippet (Preheader)
+            </label>
+            <Input
+              value={previewText}
+              onChange={(e) => setPreviewText(e.target.value)}
+              placeholder="e.g. Early access begins tonight for registered clientele..."
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+              Editorial Content
+            </label>
+            <Textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Write your editorial message, curation highlights, styling notes, or private drop codes..."
+              rows={6}
+              required
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setBroadcastModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={isBroadcasting || stats.active === 0}
+              icon={<Send className="h-3.5 w-3.5" />}
+            >
+              {isBroadcasting
+                ? "Transmitting..."
+                : `Dispatch to ${stats.active} Subscribers`}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

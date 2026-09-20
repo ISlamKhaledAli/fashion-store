@@ -190,10 +190,82 @@ export const createOrder = async (
           });
         }
 
+        // Determine dynamic shipping rate from ShippingZones or StoreSettings
+        let customShippingRate: number | undefined = undefined;
+        if (addressId) {
+          const address = await tx.address.findUnique({
+            where: { id: String(addressId) },
+          });
+          if (address?.country) {
+            const code = address.country.trim().toUpperCase();
+            const activeZones = await tx.shippingZone.findMany({
+              where: { isActive: true },
+            });
+            const matchingZone = activeZones.find((z) => {
+              if (Array.isArray(z.countries)) {
+                return (z.countries as string[]).some(
+                  (c) => String(c).trim().toUpperCase() === code
+                );
+              }
+              return false;
+            });
+
+            if (matchingZone) {
+              if (
+                matchingZone.freeAbove !== null &&
+                subtotal >= matchingZone.freeAbove
+              ) {
+                customShippingRate = 0;
+              } else if (
+                shippingMethod === "express" &&
+                matchingZone.expressRate !== null
+              ) {
+                customShippingRate = matchingZone.expressRate;
+              } else {
+                customShippingRate = matchingZone.standardRate;
+              }
+            } else {
+              // Fallback to StoreSettings thresholds
+              const settings = await tx.storeSettings.findMany({
+                where: {
+                  key: {
+                    in: [
+                      "freeShippingThreshold",
+                      "domesticShippingFee",
+                      "internationalShippingFee",
+                    ],
+                  },
+                },
+              });
+              const settingsMap: Record<string, number> = {};
+              for (const s of settings) {
+                if (typeof s.value === "number") {
+                  settingsMap[s.key] = s.value;
+                }
+              }
+
+              const freeThreshold = settingsMap["freeShippingThreshold"];
+              if (freeThreshold !== undefined && subtotal >= freeThreshold) {
+                customShippingRate = 0;
+              } else if (
+                code === "EG" &&
+                settingsMap["domesticShippingFee"] !== undefined
+              ) {
+                customShippingRate = settingsMap["domesticShippingFee"];
+              } else if (
+                settingsMap["internationalShippingFee"] !== undefined
+              ) {
+                customShippingRate = settingsMap["internationalShippingFee"];
+              }
+            }
+          }
+        }
+
         const totals = calculateOrderTotals({
           subtotal,
           discountAmount: rawDiscountAmount,
           shippingMethod,
+          customShippingRate,
         });
 
         // Step 1c: Verify PaymentIntent if provided (Security check)

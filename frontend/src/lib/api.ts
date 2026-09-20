@@ -88,7 +88,11 @@ export const cartApi = {
     api.get<
       ApiResponse<{ id: string; name: string; time: string; rate: number }[]>
     >("/cart/shipping-methods"),
-  calculateTotals: (shippingMethod: string = "standard", promoCode?: string) =>
+  calculateTotals: (
+    shippingMethod: string = "standard",
+    promoCode?: string,
+    options?: { country?: string; addressId?: string }
+  ) =>
     api.post<
       ApiResponse<{
         subtotal: number;
@@ -98,7 +102,12 @@ export const cartApi = {
         tax: number;
         total: number;
       }>
-    >("/cart/calculate", { shippingMethod, promoCode }),
+    >("/cart/calculate", {
+      shippingMethod,
+      promoCode,
+      country: options?.country,
+      addressId: options?.addressId,
+    }),
 };
 
 export const orderApi = {
@@ -201,6 +210,7 @@ export const adminApi = {
       tags?: string[];
       adminNotes?: string | null;
       status?: "ACTIVE" | "BANNED";
+      role?: "CUSTOMER" | "ADMIN";
     }
   ) => api.put<ApiResponse<unknown>>(`/admin/customers/${id}/details`, data),
   updateCustomerStatus: (id: string, status: "ACTIVE" | "BANNED") =>
@@ -400,6 +410,12 @@ export const newsletterApi = {
   delete: (id: string) => api.delete<ApiResponse<null>>(`/newsletter/${id}`),
   export: () =>
     api.get<ApiResponse<NewsletterSubscriber[]>>("/newsletter/export"),
+  broadcast: (data: {
+    subject: string;
+    previewText?: string;
+    content: string;
+  }) =>
+    api.post<ApiResponse<{ sentCount: number }>>("/newsletter/broadcast", data),
 };
 
 export const rentalApi = {
@@ -444,6 +460,15 @@ export const notificationApi = {
     api.put<ApiResponse<Notification>>(`/notifications/${id}/read`),
   markAllAsRead: () =>
     api.put<ApiResponse<{ message: string }>>("/notifications/read-all"),
+  delete: (id: string) =>
+    api.delete<ApiResponse<{ message: string }>>(`/notifications/${id}`),
+  broadcast: (data: {
+    title: string;
+    message: string;
+    type?: string;
+    target?: string;
+  }) =>
+    api.post<ApiResponse<{ count?: number }>>("/notifications/broadcast", data),
 };
 
 export const returnApi = {

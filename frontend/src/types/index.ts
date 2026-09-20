@@ -232,6 +232,7 @@ export interface AdminCustomer {
   totalSpent: number;
   joinDate: string;
   status: "ACTIVE" | "BANNED";
+  role?: "CUSTOMER" | "ADMIN";
   tags?: string[];
   adminNotes?: string | null;
   orders?: CustomerOrder[];

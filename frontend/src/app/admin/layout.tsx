@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import {
-  Bell,
   Menu,
   ExternalLink,
   Settings as SettingsIcon,
@@ -15,6 +14,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { AdminChatWidget } from "@/components/admin/AdminChatWidget";
+import { NotificationBell } from "@/components/admin/NotificationBell";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -117,13 +117,7 @@ export default function AdminLayout({
             </div>
 
             <div className="flex items-center gap-3 lg:gap-6">
-              <Button
-                variant="icon"
-                size="none"
-                onClick={() => router.push("/admin/notifications")}
-                className="rounded-full p-2 text-zinc-400 transition-all hover:bg-zinc-50 hover:text-zinc-950 lg:p-2.5"
-                icon={<Bell size={20} />}
-              />
+              <NotificationBell />
 
               {/* User Dropdown */}
               <div className="relative">

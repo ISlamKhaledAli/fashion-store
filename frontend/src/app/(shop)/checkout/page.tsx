@@ -16,7 +16,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || "");
 
-import { addressApi } from "@/lib/api";
+import { addressApi, cartApi } from "@/lib/api";
 
 export interface ShippingFormData {
   firstName: string;
@@ -26,6 +26,7 @@ export interface ShippingFormData {
   city: string;
   state: string;
   zipCode: string;
+  country?: string;
   shippingMethod: "standard" | "express" | "overnight";
   addressId?: string;
 }
@@ -45,22 +46,57 @@ function CheckoutPageContent() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<{ id: string } | null>(null);
+  const [serverTotals, setServerTotals] = useState<{
+    subtotal: number;
+    discountAmount: number;
+    discountedSubtotal: number;
+    shippingCost: number;
+    tax: number;
+    total: number;
+  } | null>(null);
 
   const { items: cartItems, discountAmount: storeDiscount } = useCartStore();
-  const subtotal = cartItems.reduce(
+
+  useEffect(() => {
+    if (cartItems.length === 0) return;
+    cartApi
+      .calculateTotals(shippingData?.shippingMethod || "standard", undefined, {
+        country: shippingData?.country || "EG",
+        addressId: shippingData?.addressId,
+      })
+      .then((res) => {
+        if (res.data?.success && res.data?.data) {
+          setServerTotals(res.data.data);
+        }
+      })
+      .catch(() => {});
+  }, [
+    shippingData?.shippingMethod,
+    shippingData?.country,
+    shippingData?.addressId,
+    cartItems.length,
+  ]);
+
+  const fallbackSubtotal = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
+  const subtotal = serverTotals?.subtotal ?? fallbackSubtotal;
   const shipping =
-    shippingData?.shippingMethod === "overnight"
+    serverTotals?.shippingCost ??
+    (shippingData?.shippingMethod === "overnight"
       ? 24.99
       : shippingData?.shippingMethod === "express"
         ? 9.99
-        : 10;
-  const discountedSubtotal = Math.max(0, subtotal - storeDiscount);
-  const tax = Math.round(discountedSubtotal * 0.1 * 100) / 100;
-  const discountAmount = storeDiscount;
-  const total = Math.round((discountedSubtotal + shipping + tax) * 100) / 100;
+        : 10);
+  const discountAmount = serverTotals?.discountAmount ?? storeDiscount;
+  const discountedSubtotal =
+    serverTotals?.discountedSubtotal ?? Math.max(0, subtotal - storeDiscount);
+  const tax =
+    serverTotals?.tax ?? Math.round(discountedSubtotal * 0.1 * 100) / 100;
+  const total =
+    serverTotals?.total ??
+    Math.round((discountedSubtotal + shipping + tax) * 100) / 100;
 
   useEffect(() => {
     // 1. Restore minimal state from sessionStorage securely

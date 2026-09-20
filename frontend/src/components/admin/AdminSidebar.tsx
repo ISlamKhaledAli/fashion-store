@@ -23,6 +23,7 @@ import {
   RotateCcw,
   Truck,
   Activity,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -52,6 +53,7 @@ const navLinks = [
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { name: "Activity", href: "/admin/activity", icon: Activity },
+  { name: "Notifications", href: "/admin/notifications", icon: Bell },
   { name: "Categories", href: "/admin/categories", icon: FolderTree },
   { name: "Brands", href: "/admin/brands", icon: Tag },
   { name: "Inventory", href: "/admin/inventory", icon: Warehouse },

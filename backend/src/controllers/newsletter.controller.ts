@@ -5,9 +5,11 @@ import {
   subscribeNewsletterSchema,
   updateSubscriberStatusSchema,
 } from "../validators/newsletter.validator";
-import { NotFoundError } from "../utils/AppError";
+import { NotFoundError, ValidationError } from "../utils/AppError";
 import { getPagination, calculatePagination } from "../utils/pagination";
 import { NewsletterStatus } from "@prisma/client";
+import { sendEmail, renderEmailShell } from "../services/email";
+import logger from "../utils/logger";
 
 export const subscribeNewsletter = async (
   req: Request,
@@ -247,6 +249,69 @@ export const exportSubscribers = async (
       success: true,
       data: subscribers,
       message: "Subscribers exported successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const broadcastNewsletter = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { subject, previewText, content } = req.body;
+
+    if (!subject || !content) {
+      throw new ValidationError(
+        "Subject and content are required to dispatch newsletter"
+      );
+    }
+
+    const activeSubscribers = await prisma.newsletterSubscriber.findMany({
+      where: { status: NewsletterStatus.SUBSCRIBED },
+      select: { email: true },
+    });
+
+    if (activeSubscribers.length === 0) {
+      return sendResponse({
+        res,
+        status: 200,
+        success: true,
+        message: "No active subscribers found",
+        data: { sentCount: 0 },
+      });
+    }
+
+    const htmlContent = `
+      <div style="font-size: 14px; line-height: 1.7; color: #27272a; white-space: pre-wrap; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
+        ${content}
+      </div>
+      <div style="margin-top: 36px; padding-top: 20px; border-top: 1px solid #e4e4e7; font-size: 11px; color: #71717a; text-align: center;">
+        <p>You received this private dispatch because you are subscribed to The Curator Atelier Editorial.</p>
+      </div>
+    `;
+
+    const emails = activeSubscribers.map((s) => s.email);
+    for (const email of emails) {
+      sendEmail(
+        email,
+        subject,
+        renderEmailShell(subject, previewText || subject, htmlContent)
+      ).catch((err) => {
+        logger.error(`Failed to send newsletter dispatch to ${email}:`, {
+          err,
+        });
+      });
+    }
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: `Editorial dispatch queued to ${emails.length} subscribers`,
+      data: { sentCount: emails.length },
     });
   } catch (error) {
     next(error);

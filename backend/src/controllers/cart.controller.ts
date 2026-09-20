@@ -203,7 +203,12 @@ export const calculateTotals = async (
 ) => {
   try {
     const userId = req.user?.id as string;
-    const { shippingMethod = "standard", promoCode } = req.body || {};
+    const {
+      shippingMethod = "standard",
+      promoCode,
+      country,
+      addressId,
+    } = req.body || {};
 
     // 1. Read server-side cart
     const cart = await prisma.cart.findUnique({
@@ -262,11 +267,87 @@ export const calculateTotals = async (
       }
     }
 
-    // 3. Single canonical calculation
+    // 3. Dynamic shipping calculation based on ShippingZones and StoreSettings
+    let customShippingRate: number | undefined = undefined;
+    let destinationCountry = (country as string | undefined)?.trim();
+
+    if (!destinationCountry && addressId) {
+      const address = await prisma.address.findUnique({
+        where: { id: String(addressId) },
+      });
+      if (address) {
+        destinationCountry = address.country?.trim();
+      }
+    }
+
+    if (destinationCountry) {
+      const code = destinationCountry.toUpperCase();
+      const activeZones = await prisma.shippingZone.findMany({
+        where: { isActive: true },
+      });
+      const matchingZone = activeZones.find((z) => {
+        if (Array.isArray(z.countries)) {
+          return (z.countries as string[]).some(
+            (c) => String(c).trim().toUpperCase() === code
+          );
+        }
+        return false;
+      });
+
+      if (matchingZone) {
+        if (
+          matchingZone.freeAbove !== null &&
+          subtotal >= matchingZone.freeAbove
+        ) {
+          customShippingRate = 0;
+        } else if (
+          shippingMethod === "express" &&
+          matchingZone.expressRate !== null
+        ) {
+          customShippingRate = matchingZone.expressRate;
+        } else {
+          customShippingRate = matchingZone.standardRate;
+        }
+      } else {
+        // Fallback to StoreSettings thresholds
+        const settings = await prisma.storeSettings.findMany({
+          where: {
+            key: {
+              in: [
+                "freeShippingThreshold",
+                "domesticShippingFee",
+                "internationalShippingFee",
+              ],
+            },
+          },
+        });
+        const settingsMap: Record<string, number> = {};
+        for (const s of settings) {
+          if (typeof s.value === "number") {
+            settingsMap[s.key] = s.value;
+          }
+        }
+
+        const freeThreshold = settingsMap["freeShippingThreshold"];
+        if (freeThreshold !== undefined && subtotal >= freeThreshold) {
+          customShippingRate = 0;
+        } else if (
+          code === "EG" &&
+          settingsMap["domesticShippingFee"] !== undefined
+        ) {
+          customShippingRate = settingsMap["domesticShippingFee"];
+        } else if (settingsMap["internationalShippingFee"] !== undefined) {
+          customShippingRate = settingsMap["internationalShippingFee"];
+        }
+      }
+    }
+
+    // 4. Single canonical calculation
     const totals = calculateOrderTotals({
       subtotal,
       discountAmount: rawDiscountAmount,
       shippingMethod,
+      customShippingRate,
     });
 
     return sendResponse({ res, status: 200, success: true, data: totals });

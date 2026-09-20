@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { CartDrawer } from "@/components/layout/CartDrawer";
 import { ChatAssistantWrapper } from "@/components/layout/ChatAssistantWrapper";
 import { PwaInstallPrompt } from "@/components/layout/PwaInstallPrompt";
+import { MaintenanceGuard } from "@/components/layout/MaintenanceGuard";
 
 export default function ShopLayout({
   children,
@@ -12,7 +13,7 @@ export default function ShopLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <MaintenanceGuard>
       <header className="sticky top-0 z-50 w-full">
         <AnnouncementBar />
         <Navbar />
@@ -22,6 +23,6 @@ export default function ShopLayout({
       <ChatAssistantWrapper />
       <PwaInstallPrompt />
       <Footer />
-    </>
+    </MaintenanceGuard>
   );
 }

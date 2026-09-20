@@ -1,10 +1,14 @@
 import { Request, Response, NextFunction } from "express";
-import { Prisma, RentalStatus, PaymentStatus } from "@prisma/client";
+import { Prisma, RentalStatus, PaymentStatus, Role } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { sendResponse } from "../utils/apiResponse";
 import { getPagination, calculatePagination } from "../utils/pagination";
 import { createDiscountSchema } from "../validators/common.validator";
-import { NotFoundError, ValidationError } from "../utils/AppError";
+import {
+  NotFoundError,
+  ValidationError,
+  ForbiddenError,
+} from "../utils/AppError";
 import { isNotFoundError } from "../utils/prismaErrors";
 import {
   sendShippingNotificationEmail,
@@ -1699,7 +1703,7 @@ export const updateCustomerDetails = async (
 ) => {
   try {
     const { id } = req.params;
-    const { tags, adminNotes, status } = req.body;
+    const { tags, adminNotes, status, role } = req.body;
 
     const data: Prisma.UserUpdateInput = {};
     if (tags !== undefined && Array.isArray(tags)) {
@@ -1711,6 +1715,17 @@ export const updateCustomerDetails = async (
     if (status !== undefined) {
       data.status = status;
     }
+    if (role !== undefined) {
+      if (role !== Role.CUSTOMER && role !== Role.ADMIN) {
+        throw new ValidationError("Invalid role specified");
+      }
+      if (req.user?.id === id && role !== Role.ADMIN) {
+        throw new ForbiddenError(
+          "You cannot revoke your own administrator privileges"
+        );
+      }
+      data.role = role;
+    }
 
     const user = await prisma.user.update({
       where: { id: String(id) },
@@ -1721,7 +1736,7 @@ export const updateCustomerDetails = async (
       action: "CUSTOMER_DETAILS_UPDATE",
       entity: "User",
       entityId: user.id,
-      details: { tags, adminNotes, status },
+      details: { tags, adminNotes, status, role },
     });
 
     return sendResponse({

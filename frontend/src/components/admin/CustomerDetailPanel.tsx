@@ -54,6 +54,11 @@ export const CustomerDetailPanel = ({
   const [savingNotes, setSavingNotes] = useState(false);
   const [isNotesSaved, setIsNotesSaved] = useState(false);
 
+  // Role state
+  const [role, setRole] = useState<"CUSTOMER" | "ADMIN">(
+    customer?.role || "CUSTOMER"
+  );
+
   const fetch360Data = useCallback(
     async (customerId: string) => {
       setLoading360(true);
@@ -63,12 +68,18 @@ export const CustomerDetailPanel = ({
           setProfile360(res.data.data);
           setTags(res.data.data.tags || []);
           setAdminNotes(res.data.data.adminNotes || "");
+          if (res.data.data.role) {
+            setRole(res.data.data.role);
+          }
         }
       } catch {
         // Fallback to basic customer data
         if (customer) {
           setTags(customer.tags || []);
           setAdminNotes(customer.adminNotes || "");
+          if (customer.role) {
+            setRole(customer.role);
+          }
         }
       } finally {
         setLoading360(false);
@@ -82,6 +93,27 @@ export const CustomerDetailPanel = ({
       fetch360Data(customer.id);
     }
   }, [customer, isOpen, fetch360Data]);
+
+  const handleRoleChange = async (newRole: "CUSTOMER" | "ADMIN") => {
+    if (newRole === role || !customer) return;
+    try {
+      await adminApi.updateCustomerDetails(customer.id, { role: newRole });
+      setRole(newRole);
+      toast.success(`User role updated to ${newRole}`);
+      onCustomerUpdated?.();
+    } catch (err: unknown) {
+      const errorMsg =
+        typeof err === "object" &&
+        err !== null &&
+        "response" in err &&
+        typeof (err as { response?: { data?: { message?: string } } }).response
+          ?.data?.message === "string"
+          ? (err as { response: { data: { message: string } } }).response.data
+              .message
+          : "Failed to update role privileges";
+      toast.error(errorMsg);
+    }
+  };
 
   if (!customer) return null;
 
@@ -203,15 +235,43 @@ export const CustomerDetailPanel = ({
           </h3>
           <p className="mt-0.5 text-xs text-zinc-500">{customer.email}</p>
 
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
             {isVip && (
               <span className="rounded bg-zinc-950 px-2.5 py-0.5 text-[9px] font-bold tracking-wider text-white uppercase">
                 VIP Collector
               </span>
             )}
-            <span className="rounded border border-zinc-200 bg-zinc-50 px-2.5 py-0.5 text-[9px] font-bold tracking-wider text-zinc-600 uppercase">
+            <span className="rounded border border-zinc-200 bg-zinc-50 px-2.5 py-0.5 text-[9px] font-bold tracking-wider text-zinc-600 uppercase dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
               Member Since {new Date(customer.joinDate).getFullYear()}
             </span>
+
+            {/* Staff / Admin Privilege Selector */}
+            <div className="inline-flex items-center rounded border border-zinc-200 bg-white p-0.5 text-[9px] font-bold uppercase dark:border-zinc-700 dark:bg-zinc-800">
+              <button
+                type="button"
+                onClick={() => handleRoleChange("CUSTOMER")}
+                className={cn(
+                  "cursor-pointer rounded px-2 py-0.5 transition-colors",
+                  role === "CUSTOMER"
+                    ? "bg-zinc-100 font-bold text-zinc-800 dark:bg-zinc-700 dark:text-zinc-200"
+                    : "text-zinc-400 hover:text-zinc-600"
+                )}
+              >
+                Client
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRoleChange("ADMIN")}
+                className={cn(
+                  "cursor-pointer rounded px-2 py-0.5 transition-colors",
+                  role === "ADMIN"
+                    ? "bg-amber-500 font-bold text-white"
+                    : "text-zinc-400 hover:text-zinc-600"
+                )}
+              >
+                Staff Admin
+              </button>
+            </div>
           </div>
 
           {/* Tags Pills Section */}

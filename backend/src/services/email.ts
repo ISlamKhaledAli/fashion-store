@@ -36,7 +36,7 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
 /**
  * Common responsive HTML wrapper for The Curator transactional emails
  */
-const renderEmailShell = (
+export const renderEmailShell = (
   title: string,
   preheader: string,
   contentHtml: string

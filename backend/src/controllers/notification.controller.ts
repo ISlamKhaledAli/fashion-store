@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
 import { sendResponse } from "../utils/apiResponse";
-import { NotFoundError, ForbiddenError } from "../utils/AppError";
+import {
+  NotFoundError,
+  ForbiddenError,
+  ValidationError,
+} from "../utils/AppError";
 
 // Get notifications for current user or admin
 export const getNotifications = async (
@@ -163,6 +167,110 @@ export const markAllNotificationsAsRead = async (
       status: 200,
       success: true,
       message: "All notifications marked as read",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Broadcast notification to all users or admins (Admin only)
+export const broadcastNotification = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const {
+      title,
+      message,
+      type = "SYSTEM",
+      data = {},
+      target = "ALL",
+    } = req.body;
+
+    if (!title || !message) {
+      throw new ValidationError("Title and message are required for broadcast");
+    }
+
+    if (target === "ADMINS") {
+      const notification = await prisma.notification.create({
+        data: {
+          userId: null,
+          title,
+          message,
+          type,
+          data,
+        },
+      });
+      return sendResponse({
+        res,
+        status: 201,
+        success: true,
+        message: "Admin broadcast notification created",
+        data: notification,
+      });
+    }
+
+    const activeUsers = await prisma.user.findMany({
+      where: { status: "ACTIVE" },
+      select: { id: true },
+    });
+
+    if (activeUsers.length > 0) {
+      await prisma.notification.createMany({
+        data: activeUsers.map((u) => ({
+          userId: u.id,
+          title,
+          message,
+          type,
+          data,
+        })),
+      });
+    }
+
+    return sendResponse({
+      res,
+      status: 201,
+      success: true,
+      message: `Broadcast sent to ${activeUsers.length} active members`,
+      data: { count: activeUsers.length },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete notification
+export const deleteNotification = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+
+    const notification = await prisma.notification.findUnique({
+      where: { id: String(id) },
+    });
+
+    if (!notification) {
+      throw new NotFoundError("Notification not found");
+    }
+
+    if (user?.role !== "ADMIN" && notification.userId !== user?.id) {
+      throw new ForbiddenError("Not authorized to delete this notification");
+    }
+
+    await prisma.notification.delete({
+      where: { id: String(id) },
+    });
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Notification deleted",
     });
   } catch (error) {
     next(error);
