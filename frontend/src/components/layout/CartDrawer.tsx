@@ -88,7 +88,7 @@ export const CartDrawer = () => {
               duration: 0.35,
               ease: [0.16, 1, 0.3, 1],
             }}
-            className="fixed right-0 z-[60] flex h-full w-full max-w-[450px] flex-col bg-surface shadow-[0_20px_50px_rgba(26,28,29,0.05)] dark:bg-stone-950"
+            className="fixed inset-y-0 right-0 z-[60] flex h-full w-full max-w-[450px] flex-col bg-surface shadow-[0_20px_50px_rgba(26,28,29,0.05)] dark:bg-stone-950"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-outline-variant/10 p-6 sm:p-8">
