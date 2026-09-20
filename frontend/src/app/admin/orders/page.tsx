@@ -216,18 +216,26 @@ export default function AdminOrdersPage() {
   };
 
   const handleUpdateStatus = React.useCallback(
-    async (id: string, status: string) => {
+    async (
+      id: string,
+      status: string,
+      trackingData?: { trackingNumber?: string; carrier?: string }
+    ) => {
       try {
-        const res = await adminApi.updateOrderStatus(id, status as OrderStatus);
+        const payload = trackingData
+          ? { status: status as OrderStatus, ...trackingData }
+          : (status as OrderStatus);
+        const res = await adminApi.updateOrderStatus(id, payload);
         if (res.data.success) {
           setOrders((prev) =>
             prev.map((o) => (o.id === id ? (res.data.data as Order) : o))
           );
           if (selectedOrder?.id === id)
             setSelectedOrder(res.data.data as Order);
+          toast.success("Order status updated");
         }
-      } catch (error) {
-        console.error("Failed to update status");
+      } catch {
+        toast.error("Failed to update order status");
       }
     },
     [selectedOrder?.id]

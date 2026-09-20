@@ -189,9 +189,6 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
           );
 
         if (matchedSize) {
-          console.log(
-            `[DEBUG] Automatically auto-selecting recommended size: ${matchedSize}`
-          );
           onSizeRecommended(matchedSize);
           toast.success(
             `We selected recommended Size: ${matchedSize} for you!`

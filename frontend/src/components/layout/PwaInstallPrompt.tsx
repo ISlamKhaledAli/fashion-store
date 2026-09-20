@@ -4,6 +4,37 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { X, ArrowRight, Share } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { contentApi } from "@/lib/api";
+import type { PwaModalContent } from "@/types";
+
+const defaultPwaModal: PwaModalContent = {
+  badge: "Private Client Edition",
+  title: "The Digital Flagship",
+  imageUrl: "/images/curator_atelier.jpg",
+  description:
+    "Experience seamless bespoke shopping, priority archival drops, and private AI styling directly on your home screen with zero browser latency.",
+  benefits: [
+    {
+      num: "01",
+      title: "Priority Runway Reservations",
+      description:
+        "Private client early access to limited seasonal capsule releases.",
+    },
+    {
+      num: "02",
+      title: "Native Fluid Continuity",
+      description:
+        "Fullscreen gesture navigation and instant offline lookbook caching.",
+    },
+    {
+      num: "03",
+      title: "Bespoke AI Concierge",
+      description:
+        "Instant biometric access to your sizing profile and personal wardrobe recommendations.",
+    },
+  ],
+  buttonText: "Add to Home Screen",
+};
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -14,6 +45,8 @@ export const PwaInstallPrompt: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [modalContent, setModalContent] =
+    useState<PwaModalContent>(defaultPwaModal);
   const [isIOS] = useState(() => {
     if (typeof window !== "undefined") {
       return /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
@@ -21,6 +54,22 @@ export const PwaInstallPrompt: React.FC = () => {
     return false;
   });
   const [showLuxuryModal, setShowLuxuryModal] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    contentApi
+      .getByKey<PwaModalContent>("pwa_modal")
+      .then((res) => {
+        if (isMounted && res.data?.data) {
+          setModalContent((prev) => ({ ...prev, ...res.data.data }));
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     // 1. Register Service Worker
@@ -107,6 +156,20 @@ export const PwaInstallPrompt: React.FC = () => {
     localStorage.setItem("curator_pwa_dismissed", Date.now().toString());
   };
 
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) {
+      setShowLuxuryModal(false);
+      return;
+    }
+    await deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") {
+      setIsVisible(false);
+      setShowLuxuryModal(false);
+    }
+    setDeferredPrompt(null);
+  };
+
   if (!isVisible && !showLuxuryModal) return null;
 
   return (
@@ -119,7 +182,7 @@ export const PwaInstallPrompt: React.FC = () => {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 60, opacity: 0 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed right-4 bottom-5 left-4 z-50 mx-auto max-w-sm sm:right-6 sm:bottom-6 sm:left-auto"
+            className="fixed right-4 bottom-5 left-4 z-50 mx-auto max-w-sm md:hidden"
             aria-label="The Curator Application"
           >
             <div className="relative flex items-center justify-between gap-4 border border-stone-200 bg-white/95 px-4 py-3 shadow-[0_12px_32px_rgba(0,0,0,0.08)] backdrop-blur-xl dark:border-stone-800 dark:bg-stone-950/95">
@@ -203,11 +266,13 @@ export const PwaInstallPrompt: React.FC = () => {
               {/* Editorial Header Photography */}
               <div className="relative h-44 w-full overflow-hidden bg-stone-900">
                 <Image
-                  src="/images/curator_atelier.jpg"
-                  alt="The Curator Atelier Haute Couture"
+                  src={modalContent.imageUrl || defaultPwaModal.imageUrl}
+                  alt={
+                    modalContent.title || "The Curator Atelier Haute Couture"
+                  }
                   fill
                   sizes="(max-width: 768px) 100vw, 448px"
-                  className="object-cover object-center contrast-105 grayscale"
+                  className="object-cover object-center contrast-105"
                   priority
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
@@ -216,10 +281,10 @@ export const PwaInstallPrompt: React.FC = () => {
                 <div className="absolute right-6 bottom-4 left-6 flex items-end justify-between">
                   <div>
                     <span className="font-sans text-[10px] font-medium tracking-[0.25em] text-stone-300 uppercase">
-                      Private Client Edition
+                      {modalContent.badge || defaultPwaModal.badge}
                     </span>
                     <h3 className="font-serif text-2xl font-normal tracking-wide text-white">
-                      The Digital Flagship
+                      {modalContent.title || defaultPwaModal.title}
                     </h3>
                   </div>
                 </div>
@@ -228,57 +293,31 @@ export const PwaInstallPrompt: React.FC = () => {
               {/* Content Section */}
               <div className="p-6 sm:p-7">
                 <p className="font-sans text-xs leading-relaxed text-stone-600 dark:text-stone-400">
-                  Experience seamless bespoke shopping, priority archival drops,
-                  and private AI styling directly on your home screen with zero
-                  browser latency.
+                  {modalContent.description || defaultPwaModal.description}
                 </p>
 
                 {/* Haute Couture Numbered Pillars */}
                 <div className="dark:border-stone-850 mt-6 space-y-4 border-t border-stone-100 pt-5">
-                  <div className="flex items-start gap-4">
-                    <span className="pt-0.5 font-serif text-xs font-semibold tracking-wider text-stone-400 dark:text-stone-500">
-                      01
-                    </span>
-                    <div>
-                      <h4 className="font-serif text-xs font-semibold tracking-wider text-stone-900 uppercase dark:text-stone-100">
-                        Priority Runway Reservations
-                      </h4>
-                      <p className="mt-0.5 text-[11px] leading-normal text-stone-500 dark:text-stone-400">
-                        Private client early access to limited seasonal capsule
-                        releases.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4">
-                    <span className="pt-0.5 font-serif text-xs font-semibold tracking-wider text-stone-400 dark:text-stone-500">
-                      02
-                    </span>
-                    <div>
-                      <h4 className="font-serif text-xs font-semibold tracking-wider text-stone-900 uppercase dark:text-stone-100">
-                        Native Fluid Continuity
-                      </h4>
-                      <p className="mt-0.5 text-[11px] leading-normal text-stone-500 dark:text-stone-400">
-                        Fullscreen gesture navigation and instant offline
-                        lookbook caching.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4">
-                    <span className="pt-0.5 font-serif text-xs font-semibold tracking-wider text-stone-400 dark:text-stone-500">
-                      03
-                    </span>
-                    <div>
-                      <h4 className="font-serif text-xs font-semibold tracking-wider text-stone-900 uppercase dark:text-stone-100">
-                        Bespoke AI Concierge
-                      </h4>
-                      <p className="mt-0.5 text-[11px] leading-normal text-stone-500 dark:text-stone-400">
-                        Instant biometric access to your sizing profile and
-                        personal wardrobe recommendations.
-                      </p>
-                    </div>
-                  </div>
+                  {(modalContent.benefits || defaultPwaModal.benefits).map(
+                    (b, idx) => (
+                      <div
+                        key={b.num || idx}
+                        className="flex items-start gap-4"
+                      >
+                        <span className="pt-0.5 font-serif text-xs font-semibold tracking-wider text-stone-400 dark:text-stone-500">
+                          {b.num || `0${idx + 1}`}
+                        </span>
+                        <div>
+                          <h4 className="font-serif text-xs font-semibold tracking-wider text-stone-900 uppercase dark:text-stone-100">
+                            {b.title}
+                          </h4>
+                          <p className="mt-0.5 text-[11px] leading-normal text-stone-500 dark:text-stone-400">
+                            {b.description}
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  )}
                 </div>
 
                 {/* iOS Instructions (if detected) */}
@@ -321,17 +360,12 @@ export const PwaInstallPrompt: React.FC = () => {
                   {!isIOS ? (
                     <button
                       type="button"
-                      onClick={() => {
-                        if (deferredPrompt) {
-                          deferredPrompt.prompt();
-                          setShowLuxuryModal(false);
-                        } else {
-                          setShowLuxuryModal(false);
-                        }
-                      }}
-                      className="flex w-full cursor-pointer items-center justify-center gap-2 bg-stone-950 py-3.5 text-xs font-medium tracking-[0.22em] text-white uppercase shadow-sm transition-all hover:bg-stone-800 active:scale-[0.99] dark:bg-white dark:text-stone-950 dark:hover:bg-stone-200"
+                      onClick={handleInstallClick}
+                      className="flex w-full cursor-pointer items-center justify-center gap-2 bg-stone-950 py-3.5 text-xs font-semibold tracking-[0.2em] text-white uppercase transition-colors hover:bg-stone-800 dark:bg-white dark:text-stone-950 dark:hover:bg-stone-200"
                     >
-                      <span>Add to Home Screen</span>
+                      <span>
+                        {modalContent.buttonText || defaultPwaModal.buttonText}
+                      </span>
                       <ArrowRight className="h-3.5 w-3.5" />
                     </button>
                   ) : (

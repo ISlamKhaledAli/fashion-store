@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
@@ -8,6 +9,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Truck, Check } from "lucide-react";
+import { contentApi } from "@/lib/api";
 
 export const CartDrawer = () => {
   const {
@@ -20,8 +22,38 @@ export const CartDrawer = () => {
   } = useCartStore();
   const { isAuthenticated } = useAuthStore();
 
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("curator_admin_settings");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.freeShippingThreshold) {
+            return Number(parsed.freeShippingThreshold);
+          }
+        }
+      } catch {}
+    }
+    return 250;
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    contentApi
+      .getByKey<{ freeShippingThreshold: number }>("admin_settings")
+      .then((res) => {
+        if (isMounted && res.data?.data?.freeShippingThreshold) {
+          setFreeShippingThreshold(Number(res.data.data.freeShippingThreshold));
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const subtotal = getTotalPrice();
-  const freeShippingThreshold = 250;
   const remainingForFreeShipping = Math.max(
     0,
     freeShippingThreshold - subtotal

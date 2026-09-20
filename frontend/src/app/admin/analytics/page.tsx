@@ -88,7 +88,6 @@ export default function AdminAnalyticsPage() {
           setGeoData(gData);
 
           const catData = (categoryRes.data?.data as CategoryStat[]) || [];
-          console.log("Analytics: Category Data Loaded:", catData);
           setCategoryData(catData);
 
           const retData = retentionRes.data?.data;

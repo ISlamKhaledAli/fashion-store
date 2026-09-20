@@ -12,6 +12,12 @@ import type {
   OrderStatus,
   AdminCustomer,
   UserMeasurements,
+  ContactMessage,
+  ContactMessageStatus,
+  SiteContentItem,
+  NewsletterSubscriber,
+  NewsletterListResponse,
+  NewsletterStatus,
 } from "@/types";
 
 export const authApi = {
@@ -107,6 +113,18 @@ export const reviewApi = {
     title: string;
     body: string;
   }) => api.post<ApiResponse<unknown>>("/reviews", data),
+  getAdminReviews: (params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    rating?: number;
+    search?: string;
+  }) => api.get<ApiResponse<Review[]>>("/admin/reviews", { params }),
+  updateStatus: (id: string, status: "APPROVED" | "REJECTED" | "PENDING") =>
+    api.patch<ApiResponse<Review>>(`/admin/reviews/${id}/status`, { status }),
+  reply: (id: string, reply: string) =>
+    api.post<ApiResponse<Review>>(`/admin/reviews/${id}/reply`, { reply }),
+  delete: (id: string) => api.delete<ApiResponse<null>>(`/admin/reviews/${id}`),
 };
 
 export const addressApi = {
@@ -137,8 +155,19 @@ export const adminApi = {
     search?: string;
     status?: OrderStatus;
   }) => api.get<ApiResponse<Order[]>>("/admin/orders", { params }),
-  updateOrderStatus: (id: string, status: OrderStatus) =>
-    api.put<ApiResponse<Order>>(`/admin/orders/${id}`, { status }),
+  updateOrderStatus: (
+    id: string,
+    data:
+      | {
+          status?: OrderStatus;
+          trackingNumber?: string;
+          carrier?: string;
+        }
+      | OrderStatus
+  ) => {
+    const payload = typeof data === "string" ? { status: data } : data;
+    return api.put<ApiResponse<Order>>(`/admin/orders/${id}`, payload);
+  },
   bulkUpdateOrderStatus: (ids: string[], status: OrderStatus) =>
     api.post<ApiResponse<unknown>>("/admin/orders/bulk-status", {
       ids,
@@ -266,4 +295,63 @@ export const sizeApi = {
   updateMeasurements: (data: UserMeasurements) =>
     api.put<ApiResponse<UserMeasurements>>("/size/measurements", data),
   clearMeasurements: () => api.delete<ApiResponse<null>>("/size/measurements"),
+};
+
+export const contentApi = {
+  getByKey: <T>(key: string) => api.get<ApiResponse<T>>(`/content/${key}`),
+  getAll: () =>
+    api.get<
+      ApiResponse<{
+        items: SiteContentItem[];
+        map: Record<string, unknown>;
+      }>
+    >("/content"),
+  upsert: <T>(key: string, data: T) =>
+    api.put<ApiResponse<SiteContentItem>>(`/content/${key}`, { data }),
+  bulkUpsert: (items: Record<string, unknown>) =>
+    api.post<ApiResponse<SiteContentItem[]>>("/content/bulk", { items }),
+};
+
+export const contactApi = {
+  submit: (data: {
+    name: string;
+    email: string;
+    subject?: string;
+    message: string;
+  }) => api.post<ApiResponse<ContactMessage>>("/contact", data),
+  getMessages: (params?: {
+    page?: number;
+    limit?: number;
+    status?: ContactMessageStatus;
+  }) => api.get<ApiResponse<ContactMessage[]>>("/contact", { params }),
+  updateStatus: (
+    id: string,
+    data: { status: ContactMessageStatus; notes?: string }
+  ) => api.patch<ApiResponse<ContactMessage>>(`/contact/${id}/status`, data),
+  deleteMessage: (id: string) =>
+    api.delete<ApiResponse<null>>(`/contact/${id}`),
+};
+
+export const newsletterApi = {
+  subscribe: (email: string) =>
+    api.post<ApiResponse<NewsletterSubscriber>>("/newsletter/subscribe", {
+      email,
+    }),
+  unsubscribe: (email: string) =>
+    api.post<ApiResponse<NewsletterSubscriber>>("/newsletter/unsubscribe", {
+      email,
+    }),
+  getSubscribers: (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: NewsletterStatus;
+  }) => api.get<ApiResponse<NewsletterListResponse>>("/newsletter", { params }),
+  updateStatus: (id: string, status: NewsletterStatus) =>
+    api.patch<ApiResponse<NewsletterSubscriber>>(`/newsletter/${id}/status`, {
+      status,
+    }),
+  delete: (id: string) => api.delete<ApiResponse<null>>(`/newsletter/${id}`),
+  export: () =>
+    api.get<ApiResponse<NewsletterSubscriber[]>>("/newsletter/export"),
 };

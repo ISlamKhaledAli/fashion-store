@@ -4,18 +4,37 @@ import React, { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { categoryApi } from "@/lib/api";
-import type { Category } from "@/types";
+import { categoryApi, contentApi } from "@/lib/api";
+import type { Category, HomeCategoriesSectionContent } from "@/types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export const Categories = () => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [sectionContent, setSectionContent] =
+    useState<HomeCategoriesSectionContent>(() => ({
+      label: "Curated Selects",
+      heading: "The Architecture of Wear",
+    }));
   const [isLoading, setIsLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
   useEffect(() => {
+    contentApi
+      .getByKey<HomeCategoriesSectionContent>("home_categories_section")
+      .then((res) => {
+        if (res.data.success && res.data.data) {
+          const fetched = res.data
+            .data as unknown as Partial<HomeCategoriesSectionContent>;
+          setSectionContent((prev) => ({
+            label: fetched.label || prev.label,
+            heading: fetched.heading || prev.heading,
+          }));
+        }
+      })
+      .catch(() => {});
+
     const fetchCategories = async () => {
       try {
         setIsLoading(true);
@@ -61,10 +80,10 @@ export const Categories = () => {
           className="mb-16"
         >
           <p className="mb-4 font-label text-xs tracking-[0.2em] text-on-surface-variant uppercase">
-            Curated Selects
+            {sectionContent.label}
           </p>
           <h2 className="text-4xl font-medium tracking-tight text-on-surface md:text-5xl">
-            The Architecture of Wear
+            {sectionContent.heading}
           </h2>
         </motion.div>
 

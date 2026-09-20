@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -14,46 +14,87 @@ import {
   Award,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { contentApi } from "@/lib/api";
+import type { AboutPageContent } from "@/types";
 
-const pillars = [
+const defaultPillars = [
   {
     num: "01",
     title: "Uncompromising Curation",
     description:
       "We operate outside the feverish rhythm of seasonal overproduction. Every garment admitted into our catalog is selected for architectural precision, tactile depth, and historical endurance.",
-    icon: Compass,
   },
   {
     num: "02",
     title: "Noble & Traceable Fibers",
     description:
       "From double-faced virgin cashmere spun in Biella, Italy, to Japanese selvedge denim woven on vintage Toyoda shuttle looms — we source raw materials that mature and develop patina with age.",
-    icon: Feather,
   },
   {
     num: "03",
     title: "Artisanal Tailoring",
     description:
       "Constructed in small family-owned ateliers across Europe and Japan. Floating canvas chest pieces, hand-sewn buttonholes, and horn buttons anchor each silhouette in couture pedigree.",
-    icon: Scissors,
   },
   {
     num: "04",
     title: "Responsible Stewardship",
     description:
       "Zero deadstock inventory. We produce in micro-batches and bespoke pre-orders, pairing traditional tailoring with AI-assisted sizing algorithms to eliminate post-consumer waste.",
-    icon: ShieldCheck,
   },
 ];
 
-const milestones = [
+const defaultMilestones = [
   { value: "100%", label: "Traceable Organic & Noble Fibers" },
   { value: "14", label: "Heritage Generational Ateliers" },
   { value: "0", label: "Seasonal Landfill / Deadstock" },
   { value: "90+", label: "Global White-Glove Destinations" },
 ];
 
+const defaultAboutContent: AboutPageContent = {
+  badge: "Archival Atelier & Design House",
+  title: "Fashion Conceived as Wearable Sculpture",
+  description:
+    "The Curator was founded on a singular conviction: enduring design transcends the ephemeral noise of fast fashion. We bridge the rigor of modern architecture with the warmth of ancestral craftsmanship.",
+  bannerImage: "/images/curator_atelier.jpg",
+  quote:
+    "We do not believe in disposable novelty. Every stitch is executed with the intention that it will be worn, preserved, and handed down across generations.",
+  quoteAuthor: "Master Tailor Marco V., Atelier Florence",
+  pillars: defaultPillars,
+  milestones: defaultMilestones,
+};
+
+const pillarIcons = [Compass, Feather, Scissors, ShieldCheck];
+
 export default function AboutPage() {
+  const [content, setContent] = useState<AboutPageContent>(defaultAboutContent);
+
+  useEffect(() => {
+    let isMounted = true;
+    contentApi
+      .getByKey<AboutPageContent>("about")
+      .then((res) => {
+        if (isMounted && res.data?.data) {
+          setContent((prev) => ({ ...prev, ...res.data.data }));
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const activePillars =
+    content.pillars && content.pillars.length > 0
+      ? content.pillars
+      : defaultAboutContent.pillars;
+
+  const activeMilestones =
+    content.milestones && content.milestones.length > 0
+      ? content.milestones
+      : defaultAboutContent.milestones;
+
   return (
     <main className="min-h-screen bg-surface">
       {/* Hero Section */}
@@ -66,20 +107,15 @@ export default function AboutPage() {
         >
           <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-outline-variant/30 bg-surface-container-lowest px-4 py-1.5 text-[11px] font-bold tracking-[0.3em] text-primary uppercase shadow-sm">
             <Sparkles size={13} />
-            <span>Archival Atelier & Design House</span>
+            <span>{content.badge || defaultAboutContent.badge}</span>
           </div>
 
           <h1 className="text-4xl leading-[1.08] font-light tracking-tight text-on-surface sm:text-6xl lg:text-7xl">
-            Fashion Conceived as{" "}
-            <span className="font-serif font-normal text-primary italic">
-              Wearable Sculpture
-            </span>
+            {content.title || defaultAboutContent.title}
           </h1>
 
           <p className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed font-normal text-on-surface-variant">
-            The Curator was founded on a singular conviction: enduring design
-            transcends the ephemeral noise of fast fashion. We bridge the rigor
-            of modern architecture with the warmth of ancestral craftsmanship.
+            {content.description || defaultAboutContent.description}
           </p>
         </motion.div>
       </section>
@@ -94,7 +130,7 @@ export default function AboutPage() {
           className="relative aspect-16/9 w-full overflow-hidden rounded-3xl border border-outline-variant/20 bg-surface-container-high shadow-2xl"
         >
           <Image
-            src="/images/curator_atelier.jpg"
+            src={content.bannerImage || defaultAboutContent.bannerImage}
             alt="The Curator Atelier Interior"
             fill
             priority
@@ -147,9 +183,6 @@ export default function AboutPage() {
                 Our philosophy begins not with mood boards, but at the raw fiber
                 level. We collaborate intimately with generational spinners and
                 master patternmakers across Northern Italy and Honshu, Japan.
-                Each cut is informed by structural minimalism — omitting
-                extraneous adornment to let the poise of the silhouette and the
-                weight of the weave command attention.
               </p>
               <p>
                 A garment from The Curator is never complete until it is worn,
@@ -171,13 +204,11 @@ export default function AboutPage() {
                 <Award size={24} strokeWidth={1.5} />
               </div>
               <blockquote className="font-serif text-2xl leading-relaxed font-light text-on-surface italic sm:text-3xl">
-                &ldquo;We do not create for seasons that expire in months. We
-                design artifacts that carry personal dignity and quiet presence
-                for decades.&rdquo;
+                &ldquo;{content.quote || defaultAboutContent.quote}&rdquo;
               </blockquote>
               <div className="mt-6 border-t border-outline-variant/15 pt-4">
                 <p className="text-sm font-semibold text-on-surface">
-                  Atelier Directorate
+                  {content.quoteAuthor || defaultAboutContent.quoteAuthor}
                 </p>
                 <p className="text-xs text-on-surface-variant">
                   The Curator Creative Guild
@@ -202,11 +233,11 @@ export default function AboutPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-            {pillars.map((pillar, idx) => {
-              const Icon = pillar.icon;
+            {activePillars.map((pillar, idx) => {
+              const Icon = pillarIcons[idx % pillarIcons.length];
               return (
                 <motion.div
-                  key={pillar.num}
+                  key={pillar.num || idx}
                   initial={{ opacity: 0, y: 25 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -239,9 +270,9 @@ export default function AboutPage() {
       {/* Milestones / Impact Metrics */}
       <section className="mx-auto max-w-[1280px] px-6 py-28 sm:px-12">
         <div className="grid grid-cols-2 gap-8 text-center lg:grid-cols-4">
-          {milestones.map((m, idx) => (
+          {activeMilestones.map((m, idx) => (
             <motion.div
-              key={m.label}
+              key={m.label || idx}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}

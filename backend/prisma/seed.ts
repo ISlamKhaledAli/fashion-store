@@ -900,6 +900,16 @@ async function main() {
       }),
     ]);
 
+  console.log("Seeding default site content...");
+  const { DEFAULT_SITE_CONTENT } = await import("./seedContent");
+  for (const [key, data] of Object.entries(DEFAULT_SITE_CONTENT)) {
+    await prisma.siteContent.upsert({
+      where: { key },
+      update: { data: data as any },
+      create: { key, data: data as any },
+    });
+  }
+
   console.log("Seed completed successfully.");
   console.log(`Admin email: ${ADMIN_CREDENTIALS.email}`);
   console.log(`Admin password: ${ADMIN_CREDENTIALS.password}`);

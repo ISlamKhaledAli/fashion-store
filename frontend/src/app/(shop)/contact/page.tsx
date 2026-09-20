@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail,
@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { contactApi, contentApi } from "@/lib/api";
+import type { ContactPageContent } from "@/types";
 
 const departments = [
   "Orders & Shipping",
@@ -24,23 +26,28 @@ const departments = [
   "General Inquiries",
 ];
 
-const salons = [
-  {
-    city: "Paris Atelier",
-    address: "18 Place Vendôme, 75001 Paris, France",
-    hours: "Mon – Sat: 10:00 – 19:00 CET",
-  },
-  {
-    city: "New York Flagship",
-    address: "720 Fifth Avenue, New York, NY 10019",
-    hours: "Mon – Sat: 10:00 – 20:00 EST",
-  },
-  {
-    city: "Tokyo Studio",
-    address: "5-7-22 Minamiaoyama, Minato-ku, Tokyo",
-    hours: "Tue – Sun: 11:00 – 19:30 JST",
-  },
-];
+const defaultContactContent: ContactPageContent = {
+  email: "concierge@thecurator.com",
+  phone: "+1 (800) 742-8820",
+  hours: "Monday – Saturday: 9:00 AM – 8:00 PM EST",
+  salons: [
+    {
+      city: "Paris Atelier",
+      address: "18 Place Vendôme, 75001 Paris, France",
+      hours: "Mon – Sat: 10:00 – 19:00 CET",
+    },
+    {
+      city: "New York Flagship",
+      address: "720 Fifth Avenue, New York, NY 10019",
+      hours: "Mon – Sat: 10:00 – 20:00 EST",
+    },
+    {
+      city: "Tokyo Studio",
+      address: "5-7-22 Minamiaoyama, Minato-ku, Tokyo",
+      hours: "Tue – Sun: 11:00 – 19:30 JST",
+    },
+  ],
+};
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -52,6 +59,25 @@ export default function ContactPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [content, setContent] = useState<ContactPageContent>(
+    defaultContactContent
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+    contentApi
+      .getByKey<ContactPageContent>("contact")
+      .then((res) => {
+        if (isMounted && res.data?.data) {
+          setContent((prev) => ({ ...prev, ...res.data.data }));
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,16 +92,43 @@ export default function ContactPage() {
 
     try {
       setIsSubmitting(true);
-      // Simulate luxury concierge dispatch
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const subjectText = formData.subject.trim()
+        ? `[${formData.department}] ${formData.subject.trim()}`
+        : `[${formData.department}] General Inquiry`;
+
+      await contactApi.submit({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        subject: subjectText,
+        message: formData.message.trim(),
+      });
+
       setIsSubmitted(true);
       toast.success("Your message has been received by our concierge.");
     } catch {
-      toast.error("An error occurred. Please try contacting us by phone.");
+      toast.error(
+        "An error occurred while sending your message. Please try contacting us by phone."
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const handleResetForm = () => {
+    setFormData({
+      name: "",
+      email: "",
+      department: departments[0],
+      subject: "",
+      message: "",
+    });
+    setIsSubmitted(false);
+  };
+
+  const activeSalons =
+    content.salons && content.salons.length > 0
+      ? content.salons
+      : defaultContactContent.salons;
 
   return (
     <main className="mx-auto min-h-screen max-w-[1440px] px-6 pt-36 pb-28 sm:px-12">
@@ -126,52 +179,35 @@ export default function ContactPage() {
                   <span className="font-semibold text-on-surface">
                     {formData.name}
                   </span>
-                  . Your correspondence has been directed to our{" "}
-                  {formData.department} desk. A concierge advisor will reply to{" "}
-                  <span className="font-medium text-on-surface">
-                    {formData.email}
-                  </span>{" "}
-                  within 2 to 4 hours.
+                  . A private concierge advisor has received your consignment
+                  and will reply within 4 business hours.
                 </p>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsSubmitted(false);
-                    setFormData({
-                      name: "",
-                      email: "",
-                      department: departments[0],
-                      subject: "",
-                      message: "",
-                    });
-                  }}
-                  className="mt-8 px-6 py-2.5 text-xs font-semibold tracking-widest uppercase"
-                >
-                  Send Another Inquiry
-                </Button>
+                <div className="mt-8">
+                  <Button
+                    variant="outline"
+                    onClick={handleResetForm}
+                    className="text-xs font-semibold tracking-wider uppercase"
+                  >
+                    Send Another Inquiry
+                  </Button>
+                </div>
               </motion.div>
             ) : (
               <motion.form
                 key="form"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 onSubmit={handleSubmit}
                 className="space-y-6"
               >
-                <div>
-                  <h2 className="text-xl font-medium tracking-tight text-on-surface">
-                    Direct Correspondence
-                  </h2>
-                  <p className="mt-1 text-xs text-on-surface-variant">
-                    Please provide your details below and select the appropriate
-                    division.
-                  </p>
-                </div>
-
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-1.5 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
-                      Your Name *
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
+                      Full Name <span className="text-primary">*</span>
                     </label>
                     <Input
+                      type="text"
                       value={formData.name}
                       onChange={(e) =>
                         setFormData((prev) => ({
@@ -179,13 +215,14 @@ export default function ContactPage() {
                           name: e.target.value,
                         }))
                       }
-                      placeholder="e.g. Julian Dupont"
+                      placeholder="e.g. Elena Rostova"
                       required
                     />
                   </div>
-                  <div>
-                    <label className="mb-1.5 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
-                      Email Address *
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
+                      Email Address <span className="text-primary">*</span>
                     </label>
                     <Input
                       type="email"
@@ -196,55 +233,58 @@ export default function ContactPage() {
                           email: e.target.value,
                         }))
                       }
-                      placeholder="julian@domain.com"
+                      placeholder="e.g. elena@domain.com"
                       required
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="mb-2 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
-                    Department
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {departments.map((dep) => (
-                      <button
-                        key={dep}
-                        type="button"
-                        onClick={() =>
-                          setFormData((prev) => ({ ...prev, department: dep }))
-                        }
-                        className={`cursor-pointer rounded-full px-4 py-2 text-xs font-medium transition-all duration-200 ${
-                          formData.department === dep
-                            ? "bg-primary text-on-primary shadow-sm"
-                            : "border border-outline-variant/30 bg-surface text-on-surface hover:border-outline-variant/80"
-                        }`}
-                      >
-                        {dep}
-                      </button>
-                    ))}
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
+                      Department
+                    </label>
+                    <select
+                      value={formData.department}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          department: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded-xl border border-outline-variant/30 bg-surface px-4 py-3 text-sm text-on-surface transition-colors focus:border-primary focus:outline-none"
+                    >
+                      {departments.map((dep) => (
+                        <option key={dep} value={dep}>
+                          {dep}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
+                      Subject
+                    </label>
+                    <Input
+                      type="text"
+                      value={formData.subject}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          subject: e.target.value,
+                        }))
+                      }
+                      placeholder="e.g. Order #1049 Inquiry"
+                    />
                   </div>
                 </div>
 
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
-                    Subject (Optional)
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
+                    Your Message <span className="text-primary">*</span>
                   </label>
-                  <Input
-                    value={formData.subject}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        subject: e.target.value,
-                      }))
-                    }
-                    placeholder="Order Reference # or Inquiry Topic"
-                  />
-                </div>
-
-                <div>
                   <Textarea
-                    label="Your Message *"
                     rows={5}
                     value={formData.message}
                     onChange={(e) =>
@@ -304,10 +344,10 @@ export default function ContactPage() {
                     Concierge Email
                   </p>
                   <a
-                    href="mailto:concierge@thecurator.com"
+                    href={`mailto:${content.email || defaultContactContent.email}`}
                     className="font-medium text-on-surface transition-colors hover:text-primary"
                   >
-                    concierge@thecurator.com
+                    {content.email || defaultContactContent.email}
                   </a>
                 </div>
               </div>
@@ -321,7 +361,7 @@ export default function ContactPage() {
                     Private Client Line
                   </p>
                   <p className="font-medium text-on-surface">
-                    +1 (800) 742-8820
+                    {content.phone || defaultContactContent.phone}
                   </p>
                 </div>
               </div>
@@ -335,7 +375,7 @@ export default function ContactPage() {
                     Atelier Hours
                   </p>
                   <p className="text-on-surface-variant">
-                    Monday – Saturday: 9:00 AM – 8:00 PM EST
+                    {content.hours || defaultContactContent.hours}
                   </p>
                   <p className="text-xs text-on-surface-variant/70">
                     Sunday: Closed for private collection appointments
@@ -356,7 +396,7 @@ export default function ContactPage() {
             </p>
 
             <div className="mt-6 space-y-4 divide-y divide-outline-variant/10">
-              {salons.map((salon) => (
+              {activeSalons.map((salon) => (
                 <div key={salon.city} className="pt-4 first:pt-0">
                   <h4 className="text-sm font-semibold text-on-surface">
                     {salon.city}

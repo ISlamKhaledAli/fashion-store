@@ -15,6 +15,10 @@ import {
   Warehouse,
   FolderTree,
   Settings,
+  LayoutTemplate,
+  Inbox,
+  Mail,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -33,6 +37,10 @@ const navLinks = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
   { name: "Products", href: "/admin/products", icon: Package },
+  { name: "Reviews", href: "/admin/reviews", icon: Star },
+  { name: "Content", href: "/admin/content", icon: LayoutTemplate },
+  { name: "Messages", href: "/admin/messages", icon: Inbox },
+  { name: "Newsletter", href: "/admin/newsletter", icon: Mail },
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { name: "Categories", href: "/admin/categories", icon: FolderTree },

@@ -67,10 +67,18 @@ export default function OrdersPage() {
     // If order has tracking number, open tracking URL
     // Otherwise show toast with order status
     if (order.trackingNumber) {
-      window.open(
-        `https://track.aftership.com/${order.trackingNumber}`,
-        "_blank"
-      );
+      const carrier = (order.carrier || "").toLowerCase();
+      let trackingUrl = `https://track.aftership.com/${order.trackingNumber}`;
+      if (carrier.includes("dhl")) {
+        trackingUrl = `https://www.dhl.com/en/express/tracking.html?AWB=${order.trackingNumber}`;
+      } else if (carrier.includes("fedex")) {
+        trackingUrl = `https://www.fedex.com/fedextrack/?trknbr=${order.trackingNumber}`;
+      } else if (carrier.includes("ups")) {
+        trackingUrl = `https://www.ups.com/track?tracknum=${order.trackingNumber}`;
+      } else if (carrier.includes("aramex")) {
+        trackingUrl = `https://www.aramex.com/track/results?shipmentNumber=${order.trackingNumber}`;
+      }
+      window.open(trackingUrl, "_blank");
     } else {
       toast.info(
         `Order #${order.id.slice(-4).toUpperCase()} is currently ${order.status.toLowerCase()}`,

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { contentApi } from "@/lib/api";
+import type { FAQItemData } from "@/types";
 
 interface FAQItem {
   id: string;
@@ -131,11 +133,32 @@ const categories = [
 ];
 
 export default function FAQPage() {
+  const [faqList, setFaqList] = useState<FAQItemData[]>(faqs);
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [openIds, setOpenIds] = useState<Record<string, boolean>>({
     "ship-1": true, // First item open by default
   });
+
+  useEffect(() => {
+    let isMounted = true;
+    contentApi
+      .getByKey<FAQItemData[]>("faq")
+      .then((res) => {
+        if (
+          isMounted &&
+          Array.isArray(res.data?.data) &&
+          res.data.data.length > 0
+        ) {
+          setFaqList(res.data.data);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const toggleItem = (id: string) => {
     setOpenIds((prev) => ({
@@ -145,7 +168,7 @@ export default function FAQPage() {
   };
 
   const filteredFaqs = useMemo(() => {
-    return faqs.filter((faq) => {
+    return faqList.filter((faq) => {
       const matchesCategory =
         activeCategory === "all" || faq.category === activeCategory;
       const query = searchQuery.toLowerCase().trim();
@@ -155,7 +178,7 @@ export default function FAQPage() {
         faq.answer.toLowerCase().includes(query);
       return matchesCategory && matchesSearch;
     });
-  }, [activeCategory, searchQuery]);
+  }, [faqList, activeCategory, searchQuery]);
 
   return (
     <main className="mx-auto min-h-screen max-w-[1280px] px-6 pt-36 pb-28 sm:px-12">

@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { contentApi } from "@/lib/api";
 
 interface AdminSettingsState {
   storeName: string;
@@ -58,14 +59,32 @@ export default function AdminSettingsPage() {
   const [showResetModal, setShowResetModal] = useState(false);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("curator_admin_settings");
-      if (saved) {
-        setSettings((prev) => ({ ...prev, ...JSON.parse(saved) }));
-      }
-    } catch {
-      // ignore
-    }
+    let isMounted = true;
+    contentApi
+      .getByKey<AdminSettingsState>("admin_settings")
+      .then((res) => {
+        if (isMounted && res.data?.data) {
+          setSettings((prev) => ({ ...prev, ...res.data.data }));
+          try {
+            localStorage.setItem(
+              "curator_admin_settings",
+              JSON.stringify(res.data.data)
+            );
+          } catch {}
+        }
+      })
+      .catch(() => {
+        try {
+          const saved = localStorage.getItem("curator_admin_settings");
+          if (saved && isMounted) {
+            setSettings((prev) => ({ ...prev, ...JSON.parse(saved) }));
+          }
+        } catch {}
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleChange = <K extends keyof AdminSettingsState>(
@@ -82,11 +101,22 @@ export default function AdminSettingsPage() {
     e.preventDefault();
     setIsSaving(true);
     try {
-      localStorage.setItem("curator_admin_settings", JSON.stringify(settings));
-      await new Promise((r) => setTimeout(r, 400));
-      toast.success("Platform settings updated successfully");
+      await contentApi.upsert("admin_settings", settings);
+      try {
+        localStorage.setItem(
+          "curator_admin_settings",
+          JSON.stringify(settings)
+        );
+      } catch {}
+      toast.success("Platform settings updated and synced successfully");
     } catch {
-      toast.error("Failed to save settings");
+      try {
+        localStorage.setItem(
+          "curator_admin_settings",
+          JSON.stringify(settings)
+        );
+      } catch {}
+      toast.error("Failed to sync settings to server (saved locally)");
     } finally {
       setIsSaving(false);
     }

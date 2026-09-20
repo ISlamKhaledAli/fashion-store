@@ -196,6 +196,8 @@ model Order {
   tax             Float         @default(0)
   total           Float
   notes           String?
+  trackingNumber  String?
+  carrier         String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   shippedAt       DateTime?
@@ -227,19 +229,22 @@ model OrderItem {
 }
 
 model Review {
-  id        String   @id @default(cuid())
-  userId    String
-  productId String
-  rating    Int
-  title     String?
-  body      String?
-  createdAt DateTime @default(now())
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String       @id @default(cuid())
+  userId     String
+  productId  String
+  rating     Int
+  title      String?
+  body       String?
+  status     ReviewStatus @default(APPROVED)
+  adminReply String?
+  createdAt  DateTime     @default(now())
+  product    Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
   @@index([productId])
   @@index([rating])
+  @@index([status])
   @@map("reviews")
 }
 
@@ -311,6 +316,12 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model WebhookEvent {
   id          String   @id
   type        String
@@ -335,3 +346,50 @@ model UserMeasurements {
 
   @@map("user_measurements")
 }
+
+enum ContactMessageStatus {
+  UNREAD
+  READ
+  ARCHIVED
+  REPLIED
+}
+
+model SiteContent {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  data      Json
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@map("site_content")
+}
+
+model ContactMessage {
+  id        String               @id @default(cuid())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  status    ContactMessageStatus @default(UNREAD)
+  notes     String?
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  @@map("contact_messages")
+}
+
+enum NewsletterStatus {
+  SUBSCRIBED
+  UNSUBSCRIBED
+}
+
+model NewsletterSubscriber {
+  id        String           @id @default(cuid())
+  email     String           @unique
+  status    NewsletterStatus @default(SUBSCRIBED)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@map("newsletter_subscribers")
+}
+

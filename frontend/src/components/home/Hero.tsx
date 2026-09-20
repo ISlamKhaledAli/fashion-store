@@ -1,18 +1,61 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowDown, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Image from "next/image";
+import { contentApi } from "@/lib/api";
+import type { HeroContent } from "@/types";
 
-export const Hero = () => {
-  const words = "THE CURATOR".split(" ");
-  const heroStats = [
+const defaultHeroContent: HeroContent = {
+  tagline: "Premium fashion commerce",
+  title: "THE CURATOR",
+  description:
+    "A cinematic storefront for modern wardrobe essentials, precise product discovery, resilient checkout, and an admin command center built for serious retail operations.",
+  ctaText: "Shop collection",
+  ctaLink: "/products",
+  secondaryCtaText: "Our Story",
+  secondaryCtaLink: "/about",
+  imageUrl:
+    "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=2000&q=85",
+  stats: [
     { value: "48h", label: "Express fulfilment" },
     { value: "AI", label: "Size guidance" },
     { value: "24/7", label: "Style assistant" },
-  ];
+  ],
+};
+
+interface HeroProps {
+  initialData?: HeroContent;
+}
+
+export const Hero = ({ initialData }: HeroProps) => {
+  const [data, setData] = useState<HeroContent>(
+    () => initialData || defaultHeroContent
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+    contentApi
+      .getByKey<HeroContent>("home_hero")
+      .then((res) => {
+        if (isMounted && res.data?.data) {
+          setData((prev) => ({ ...prev, ...res.data.data }));
+        }
+      })
+      .catch(() => {
+        // graceful degradation to defaultHeroContent
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const words = (data.title || "THE CURATOR").split(" ");
+  const heroStats =
+    data.stats && data.stats.length > 0 ? data.stats : defaultHeroContent.stats;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -41,8 +84,8 @@ export const Hero = () => {
     <section className="relative min-h-[calc(100svh-120px)] w-full overflow-hidden bg-primary">
       <div className="absolute inset-0 z-0">
         <Image
-          src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=2000&q=85"
-          alt="Editorial fashion campaign in a refined atelier setting"
+          src={data.imageUrl || defaultHeroContent.imageUrl}
+          alt={data.title || "The Curator"}
           fill
           sizes="100vw"
           priority
@@ -60,7 +103,7 @@ export const Hero = () => {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="mb-6 text-sm font-medium text-white/70 uppercase"
           >
-            Premium fashion commerce
+            {data.tagline}
           </motion.p>
 
           <motion.h1
@@ -82,9 +125,7 @@ export const Hero = () => {
             transition={{ duration: 0.7, delay: 0.75, ease: [0.16, 1, 0.3, 1] }}
             className="mt-8 max-w-2xl text-base leading-7 text-white/75 sm:text-lg"
           >
-            A cinematic storefront for modern wardrobe essentials, precise
-            product discovery, resilient checkout, and an admin command center
-            built for serious retail operations.
+            {data.description}
           </motion.p>
 
           <motion.div
@@ -94,17 +135,17 @@ export const Hero = () => {
             className="mt-10 flex flex-col gap-3 sm:flex-row"
           >
             <Link
-              href="/products"
+              href={data.ctaLink || "/products"}
               className="inline-flex min-h-12 items-center justify-center gap-3 bg-white px-7 py-3 text-sm font-bold text-black uppercase transition-transform duration-300 hover:scale-[0.98]"
             >
-              Shop collection
+              {data.ctaText || "Shop collection"}
               <ArrowRight size={18} strokeWidth={1.5} />
             </Link>
             <Link
-              href="/editorial"
+              href={data.secondaryCtaLink || "/about"}
               className="inline-flex min-h-12 items-center justify-center border border-white/35 px-7 py-3 text-sm font-bold text-white uppercase transition-colors duration-300 hover:bg-white/10"
             >
-              Read editorial
+              {data.secondaryCtaText || "Our Story"}
             </Link>
           </motion.div>
         </div>
@@ -120,20 +161,13 @@ export const Hero = () => {
               <span className="text-2xl font-semibold text-white">
                 {item.value}
               </span>
-              <span className="text-sm">{item.label}</span>
+              <span className="text-xs tracking-wider text-white/70 uppercase">
+                {item.label}
+              </span>
             </div>
           ))}
         </motion.div>
       </div>
-
-      <motion.div
-        animate={{ y: [0, 8, 0] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute right-6 bottom-6 opacity-50"
-        aria-hidden="true"
-      >
-        <ArrowDown className="text-white" size={32} strokeWidth={1} />
-      </motion.div>
     </section>
   );
 };

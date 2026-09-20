@@ -106,14 +106,56 @@ const sections = [
   },
 ];
 
+import { useState, useEffect } from "react";
+import { contentApi } from "@/lib/api";
+import type { PolicyPageContent } from "@/types";
+
 export default function TermsOfServicePage() {
+  const [content, setContent] = useState<PolicyPageContent | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    contentApi
+      .getByKey<PolicyPageContent>("policy_terms")
+      .then((res) => {
+        if (isMounted && res.data?.data) {
+          setContent(res.data.data);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const renderedSections =
+    content?.sections && content.sections.length > 0
+      ? content.sections.map((sec) => ({
+          id: sec.id,
+          title: sec.title,
+          content: (
+            <div className="space-y-4">
+              {sec.content.split("\n\n").map((p, idx) => (
+                <p key={idx} className="leading-relaxed whitespace-pre-line">
+                  {p}
+                </p>
+              ))}
+            </div>
+          ),
+        }))
+      : sections;
+
   return (
     <PolicyLayout
-      title="Terms & Conditions of Service"
-      subtitle="Standard guidelines governing access, acquisitions, copyright, and platform stewardship."
-      lastUpdated="September 2026"
+      title={content?.title || "Terms & Conditions of Service"}
+      subtitle={
+        content?.subtitle ||
+        "Standard guidelines governing access, acquisitions, copyright, and platform stewardship."
+      }
+      lastUpdated={content?.lastUpdated || "January 2026"}
       currentPath="/terms"
-      sections={sections}
+      sections={renderedSections}
     />
   );
 }

@@ -16,6 +16,14 @@ import { Button } from "@/components/ui/Button";
 import { useSearchStore } from "@/store/searchStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { SearchOverlay } from "./SearchOverlay";
+import { contentApi } from "@/lib/api";
+import type { NavLinkItem } from "@/types";
+
+const defaultNavLinks: NavLinkItem[] = [
+  { name: "Collections", href: "/products" },
+  { name: "About", href: "/about" },
+  { name: "Contact", href: "/contact" },
+];
 
 export const Navbar = () => {
   const { scrollY } = useScroll();
@@ -27,11 +35,11 @@ export const Navbar = () => {
   const { fetchWishlist } = useWishlistStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const height = useTransform(scrollY, [0, 80], ["70px", "56px"]);
+  const height = useTransform(scrollY, [0, 80], ["70px", "58px"]);
   const backgroundColor = useTransform(
     scrollY,
     [0, 80],
-    ["rgba(249, 249, 251, 0)", "rgba(249, 249, 251, 0.8)"]
+    ["rgba(249, 249, 251, 0.92)", "rgba(249, 249, 251, 0.98)"]
   );
 
   useEffect(() => {
@@ -53,12 +61,27 @@ export const Navbar = () => {
     });
   }, [scrollY]);
 
-  const navLinks = [
-    { name: "Collections", href: "/products" },
-    { name: "Archives", href: "/archives" },
-    { name: "Editorial", href: "/editorial" },
-    { name: "About", href: "/about" },
-  ];
+  const [navLinks, setNavLinks] = useState<NavLinkItem[]>(defaultNavLinks);
+
+  useEffect(() => {
+    let isCurrent = true;
+    contentApi
+      .getByKey("nav_links")
+      .then((res) => {
+        if (
+          isCurrent &&
+          Array.isArray(res.data?.data) &&
+          res.data.data.length > 0
+        ) {
+          setNavLinks(res.data.data as NavLinkItem[]);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
 
   const accountHref = isMounted && isAuthenticated ? "/account" : "/login";
 
@@ -71,10 +94,10 @@ export const Navbar = () => {
     <motion.nav
       style={{ height, backgroundColor }}
       className={cn(
-        "cinematic-ease fixed top-0 z-50 flex w-full items-center justify-between border-b px-8 backdrop-blur-xl transition-all duration-500",
+        "cinematic-ease relative z-40 flex w-full items-center justify-between border-b px-8 backdrop-blur-xl transition-all duration-500",
         isScrolled
-          ? "border-outline-variant/10 shadow-sm"
-          : "border-transparent"
+          ? "border-outline-variant/15 shadow-sm"
+          : "border-outline-variant/10"
       )}
     >
       <div className="flex items-center gap-12">
@@ -170,8 +193,7 @@ export const Navbar = () => {
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
-              "fixed right-0 left-0 z-40 border-b border-outline-variant/20 bg-surface/95 px-6 py-6 shadow-xl shadow-black/5 backdrop-blur-xl md:hidden",
-              isScrolled ? "top-[56px]" : "top-[70px]"
+              "absolute top-full right-0 left-0 z-40 border-b border-outline-variant/20 bg-surface/95 px-6 py-6 shadow-xl shadow-black/5 backdrop-blur-xl md:hidden"
             )}
           >
             <div className="flex flex-col gap-1">

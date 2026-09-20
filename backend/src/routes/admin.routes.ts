@@ -23,6 +23,12 @@ import {
   getCustomerRetention,
 } from "../controllers/admin.controller";
 import { getAdminProducts } from "../controllers/product.controller";
+import {
+  getAdminReviews,
+  updateReviewStatus,
+  replyToReview,
+  adminDeleteReview,
+} from "../controllers/review.controller";
 import { authMiddleware } from "../middleware/auth";
 import { adminMiddleware } from "../middleware/auth";
 
@@ -30,6 +36,12 @@ const router = Router();
 
 router.use(authMiddleware);
 router.use(adminMiddleware);
+
+router.get("/reviews", getAdminReviews);
+router.patch("/reviews/:id/status", updateReviewStatus);
+router.put("/reviews/:id/status", updateReviewStatus);
+router.post("/reviews/:id/reply", replyToReview);
+router.delete("/reviews/:id", adminDeleteReview);
 
 router.get("/categories", getAdminCategories);
 router.post("/categories/reorder", reorderCategories);

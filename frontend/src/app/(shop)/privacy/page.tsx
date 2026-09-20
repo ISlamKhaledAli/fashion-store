@@ -145,14 +145,56 @@ const sections = [
   },
 ];
 
+import { useState, useEffect } from "react";
+import { contentApi } from "@/lib/api";
+import type { PolicyPageContent } from "@/types";
+
 export default function PrivacyPolicyPage() {
+  const [content, setContent] = useState<PolicyPageContent | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    contentApi
+      .getByKey<PolicyPageContent>("policy_privacy")
+      .then((res) => {
+        if (isMounted && res.data?.data) {
+          setContent(res.data.data);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const renderedSections =
+    content?.sections && content.sections.length > 0
+      ? content.sections.map((sec) => ({
+          id: sec.id,
+          title: sec.title,
+          content: (
+            <div className="space-y-4">
+              {sec.content.split("\n\n").map((p, idx) => (
+                <p key={idx} className="leading-relaxed whitespace-pre-line">
+                  {p}
+                </p>
+              ))}
+            </div>
+          ),
+        }))
+      : sections;
+
   return (
     <PolicyLayout
-      title="Privacy & Data Protection"
-      subtitle="Our unwavering commitment to safeguarding client information, payment credentials, and personal privacy."
-      lastUpdated="September 2026"
+      title={content?.title || "Privacy & Data Protection"}
+      subtitle={
+        content?.subtitle ||
+        "Our unwavering commitment to safeguarding client information, payment credentials, and personal privacy."
+      }
+      lastUpdated={content?.lastUpdated || "January 2026"}
       currentPath="/privacy"
-      sections={sections}
+      sections={renderedSections}
     />
   );
 }

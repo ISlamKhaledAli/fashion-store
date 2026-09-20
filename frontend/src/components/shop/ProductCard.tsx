@@ -14,6 +14,7 @@ import { Button } from "../ui/Button";
 import { flyToCart } from "@/lib/animations";
 import { RatingDisplay } from "../ui/RatingDisplay";
 import { QuickViewModal } from "./QuickViewModal";
+import { ProductBadge } from "./ProductBadge";
 
 interface ProductCardProps {
   product: Product;
@@ -180,6 +181,7 @@ export const ProductCard = ({
           href={`/products/${product.slug}${hoveredColor || selectedColor ? `?color=${encodeURIComponent((hoveredColor || selectedColor) as string)}` : ""}`}
           className="relative aspect-3/4 w-full shrink-0 overflow-hidden bg-surface-container-low transition-transform duration-500 group-hover:-translate-y-1 sm:aspect-square sm:w-64"
         >
+          <ProductBadge product={product} />
           {product.images?.find((img) => img.isMain)?.url ||
           product.images?.[0]?.url ? (
             <Image
@@ -248,9 +250,16 @@ export const ProductCard = ({
           </p>
 
           <div className="flex items-center gap-6">
-            <span className="text-xl font-bold tracking-tighter">
-              {formatCurrency(product.price)}
-            </span>
+            <div className="flex items-baseline gap-2">
+              {product.comparePrice && product.comparePrice > product.price && (
+                <span className="text-sm text-on-surface-variant/60 line-through">
+                  {formatCurrency(product.comparePrice)}
+                </span>
+              )}
+              <span className="text-xl font-bold tracking-tighter">
+                {formatCurrency(product.price)}
+              </span>
+            </div>
             <div className="h-4 w-px bg-outline-variant" />
             <RatingDisplay
               rating={product.avgRating}
@@ -326,6 +335,7 @@ export const ProductCard = ({
           className="block"
         >
           <div className="relative mb-4 aspect-3/4 overflow-hidden bg-surface-container-low">
+            <ProductBadge product={product} />
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentImage?.url || "placeholder"}
@@ -432,9 +442,17 @@ export const ProductCard = ({
               <h3 className="text-sm font-medium tracking-tight">
                 {product.name}
               </h3>
-              <span className="text-sm font-medium">
-                {formatCurrency(product.price)}
-              </span>
+              <div className="flex items-baseline gap-2">
+                {product.comparePrice &&
+                  product.comparePrice > product.price && (
+                    <span className="text-xs text-on-surface-variant/60 line-through">
+                      {formatCurrency(product.comparePrice)}
+                    </span>
+                  )}
+                <span className="text-sm font-medium">
+                  {formatCurrency(product.price)}
+                </span>
+              </div>
             </div>
 
             {/* Color Swatches */}
@@ -493,6 +511,7 @@ export const ProductCard = ({
         className="block"
       >
         <div className="cinematic-ease relative mb-6 aspect-4/5 overflow-hidden bg-surface-container-low duration-500 group-hover:-translate-y-2">
+          <ProductBadge product={product} />
           <AnimatePresence mode="wait">
             <motion.div
               key={currentImage?.url || "placeholder"}
@@ -583,9 +602,16 @@ export const ProductCard = ({
             <p className="text-[9px] font-black tracking-[0.25em] text-on-surface-variant uppercase">
               {product.brand?.name || "THE CURATOR"}
             </p>
-            <span className="text-sm font-bold tracking-tighter text-on-surface">
-              {formatCurrency(product.price)}
-            </span>
+            <div className="flex items-baseline gap-2">
+              {product.comparePrice && product.comparePrice > product.price && (
+                <span className="text-xs text-on-surface-variant/60 line-through">
+                  {formatCurrency(product.comparePrice)}
+                </span>
+              )}
+              <span className="text-sm font-bold tracking-tighter text-on-surface">
+                {formatCurrency(product.price)}
+              </span>
+            </div>
           </div>
 
           {/* Title & Color Display */}

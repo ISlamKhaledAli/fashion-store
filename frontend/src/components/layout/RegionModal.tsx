@@ -1,18 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
 import { useCurrencyStore } from "@/store/currencyStore";
+import { contentApi } from "@/lib/api";
+import type {
+  RegionOption,
+  LanguageOption,
+  RegionSettingsContent,
+} from "@/types";
 
 interface RegionModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const REGIONS = [
+const DEFAULT_REGIONS: RegionOption[] = [
   {
     code: "US",
     name: "United States",
@@ -46,30 +52,55 @@ const REGIONS = [
   { code: "JP", name: "Japan", currency: "JPY", symbol: "¥", flag: "🇯🇵" },
 ];
 
-const LANGUAGES = [
+const DEFAULT_LANGUAGES: LanguageOption[] = [
   { code: "en", name: "English (US)" },
   { code: "ar", name: "العربية" },
   { code: "fr", name: "Français" },
 ];
 
 export function RegionModal({ isOpen, onClose }: RegionModalProps) {
-  const [selectedRegion, setSelectedRegion] = useState(() => {
+  const [regionsList, setRegionsList] = useState<RegionOption[]>(
+    () => DEFAULT_REGIONS
+  );
+  const [languagesList, setLanguagesList] = useState<LanguageOption[]>(
+    () => DEFAULT_LANGUAGES
+  );
+
+  useEffect(() => {
+    contentApi
+      .getByKey<RegionSettingsContent>("regions")
+      .then((res) => {
+        if (res.data.success && res.data.data) {
+          const data = res.data
+            .data as unknown as Partial<RegionSettingsContent>;
+          if (Array.isArray(data.regions) && data.regions.length > 0) {
+            setRegionsList(data.regions);
+          }
+          if (Array.isArray(data.languages) && data.languages.length > 0) {
+            setLanguagesList(data.languages);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const [selectedRegion, setSelectedRegion] = useState<RegionOption>(() => {
     if (typeof window !== "undefined") {
       try {
         const saved = localStorage.getItem("thecurator_preferences");
         if (saved) {
           const parsed = JSON.parse(saved);
-          const found = REGIONS.find((r) => r.code === parsed.region);
+          const found = DEFAULT_REGIONS.find((r) => r.code === parsed.region);
           if (found) return found;
         }
       } catch {
         // Ignore
       }
     }
-    return REGIONS[0];
+    return DEFAULT_REGIONS[0];
   });
 
-  const [selectedLanguage, setSelectedLanguage] = useState(() => {
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(() => {
     if (typeof window !== "undefined") {
       try {
         const saved = localStorage.getItem("thecurator_preferences");
@@ -81,7 +112,7 @@ export function RegionModal({ isOpen, onClose }: RegionModalProps) {
         // Ignore
       }
     }
-    return LANGUAGES[0].code;
+    return DEFAULT_LANGUAGES[0].code;
   });
 
   const handleSave = () => {
@@ -130,7 +161,7 @@ export function RegionModal({ isOpen, onClose }: RegionModalProps) {
             Shipping Destination & Currency
           </label>
           <div className="grid max-h-64 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
-            {REGIONS.map((region) => {
+            {regionsList.map((region) => {
               const isSelected = selectedRegion.code === region.code;
               return (
                 <button
@@ -167,7 +198,7 @@ export function RegionModal({ isOpen, onClose }: RegionModalProps) {
             Language
           </label>
           <div className="flex gap-2">
-            {LANGUAGES.map((lang) => {
+            {languagesList.map((lang) => {
               const isSelected = selectedLanguage === lang.code;
               return (
                 <button

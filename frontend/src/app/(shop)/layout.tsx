@@ -1,4 +1,5 @@
 import React from "react";
+import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CartDrawer } from "@/components/layout/CartDrawer";
@@ -12,9 +13,12 @@ export default function ShopLayout({
 }) {
   return (
     <>
-      <Navbar />
+      <header className="sticky top-0 z-50 w-full">
+        <AnnouncementBar />
+        <Navbar />
+      </header>
       <CartDrawer />
-      <div className="min-h-screen pt-[70px]">{children}</div>
+      <main className="min-h-screen">{children}</main>
       <ChatAssistantWrapper />
       <PwaInstallPrompt />
       <Footer />

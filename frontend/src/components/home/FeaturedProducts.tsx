@@ -3,16 +3,37 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ProductCard } from "@/components/shop/ProductCard";
-import { productApi } from "@/lib/api";
-import type { Product } from "@/types";
+import { contentApi, productApi } from "@/lib/api";
+import type { HomeFeaturedSectionContent, Product } from "@/types";
 import Link from "next/link";
 import { ProductSkeleton } from "@/components/shop/ProductSkeleton";
 
 export const FeaturedProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [sectionContent, setSectionContent] =
+    useState<HomeFeaturedSectionContent>(() => ({
+      label: "New Release",
+      heading: "The Core Collection",
+      viewAllText: "View All",
+    }));
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    contentApi
+      .getByKey<HomeFeaturedSectionContent>("home_featured_section")
+      .then((res) => {
+        if (res.data.success && res.data.data) {
+          const fetched = res.data
+            .data as unknown as Partial<HomeFeaturedSectionContent>;
+          setSectionContent((prev) => ({
+            label: fetched.label || prev.label,
+            heading: fetched.heading || prev.heading,
+            viewAllText: fetched.viewAllText || prev.viewAllText,
+          }));
+        }
+      })
+      .catch(() => {});
+
     const fetchProducts = async () => {
       try {
         setIsLoading(true);
@@ -40,10 +61,10 @@ export const FeaturedProducts = () => {
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] as const }}
           >
             <p className="mb-4 font-label text-xs tracking-[0.2em] text-on-surface-variant uppercase">
-              New Release
+              {sectionContent.label}
             </p>
             <h2 className="text-4xl font-medium tracking-tight text-on-surface md:text-5xl">
-              The Core Collection
+              {sectionContent.heading}
             </h2>
           </motion.div>
 
@@ -51,7 +72,7 @@ export const FeaturedProducts = () => {
             href="/products"
             className="border-b border-primary/20 pb-1 font-medium text-primary transition-all duration-300 hover:border-primary"
           >
-            View All
+            {sectionContent.viewAllText}
           </Link>
         </div>
 

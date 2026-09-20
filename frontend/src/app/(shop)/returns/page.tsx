@@ -119,14 +119,56 @@ const sections = [
   },
 ];
 
+import { useState, useEffect } from "react";
+import { contentApi } from "@/lib/api";
+import type { PolicyPageContent } from "@/types";
+
 export default function ReturnsPolicyPage() {
+  const [content, setContent] = useState<PolicyPageContent | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    contentApi
+      .getByKey<PolicyPageContent>("policy_returns")
+      .then((res) => {
+        if (isMounted && res.data?.data) {
+          setContent(res.data.data);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const renderedSections =
+    content?.sections && content.sections.length > 0
+      ? content.sections.map((sec) => ({
+          id: sec.id,
+          title: sec.title,
+          content: (
+            <div className="space-y-4">
+              {sec.content.split("\n\n").map((p, idx) => (
+                <p key={idx} className="leading-relaxed whitespace-pre-line">
+                  {p}
+                </p>
+              ))}
+            </div>
+          ),
+        }))
+      : sections;
+
   return (
     <PolicyLayout
-      title="Returns & Exchanges Policy"
-      subtitle="Seamless 14-day return protocols, complimentary courier pickups, and exchange reservations."
-      lastUpdated="September 2026"
+      title={content?.title || "Returns & Exchanges Policy"}
+      subtitle={
+        content?.subtitle ||
+        "Seamless 14-day return protocols, complimentary courier pickups, and exchange reservations."
+      }
+      lastUpdated={content?.lastUpdated || "January 2026"}
       currentPath="/returns"
-      sections={sections}
+      sections={renderedSections}
     />
   );
 }

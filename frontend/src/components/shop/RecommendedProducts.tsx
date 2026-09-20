@@ -24,10 +24,6 @@ export const RecommendedProducts: React.FC<RecommendedProductsProps> = ({
       try {
         const response = await productApi.getRecommendations(currentProductId);
         if (active && response.data?.success) {
-          console.log(
-            "[RECOMMENDATIONS] Loaded recommendations. Source:",
-            response.data.source
-          );
           setRecommendations(response.data.recommendations || []);
           setSource(response.data.source || "fallback");
         }

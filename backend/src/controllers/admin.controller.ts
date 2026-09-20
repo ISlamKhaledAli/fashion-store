@@ -1,10 +1,13 @@
 import { Request, Response, NextFunction } from "express";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { sendResponse } from "../utils/apiResponse";
 import { getPagination, calculatePagination } from "../utils/pagination";
 import { createDiscountSchema } from "../validators/common.validator";
 import { NotFoundError } from "../utils/AppError";
 import { isNotFoundError } from "../utils/prismaErrors";
+import { sendShippingNotificationEmail } from "../services/email";
+import logger from "../utils/logger";
 
 export const getAdminCategories = async (
   req: Request,
@@ -138,15 +141,44 @@ export const updateOrderStatus = async (
 ) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, trackingNumber, carrier } = req.body;
+
+    const dataToUpdate: Prisma.OrderUpdateInput = {};
+    if (status) {
+      dataToUpdate.status = status;
+      if (status === "SHIPPED") {
+        dataToUpdate.shippedAt = new Date();
+      }
+    }
+    if (trackingNumber !== undefined) {
+      dataToUpdate.trackingNumber = trackingNumber;
+    }
+    if (carrier !== undefined) {
+      dataToUpdate.carrier = carrier;
+    }
 
     const order = await prisma.order.update({
       where: { id: String(id) },
-      data: {
-        status,
-        shippedAt: status === "SHIPPED" ? new Date() : undefined,
+      data: dataToUpdate,
+      include: {
+        user: { select: { email: true, name: true } },
       },
     });
+
+    if (status === "SHIPPED" && order.user?.email && order.trackingNumber) {
+      sendShippingNotificationEmail({
+        to: order.user.email,
+        orderNumber: order.id,
+        customerName: order.user.name,
+        carrier: order.carrier || undefined,
+        trackingNumber: order.trackingNumber,
+      }).catch((err) => {
+        logger.warn(
+          `Failed to send shipping email for order ${order.id}:`,
+          err
+        );
+      });
+    }
 
     return sendResponse({ res, status: 200, success: true, data: order });
   } catch (error) {

@@ -114,14 +114,56 @@ const sections = [
   },
 ];
 
+import { useState, useEffect } from "react";
+import { contentApi } from "@/lib/api";
+import type { PolicyPageContent } from "@/types";
+
 export default function ShippingPolicyPage() {
+  const [content, setContent] = useState<PolicyPageContent | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    contentApi
+      .getByKey<PolicyPageContent>("policy_shipping")
+      .then((res) => {
+        if (isMounted && res.data?.data) {
+          setContent(res.data.data);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const renderedSections =
+    content?.sections && content.sections.length > 0
+      ? content.sections.map((sec) => ({
+          id: sec.id,
+          title: sec.title,
+          content: (
+            <div className="space-y-4">
+              {sec.content.split("\n\n").map((p, idx) => (
+                <p key={idx} className="leading-relaxed whitespace-pre-line">
+                  {p}
+                </p>
+              ))}
+            </div>
+          ),
+        }))
+      : sections;
+
   return (
     <PolicyLayout
-      title="Shipping & Dispatch Protocol"
-      subtitle="Comprehensive guidelines on international transport, customs handling, and white-glove packaging."
-      lastUpdated="September 2026"
+      title={content?.title || "Shipping & Dispatch Protocol"}
+      subtitle={
+        content?.subtitle ||
+        "Comprehensive guidelines on international transport, customs handling, and white-glove packaging."
+      }
+      lastUpdated={content?.lastUpdated || "January 2026"}
       currentPath="/shipping"
-      sections={sections}
+      sections={renderedSections}
     />
   );
 }

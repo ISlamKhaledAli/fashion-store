@@ -149,6 +149,7 @@ export interface Order {
   total: number;
   items: OrderItem[];
   trackingNumber?: string;
+  carrier?: string;
   createdAt: string;
 }
 
@@ -159,16 +160,29 @@ export interface PaginationData {
   totalPages: number;
 }
 
+export type ReviewStatus = "PENDING" | "APPROVED" | "REJECTED";
+
 export interface Review {
   id: string;
   userId: string;
   user?: {
+    id?: string;
     name: string;
+    email?: string;
     avatar?: string;
   };
+  product?: {
+    id: string;
+    name: string;
+    slug: string;
+    images?: { url: string }[];
+  };
+  productId?: string;
   rating: number;
   title?: string;
   body: string;
+  status: ReviewStatus;
+  adminReply?: string | null;
   createdAt: string;
 }
 
@@ -211,4 +225,229 @@ export interface AdminCustomer {
   joinDate: string;
   status: "ACTIVE" | "BANNED";
   orders?: CustomerOrder[];
+}
+
+export interface HeroContent {
+  tagline: string;
+  title: string;
+  description: string;
+  ctaText: string;
+  ctaLink: string;
+  secondaryCtaText: string;
+  secondaryCtaLink: string;
+  imageUrl: string;
+  stats: Array<{ value: string; label: string }>;
+}
+
+export interface BrandStoryContent {
+  title: string;
+  heading: string;
+  quote: string;
+  author: string;
+  authorRole: string;
+  badgeText: string;
+  badgeSubtext: string;
+  imageUrl: string;
+}
+
+export interface CtaBannerContent {
+  tagline: string;
+  title: string;
+  description: string;
+  primaryButtonText: string;
+  primaryButtonLink: string;
+  secondaryButtonText: string;
+  secondaryButtonLink: string;
+}
+
+export interface SocialLinksContent {
+  instagram?: string;
+  twitter?: string;
+  facebook?: string;
+  tiktok?: string;
+  pinterest?: string;
+}
+
+export interface NavLinkItem {
+  name: string;
+  href: string;
+}
+
+export interface FooterContent {
+  brandDescription: string;
+  copyrightText: string;
+  socialLinks?: SocialLinksContent;
+}
+
+export interface ContactSalon {
+  city: string;
+  address: string;
+  hours: string;
+}
+
+export interface ContactPageContent {
+  email: string;
+  phone: string;
+  hours: string;
+  salons: ContactSalon[];
+}
+
+export interface AboutPillar {
+  num: string;
+  title: string;
+  description: string;
+}
+
+export interface AboutMilestone {
+  value: string;
+  label: string;
+}
+
+export interface AboutPageContent {
+  badge: string;
+  title: string;
+  description: string;
+  bannerImage: string;
+  quote: string;
+  quoteAuthor: string;
+  pillars: AboutPillar[];
+  milestones: AboutMilestone[];
+}
+
+export interface FAQItemData {
+  id: string;
+  category: string;
+  question: string;
+  answer: string;
+}
+
+export interface PolicySectionData {
+  id: string;
+  title: string;
+  content: string;
+}
+
+export interface PolicyPageContent {
+  title: string;
+  subtitle: string;
+  lastUpdated: string;
+  sections: PolicySectionData[];
+}
+
+export type ContactMessageStatus = "UNREAD" | "READ" | "ARCHIVED" | "REPLIED";
+
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject?: string | null;
+  message: string;
+  status: ContactMessageStatus;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SiteContentItem {
+  id: string;
+  key: string;
+  data: unknown;
+  updatedAt: string;
+  createdAt: string;
+}
+
+export interface PwaModalBenefit {
+  num: string;
+  title: string;
+  description: string;
+}
+
+export interface PwaModalContent {
+  badge: string;
+  title: string;
+  imageUrl: string;
+  description: string;
+  benefits: PwaModalBenefit[];
+  buttonText: string;
+}
+
+export interface HomeCategoriesSectionContent {
+  label: string;
+  heading: string;
+}
+
+export interface HomeFeaturedSectionContent {
+  label: string;
+  heading: string;
+  viewAllText: string;
+}
+
+export interface SizeGuideRow {
+  size: string;
+  chest: string;
+  waist: string;
+  hip: string;
+}
+
+export interface MeasureInstruction {
+  label: string;
+  instruction: string;
+}
+
+export interface SizeGuideContent {
+  title: string;
+  subtitle: string;
+  rows: SizeGuideRow[];
+  howToMeasure: MeasureInstruction[];
+  fitsAndStyles: string;
+}
+
+export interface RegionOption {
+  code: string;
+  name: string;
+  currency: string;
+  symbol: string;
+  flag: string;
+}
+
+export interface LanguageOption {
+  code: string;
+  name: string;
+}
+
+export interface RegionSettingsContent {
+  regions: RegionOption[];
+  languages: LanguageOption[];
+}
+
+export type NewsletterStatus = "SUBSCRIBED" | "UNSUBSCRIBED";
+
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  status: NewsletterStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NewsletterStats {
+  total: number;
+  active: number;
+  unsubscribed: number;
+}
+
+export interface NewsletterListResponse {
+  subscribers: NewsletterSubscriber[];
+  stats: NewsletterStats;
+}
+
+export interface AnnouncementBarContent {
+  enabled: boolean;
+  text: string;
+  badgeText?: string;
+  link?: string;
+  linkText?: string;
+  bgColor?: string;
+  textColor?: string;
+  closable?: boolean;
 }
