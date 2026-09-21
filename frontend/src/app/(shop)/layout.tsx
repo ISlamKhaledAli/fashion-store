@@ -19,7 +19,7 @@ export default function ShopLayout({
         <Navbar />
       </header>
       <CartDrawer />
-      <main className="min-h-screen">{children}</main>
+      <main className="min-h-screen overflow-x-clip">{children}</main>
       <ChatAssistantWrapper />
       <PwaInstallPrompt />
       <Footer />

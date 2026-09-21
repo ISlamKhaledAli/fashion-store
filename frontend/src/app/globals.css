@@ -85,12 +85,16 @@ body {
   color: var(--foreground) !important;
   font-family: var(--font-inter);
   -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 html {
   background-color: var(--background) !important;
   color: var(--foreground) !important;
   color-scheme: only light !important;
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 /* Cinematic Utilities */

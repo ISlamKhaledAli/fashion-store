@@ -386,24 +386,40 @@ export const ProductCard = ({
               }
             />
 
+            {/* Quick View Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsQuickViewOpen(true);
+              }}
+              title="Quick View"
+              aria-label="Quick View"
+              className="absolute bottom-3 left-3 z-10 flex h-10 w-10 translate-y-0 cursor-pointer items-center justify-center rounded-full bg-white/95 text-stone-900 opacity-100 shadow-md backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-white active:scale-95 md:translate-y-2 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100"
+            >
+              <Eye size={18} strokeWidth={1.5} />
+            </button>
+
+            {/* Quick Add Button */}
             {product.variants?.[0] && (
               <Button
                 variant={status === "success" ? "success" : "primary"}
+                size="icon"
                 onClick={handleAddToCart}
                 disabled={status !== "idle"}
-                className="absolute bottom-0 left-0 z-10 w-full translate-y-full py-6 duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-y-0"
-                size="none"
+                className="absolute right-3 bottom-3 z-10 flex h-10 w-10 translate-y-0 cursor-pointer items-center justify-center rounded-full bg-stone-950 text-white opacity-100 shadow-md transition-all duration-300 hover:scale-105 hover:bg-stone-800 active:scale-95 md:translate-y-2 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100"
+                aria-label="Add to cart"
               >
                 <AnimatePresence mode="wait">
                   {status === "idle" && (
                     <motion.span
                       key="idle"
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -5 }}
-                      transition={{ duration: 0.2 }}
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.5 }}
                     >
-                      Quick Add
+                      <Plus size={20} strokeWidth={1.5} />
                     </motion.span>
                   )}
                   {status === "loading" && (
@@ -412,7 +428,6 @@ export const ProductCard = ({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="flex items-center justify-center"
                     >
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                     </motion.span>
@@ -420,12 +435,11 @@ export const ProductCard = ({
                   {status === "success" && (
                     <motion.span
                       key="success"
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -5 }}
-                      className="flex items-center gap-2"
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.5 }}
                     >
-                      <Check size={18} /> Added
+                      <Check size={18} />
                     </motion.span>
                   )}
                 </AnimatePresence>
@@ -493,6 +507,11 @@ export const ProductCard = ({
             )}
           </div>
         </Link>
+        <QuickViewModal
+          product={product}
+          isOpen={isQuickViewOpen}
+          onClose={() => setIsQuickViewOpen(false)}
+        />
       </article>
     );
   }
@@ -536,6 +555,33 @@ export const ProductCard = ({
             </motion.div>
           </AnimatePresence>
 
+          {/* Wishlist Button */}
+          <Button
+            variant="icon"
+            size="icon"
+            onClick={toggleFavorite}
+            isActive={isFavorite}
+            className={cn(
+              "group/fav absolute top-4 right-4 z-10 rounded-full backdrop-blur-md transition-all duration-300",
+              isFavorite
+                ? "bg-black text-white!"
+                : "bg-black/40 text-white! hover:bg-black"
+            )}
+            aria-label={
+              isFavorite ? "Remove from favorites" : "Add to favorites"
+            }
+            icon={
+              <Heart
+                size={20}
+                className={cn(
+                  "transition-all duration-300",
+                  isFavorite ? "fill-white!" : "group-hover/fav:fill-white!"
+                )}
+                strokeWidth={1.5}
+              />
+            }
+          />
+
           {/* Quick View Button */}
           <button
             type="button"
@@ -546,7 +592,7 @@ export const ProductCard = ({
             }}
             title="Quick View"
             aria-label="Quick View"
-            className="absolute bottom-6 left-6 z-10 flex h-12 w-12 translate-y-4 cursor-pointer items-center justify-center rounded-full bg-white/95 text-on-surface opacity-0 shadow-xl backdrop-blur-md transition-all delay-75 duration-500 group-hover:translate-y-0 group-hover:opacity-100 hover:scale-105 hover:bg-white active:scale-95"
+            className="absolute bottom-3 left-3 z-10 flex h-10 w-10 translate-y-0 cursor-pointer items-center justify-center rounded-full bg-white/95 text-on-surface opacity-100 shadow-xl backdrop-blur-md transition-all delay-75 duration-500 hover:scale-105 hover:bg-white active:scale-95 sm:bottom-6 sm:left-6 sm:h-12 sm:w-12 md:translate-y-4 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100"
           >
             <Eye size={20} strokeWidth={1.5} />
           </button>
@@ -557,7 +603,7 @@ export const ProductCard = ({
               size="icon"
               onClick={handleAddToCart}
               disabled={status !== "idle"}
-              className="absolute right-6 bottom-6 flex h-12 w-12 translate-y-4 cursor-pointer items-center justify-center rounded-full bg-primary text-on-primary opacity-0 shadow-xl transition-all delay-100 duration-500 group-hover:translate-y-0 group-hover:opacity-100"
+              className="absolute right-3 bottom-3 z-10 flex h-10 w-10 translate-y-0 cursor-pointer items-center justify-center rounded-full bg-primary text-on-primary opacity-100 shadow-xl transition-all delay-100 duration-500 hover:scale-105 active:scale-95 sm:right-6 sm:bottom-6 sm:h-12 sm:w-12 md:translate-y-4 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100"
               aria-label="Add to cart"
             >
               <AnimatePresence mode="wait">

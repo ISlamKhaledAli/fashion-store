@@ -95,16 +95,16 @@ export const Navbar = () => {
     <motion.nav
       style={{ height, backgroundColor }}
       className={cn(
-        "cinematic-ease relative z-40 flex w-full items-center justify-between border-b px-8 backdrop-blur-xl transition-all duration-500",
+        "cinematic-ease relative z-40 flex w-full items-center justify-between border-b px-4 backdrop-blur-xl transition-all duration-500 sm:px-8",
         isScrolled
           ? "border-outline-variant/15 shadow-sm"
           : "border-outline-variant/10"
       )}
     >
-      <div className="flex items-center gap-12">
+      <div className="flex items-center gap-4 sm:gap-12">
         <Link
           href="/"
-          className="cursor-pointer text-2xl font-semibold tracking-tighter text-on-surface transition-opacity hover:opacity-70"
+          className="cursor-pointer text-xl font-semibold tracking-tighter text-on-surface transition-opacity hover:opacity-70 sm:text-2xl"
         >
           CURATOR
         </Link>
@@ -128,7 +128,7 @@ export const Navbar = () => {
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-1 sm:gap-3 md:gap-6">
         <Button
           variant="icon"
           size="icon"

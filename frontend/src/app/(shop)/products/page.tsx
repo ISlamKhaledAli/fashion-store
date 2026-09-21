@@ -237,7 +237,7 @@ function ProductsContent() {
         onClose={() => setIsSidebarOpen(false)}
       />
 
-      <section className="flex-1 p-8 lg:p-12">
+      <section className="max-w-full flex-1 overflow-hidden px-4 py-8 sm:px-8 sm:py-10 lg:p-12">
         <header className="mb-12 flex flex-col items-end justify-between gap-6 md:flex-row">
           <div className="w-full space-y-4">
             <h1 className="text-4xl font-medium tracking-tighter lg:text-6xl">
@@ -261,7 +261,7 @@ function ProductsContent() {
             </div>
           </div>
 
-          <div className="flex w-full flex-wrap items-center justify-between gap-x-8 gap-y-4 border-b border-outline-variant/30 pb-2 md:w-auto md:justify-end">
+          <div className="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-4 border-b border-outline-variant/30 pb-2 sm:gap-x-8 md:w-auto md:justify-end">
             <Select
               labelPrefix="Sort:"
               options={SORT_OPTIONS}

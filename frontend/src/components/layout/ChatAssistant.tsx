@@ -498,7 +498,7 @@ export const ChatAssistant = () => {
   };
 
   return (
-    <div className="fixed right-6 bottom-6 z-[9999] flex flex-col items-end">
+    <div className="fixed right-4 bottom-4 z-[9999] flex flex-col items-end sm:right-6 sm:bottom-6">
       {/* Welcome Tooltip */}
       <AnimatePresence>
         {!isOpen && showTooltip && (
@@ -506,7 +506,7 @@ export const ChatAssistant = () => {
             initial={{ opacity: 0, y: 15, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.9 }}
-            className="relative mb-3 flex max-w-xs cursor-pointer items-center gap-2 rounded-xl border border-stone-200 bg-white py-2.5 pr-9 pl-4 text-xs font-medium tracking-tight text-on-surface-variant shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-primary/30"
+            className="relative mb-3 flex max-w-[calc(100vw-2.5rem)] cursor-pointer items-center gap-2 rounded-xl border border-stone-200 bg-white py-2.5 pr-9 pl-4 text-xs font-medium tracking-tight text-on-surface-variant shadow-xl backdrop-blur-xl transition-all duration-300 hover:border-primary/30 sm:max-w-xs"
             onClick={() => {
               setIsOpen(true);
               setShowTooltip(false);
