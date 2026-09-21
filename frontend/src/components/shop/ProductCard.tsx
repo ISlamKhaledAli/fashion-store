@@ -9,7 +9,6 @@ import { formatCurrency, cn } from "@/lib/utils";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { useWishlistStore } from "@/store/wishlistStore";
-import { useRouter } from "next/navigation";
 import { Button } from "../ui/Button";
 import { flyToCart } from "@/lib/animations";
 import { RatingDisplay } from "../ui/RatingDisplay";
@@ -34,12 +33,10 @@ export const ProductCard = ({
   const { addItem, toggleDrawer } = useCartStore();
   const { isAuthenticated } = useAuthStore();
   const {
-    items: wishlistItems,
     addItem: addToWishlist,
     removeItem: removeFromWishlist,
     isInWishlist,
   } = useWishlistStore();
-  const router = useRouter();
   const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const isAnimating = useRef(false);
