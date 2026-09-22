@@ -7,7 +7,7 @@ import { CTABanner } from "@/components/home/CTABanner";
 
 export default function HomePage() {
   return (
-    <div className="flex w-full flex-col gap-y-12">
+    <div className="relative flex w-full flex-col gap-y-12">
       <Hero />
       <PromotionalBanners />
       <Categories />

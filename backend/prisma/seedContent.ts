@@ -11,6 +11,23 @@ const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 export const DEFAULT_SITE_CONTENT: Record<string, unknown> = {
+  announcement_bar: {
+    enabled: true,
+    text: "Complimentary Worldwide Express Shipping on All Orders Over $250",
+    badgeText: "LIMITED TIME",
+    link: "/products",
+    linkText: "Shop Collection",
+    bgColor: "#09090b",
+    textColor: "#f4f4f5",
+    closable: true,
+  },
+
+  nav_links: [
+    { name: "Collections", href: "/products" },
+    { name: "About", href: "/about" },
+    { name: "Contact", href: "/contact" },
+  ],
+
   home_hero: {
     tagline: "Winter / Spring 2026",
     title: "Modern Elegance Redefined",

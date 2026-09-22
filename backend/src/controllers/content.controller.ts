@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
 import { sendResponse } from "../utils/apiResponse";
-import { NotFoundError } from "../utils/AppError";
 import { Prisma } from "@prisma/client";
 
 export const getContentByKey = async (
@@ -16,7 +15,13 @@ export const getContentByKey = async (
     });
 
     if (!content) {
-      return next(new NotFoundError(`Content not found for key: ${key}`));
+      return sendResponse({
+        res,
+        status: 200,
+        success: true,
+        data: null,
+        message: `Content not found for key: ${key}`,
+      });
     }
 
     return sendResponse({
