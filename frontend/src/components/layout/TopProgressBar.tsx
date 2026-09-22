@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, Suspense } from "react";
+import React, { useEffect, useRef, useCallback, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 function ProgressIndicator() {
@@ -17,24 +17,50 @@ function ProgressIndicator() {
   const guardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isNavigatingRef = useRef(false);
 
-  const clearAllTimers = () => {
+  const clearAllTimers = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
     if (guardTimerRef.current) clearTimeout(guardTimerRef.current);
     timerRef.current = null;
     fadeTimerRef.current = null;
     guardTimerRef.current = null;
-  };
+  }, []);
 
-  const updateDom = (percent: number, opacity: number, display: string) => {
-    if (!containerRef.current || !barRef.current || !beadRef.current) return;
-    containerRef.current.style.display = display;
-    containerRef.current.style.opacity = String(opacity);
-    barRef.current.style.width = `${percent}%`;
-    beadRef.current.style.left = `${percent}%`;
-  };
+  const updateDom = useCallback(
+    (percent: number, opacity: number, display: string) => {
+      if (!containerRef.current || !barRef.current || !beadRef.current) return;
+      containerRef.current.style.display = display;
+      containerRef.current.style.opacity = String(opacity);
+      barRef.current.style.width = `${percent}%`;
+      beadRef.current.style.left = `${percent}%`;
+    },
+    []
+  );
 
-  const startProgress = () => {
+  const completeProgress = useCallback(() => {
+    if (!isNavigatingRef.current) return;
+    isNavigatingRef.current = false;
+    clearAllTimers();
+
+    // Snap to 100%
+    if (barRef.current && beadRef.current) {
+      barRef.current.style.width = "100%";
+      beadRef.current.style.left = "100%";
+    }
+
+    // Smoothly fade out and hide
+    fadeTimerRef.current = setTimeout(() => {
+      if (containerRef.current) {
+        containerRef.current.style.opacity = "0";
+      }
+      fadeTimerRef.current = setTimeout(() => {
+        updateDom(0, 0, "none");
+        progressRef.current = 0;
+      }, 250);
+    }, 120);
+  }, [clearAllTimers, updateDom]);
+
+  const startProgress = useCallback(() => {
     clearAllTimers();
     isNavigatingRef.current = true;
     progressRef.current = 15;
@@ -59,37 +85,14 @@ function ProgressIndicator() {
     guardTimerRef.current = setTimeout(() => {
       completeProgress();
     }, 10000);
-  };
-
-  const completeProgress = () => {
-    if (!isNavigatingRef.current) return;
-    isNavigatingRef.current = false;
-    clearAllTimers();
-
-    // Snap to 100%
-    if (barRef.current && beadRef.current) {
-      barRef.current.style.width = "100%";
-      beadRef.current.style.left = "100%";
-    }
-
-    // Smoothly fade out and hide
-    fadeTimerRef.current = setTimeout(() => {
-      if (containerRef.current) {
-        containerRef.current.style.opacity = "0";
-      }
-      fadeTimerRef.current = setTimeout(() => {
-        updateDom(0, 0, "none");
-        progressRef.current = 0;
-      }, 250);
-    }, 120);
-  };
+  }, [clearAllTimers, updateDom, completeProgress]);
 
   // Complete progress when pathname or searchParams changes
   useEffect(() => {
     if (isNavigatingRef.current) {
       completeProgress();
     }
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, completeProgress]);
 
   useEffect(() => {
     const handleAnchorClick = (e: MouseEvent) => {
@@ -188,7 +191,7 @@ function ProgressIndicator() {
       window.history.replaceState = originalReplaceState;
       clearAllTimers();
     };
-  }, []);
+  }, [clearAllTimers, startProgress]);
 
   return (
     <div

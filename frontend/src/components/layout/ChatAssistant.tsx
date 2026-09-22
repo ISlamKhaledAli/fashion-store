@@ -309,7 +309,7 @@ export const ChatAssistant = () => {
 
               // Dynamically update the streaming response
               updateLastMessage(assistantReply);
-            } catch (e) {
+            } catch {
               // Ignore split JSON chunks
             }
           }

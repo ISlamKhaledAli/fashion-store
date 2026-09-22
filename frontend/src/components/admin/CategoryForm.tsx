@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
 import type { Category } from "@/types";
 import { adminApi } from "@/lib/api";
 import { toast } from "sonner";
@@ -78,7 +79,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
         setFormData((prev) => ({ ...prev, image: res.data.data.url }));
         toast.success("Image uploaded successfully");
       }
-    } catch (err) {
+    } catch {
       toast.error("Failed to upload image.");
     } finally {
       setIsUploading(false);
@@ -187,9 +188,11 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
               />
 
               {formData.image && (
-                <img
+                <Image
                   alt="Preview Image"
-                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 400px"
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                   src={formData.image}
                 />
               )}

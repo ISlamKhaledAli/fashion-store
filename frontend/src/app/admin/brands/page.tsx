@@ -31,7 +31,7 @@ export default function AdminBrandsPage() {
       if (res.data.success) {
         setBrands(res.data.data);
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to fetch brands");
     } finally {
       setIsLoading(false);
@@ -93,15 +93,6 @@ export default function AdminBrandsPage() {
     fetchBrands();
     setSelectedBrand(null);
     setIsAddingMode(false);
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
   };
 
   return (

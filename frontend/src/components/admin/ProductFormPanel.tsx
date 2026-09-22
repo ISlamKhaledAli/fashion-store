@@ -334,7 +334,7 @@ export const ProductFormPanel = ({
     }
   };
 
-  const updateAccordion = (
+  const _updateAccordion = (
     index: number,
     field: keyof AccordionItem,
     value: string | boolean
@@ -529,7 +529,7 @@ export const ProductFormPanel = ({
         }));
         toast.success("Imagery digitized successfully");
       }
-    } catch (err) {
+    } catch {
       setFormData((prev) => ({
         ...prev,
         images: prev.images.filter((img) => img.publicId !== tempId),

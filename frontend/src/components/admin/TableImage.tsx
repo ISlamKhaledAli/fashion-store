@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface TableImageProps {
@@ -26,19 +27,21 @@ export const TableImage: React.FC<TableImageProps> = ({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center overflow-hidden bg-zinc-100",
+        "relative flex shrink-0 items-center justify-center overflow-hidden bg-zinc-100",
         containerClassName
       )}
     >
       {src ? (
-        <img
+        <Image
           src={src}
           alt={alt}
+          fill
           className={cn(
-            "vibrant-img h-full w-full object-cover",
+            "vibrant-img object-cover",
             active && "is-active",
             className
           )}
+          unoptimized
         />
       ) : (
         <span className="text-[10px] font-black tracking-widest text-zinc-300 uppercase">

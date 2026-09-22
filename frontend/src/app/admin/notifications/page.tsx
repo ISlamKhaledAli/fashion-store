@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Bell,
   CheckCheck,
@@ -24,7 +26,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { notificationApi } from "@/lib/api";
 import type { Notification } from "@/types";
 import { formatRelativeTime } from "@/lib/utils";
-import Link from "next/link";
+import { getNotificationTarget } from "@/lib/notifications";
 
 const typeBadges: Record<
   string,
@@ -67,6 +69,7 @@ const typeBadges: Record<
 };
 
 export default function AdminNotificationsPage() {
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterType, setFilterType] = useState<string>("ALL");
@@ -117,6 +120,16 @@ export default function AdminNotificationsPage() {
       );
     } catch {
       toast.error("Failed to update status");
+    }
+  };
+
+  const handleRowClick = (notification: Notification) => {
+    if (!notification.isRead) {
+      void handleMarkRead(notification.id);
+    }
+    const target = getNotificationTarget(notification, true);
+    if (target) {
+      router.push(target);
     }
   };
 
@@ -308,10 +321,11 @@ export default function AdminNotificationsPage() {
               return (
                 <div
                   key={notification.id}
-                  className={`flex flex-col justify-between gap-4 p-5 transition-colors sm:flex-row sm:items-center ${
+                  onClick={() => handleRowClick(notification)}
+                  className={`group flex cursor-pointer flex-col justify-between gap-4 p-5 transition-colors sm:flex-row sm:items-center ${
                     !notification.isRead
-                      ? "bg-amber-50/20 dark:bg-amber-950/10"
-                      : "hover:bg-zinc-50/60 dark:hover:bg-zinc-800/30"
+                      ? "bg-amber-50/25 hover:bg-amber-50/50 dark:bg-amber-950/15 dark:hover:bg-amber-950/25"
+                      : "hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
                   }`}
                 >
                   <div className="flex items-start gap-4">
@@ -341,40 +355,19 @@ export default function AdminNotificationsPage() {
                     </div>
                   </div>
 
-                  <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
-                    {notification.type === "LOW_STOCK" && (
-                      <Link href="/admin/inventory">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 gap-1 text-xs"
-                        >
-                          Inspect Stock <ExternalLink className="h-3 w-3" />
-                        </Button>
-                      </Link>
-                    )}
-                    {notification.type === "RETURN_REQUEST" && (
-                      <Link href="/admin/returns">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 gap-1 text-xs"
-                        >
-                          Review Return <ExternalLink className="h-3 w-3" />
-                        </Button>
-                      </Link>
-                    )}
-                    {notification.type === "RENTAL_DUE" && (
-                      <Link href="/admin/rentals">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 gap-1 text-xs"
-                        >
-                          Check Rental <ExternalLink className="h-3 w-3" />
-                        </Button>
-                      </Link>
-                    )}
+                  <div
+                    className="flex shrink-0 items-center gap-2 self-end sm:self-center"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Link href={getNotificationTarget(notification, true)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-1 text-xs"
+                      >
+                        Inspect <ExternalLink className="h-3 w-3" />
+                      </Button>
+                    </Link>
 
                     {!notification.isRead && (
                       <Button

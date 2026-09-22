@@ -58,6 +58,7 @@ export const stripeWebhook = async (
       case "payment_intent.succeeded":
         const paymentIntent = event.data.object as StripePaymentIntent;
         const orderId = paymentIntent.metadata?.orderId;
+        const rentalId = paymentIntent.metadata?.rentalId;
 
         if (orderId) {
           await prisma.order.update({
@@ -69,12 +70,22 @@ export const stripeWebhook = async (
             },
           });
           logger.info(`Order ${orderId} marked as PAID`);
+        } else if (rentalId) {
+          await prisma.rental.update({
+            where: { id: rentalId },
+            data: {
+              paymentStatus: "PAID",
+              stripePaymentId: paymentIntent.id,
+            },
+          });
+          logger.info(`Rental ${rentalId} marked as PAID`);
         }
         break;
 
       case "payment_intent.payment_failed":
         const failedIntent = event.data.object as StripePaymentIntent;
         const failedOrderId = failedIntent.metadata?.orderId;
+        const failedRentalId = failedIntent.metadata?.rentalId;
 
         if (failedOrderId) {
           await prisma.order.update({
@@ -82,6 +93,12 @@ export const stripeWebhook = async (
             data: { paymentStatus: "FAILED" },
           });
           logger.error(`Order ${failedOrderId} payment FAILED`);
+        } else if (failedRentalId) {
+          await prisma.rental.update({
+            where: { id: failedRentalId },
+            data: { paymentStatus: "FAILED" },
+          });
+          logger.error(`Rental ${failedRentalId} payment FAILED`);
         }
         break;
 

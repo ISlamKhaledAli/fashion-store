@@ -148,7 +148,7 @@ export const PwaInstallPrompt: React.FC = () => {
       window.removeEventListener("appinstalled", handleAppInstalled);
       window.removeEventListener("open-pwa-install", handleCustomOpen);
     };
-  }, []);
+  }, [isIOS]);
 
   const handleDismiss = () => {
     setIsVisible(false);

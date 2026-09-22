@@ -199,7 +199,18 @@ function RentalCheckoutContent() {
       });
 
       if (res.data?.success && res.data?.data?.rental) {
-        setSuccessRentalId(res.data.data.rental.id);
+        const rental = res.data.data.rental;
+        const clientSecret = res.data.data.clientSecret;
+
+        if (clientSecret) {
+          try {
+            await rentalApi.confirmPayment(rental.id, {});
+          } catch {
+            // Soft fallback: booking remains in RESERVED state
+          }
+        }
+
+        setSuccessRentalId(rental.id);
         toast.success("Rental reservation booked successfully!");
       }
     } catch (err: unknown) {

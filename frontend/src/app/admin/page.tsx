@@ -203,7 +203,7 @@ export default function AdminDashboard() {
               : prev
           );
         }
-      } catch (error) {
+      } catch {
         toast.error("Failed to update order status");
       }
     },

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import NextImage from "next/image";
 import {
   Image as ImageIcon,
   Plus,
@@ -251,10 +252,12 @@ export const BannerManager = () => {
             >
               {/* Banner Image Header */}
               <div className="bg-muted relative h-40 w-full overflow-hidden">
-                <img
+                <NextImage
                   src={banner.imageUrl}
                   alt={banner.title}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  unoptimized
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
@@ -400,10 +403,12 @@ export const BannerManager = () => {
             </div>
             {imageUrl && (
               <div className="border-border/60 relative mt-2 h-24 w-full overflow-hidden rounded-lg border">
-                <img
+                <NextImage
                   src={imageUrl}
                   alt="Preview"
-                  className="h-full w-full object-cover"
+                  fill
+                  className="object-cover"
+                  unoptimized
                 />
               </div>
             )}

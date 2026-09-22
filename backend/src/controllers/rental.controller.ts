@@ -6,7 +6,7 @@ import {
   createRentalSchema,
   returnRentalSchema,
 } from "../validators/rental.validator";
-import { createPaymentIntent } from "../services/stripe";
+import stripe, { createPaymentIntent } from "../services/stripe";
 import logger from "../utils/logger";
 import {
   NotFoundError,
@@ -267,6 +267,19 @@ export const createRental = async (
       });
     });
 
+    if (stripePaymentId) {
+      stripe.paymentIntents
+        .update(stripePaymentId, {
+          metadata: { rentalId: rental.id, type: "rental" },
+        })
+        .catch((err) => {
+          logger.warn(
+            "Failed to attach rentalId to Stripe PaymentIntent metadata",
+            { error: err }
+          );
+        });
+    }
+
     return sendResponse({
       res,
       status: 201,
@@ -499,6 +512,49 @@ export const getRentalSalons = async (
       status: 200,
       success: true,
       data: salons,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Confirm payment of a rental
+export const confirmRentalPayment = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const { stripePaymentId } = req.body;
+    const userId = req.user?.id;
+
+    const rental = await prisma.rental.findUnique({
+      where: { id: String(id) },
+    });
+
+    if (!rental || rental.userId !== userId) {
+      throw new NotFoundError("Rental reservation not found");
+    }
+
+    const updated = await prisma.rental.update({
+      where: { id: String(id) },
+      data: {
+        paymentStatus: PaymentStatus.PAID,
+        stripePaymentId: stripePaymentId || rental.stripePaymentId,
+      },
+      include: {
+        product: { include: { images: true } },
+        variant: true,
+      },
+    });
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      message: "Rental payment confirmed successfully",
+      data: updated,
     });
   } catch (error) {
     next(error);

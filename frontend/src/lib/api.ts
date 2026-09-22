@@ -40,6 +40,7 @@ export const authApi = {
   ) => api.put<ApiResponse<User>>("/auth/profile", data),
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     api.put<ApiResponse<null>>("/auth/password", data),
+  logout: () => api.post<ApiResponse<null>>("/auth/logout"),
 };
 
 export const productApi = {
@@ -113,7 +114,38 @@ export const cartApi = {
 export const orderApi = {
   getMine: (params?: Record<string, unknown>) =>
     api.get<ApiResponse<Order[]>>("/orders", { params }),
+  create: (data: {
+    addressId: string | null;
+    stripePaymentId?: string;
+    notes?: string;
+    shippingMethod?: string;
+    promoCode?: string;
+    items?: Array<{
+      variantId: string;
+      productId: string;
+      quantity: number;
+      price: number;
+    }>;
+  }) => api.post<ApiResponse<{ order: Order }>>("/orders", data),
+  updatePayment: (
+    orderId: string,
+    data: { stripePaymentId: string; paymentStatus: string }
+  ) => api.put<ApiResponse<Order>>(`/orders/${orderId}/payment`, data),
   cancel: (id: string) => api.put<ApiResponse<unknown>>(`/orders/${id}/cancel`),
+};
+
+export const paymentApi = {
+  createIntent: (data: {
+    amount: number;
+    shippingMethod?: string;
+    promoCode?: string;
+  }) =>
+    api.post<
+      ApiResponse<{
+        clientSecret: string;
+        paymentIntentId: string;
+      }>
+    >("/payment/intent", data),
 };
 
 export const wishlistApi = {
@@ -444,6 +476,8 @@ export const rentalApi = {
     ),
   getMyRentals: () => api.get<ApiResponse<Rental[]>>("/rentals"),
   getById: (id: string) => api.get<ApiResponse<Rental>>(`/rentals/${id}`),
+  confirmPayment: (id: string, data: { stripePaymentId?: string }) =>
+    api.put<ApiResponse<Rental>>(`/rentals/${id}/payment`, data),
   requestReturn: (id: string, data?: { notes?: string }) =>
     api.post<ApiResponse<Rental>>(`/rentals/${id}/return`, data || {}),
   cancel: (id: string) => api.put<ApiResponse<Rental>>(`/rentals/${id}/cancel`),

@@ -7,7 +7,6 @@ import { useCartStore } from "@/store/cartStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/store/authStore";
 import { useWishlistStore } from "@/store/wishlistStore";
-import { useRouter } from "next/navigation";
 import { Button } from "../ui/Button";
 import { flyToCart } from "@/lib/animations";
 import { toast } from "sonner";
@@ -42,7 +41,6 @@ export const ProductInfo = ({
     removeItem: removeFromWishlist,
     isInWishlist,
   } = useWishlistStore();
-  const router = useRouter();
 
   const isFavorite = isInWishlist(product.id);
   const isRentOnly = Boolean(
@@ -61,8 +59,6 @@ export const ProductInfo = ({
   const currentVariant = product.variants.find(
     (v) => v.size === selectedSize && v.color === selectedColor
   );
-
-  const colors = Array.from(new Set(product.variants.map((v) => v.color)));
 
   const colorHasImages = (colorName: string) => {
     return product.images?.some(

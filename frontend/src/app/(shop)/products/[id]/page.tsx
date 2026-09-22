@@ -23,7 +23,6 @@ export default function ProductDetailPage({ params, searchParams }: PageProps) {
   const { id } = use(params);
   const { color: initialColor } = use(searchParams);
   const [product, setProduct] = useState<Product | null>(null);
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedColor, setSelectedColor] = useState<string | null>(
     initialColor || null
@@ -48,16 +47,6 @@ export default function ProductDetailPage({ params, searchParams }: PageProps) {
             router.replace(`/products/${fetchedProduct.id}`);
           }
 
-          // Fetch related products based on category
-          const relatedRes = await productApi.getAll({
-            category: fetchedProduct.categoryId,
-            limit: 4,
-          });
-          if (relatedRes.data.success) {
-            setRelatedProducts(
-              relatedRes.data.data.filter((p) => p.id !== fetchedProduct.id)
-            );
-          }
           if (fetchedProduct?.variants?.length > 0 && !initialColor) {
             setSelectedColor(fetchedProduct.variants[0].color);
           }
@@ -65,13 +54,12 @@ export default function ProductDetailPage({ params, searchParams }: PageProps) {
       } catch (error) {
         console.error("Error fetching product:", error);
       } finally {
-        // Smooth transition for entry
-        setTimeout(() => setIsLoading(false), 300);
+        setIsLoading(false);
       }
     };
 
     fetchProduct();
-  }, [id, router]);
+  }, [id, router, initialColor]);
 
   if (isLoading) {
     return (

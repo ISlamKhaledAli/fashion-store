@@ -27,7 +27,7 @@ export default function AdminCategoriesPage() {
         if (isMounted.current && res.data.success) {
           setCategories(res.data.data as Category[]);
         }
-      } catch (err) {
+      } catch {
         if (isMounted.current) {
           toast.error("Failed to load category hierarchy.");
         }

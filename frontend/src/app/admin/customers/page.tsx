@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import Image from "next/image";
 import {
   Users,
   Search,
@@ -49,7 +50,7 @@ export default function AdminCustomersPage() {
       if (res.data.success) {
         setCustomers(res.data.data as AdminCustomer[]);
       }
-    } catch (err) {
+    } catch {
       toast.error("Failed to fetch customer data");
     } finally {
       setIsLoading(false);
@@ -77,7 +78,7 @@ export default function AdminCustomersPage() {
       if (selectedCustomer?.id === id) {
         setSelectedCustomer((prev) => (prev ? { ...prev, status } : null));
       }
-    } catch (err) {
+    } catch {
       toast.error("Failed to update status");
     }
   };
@@ -187,16 +188,18 @@ export default function AdminCustomersPage() {
           {!isLoading && customers.length > 0 && (
             <div className="animate-in fade-in slide-in-from-left-4 flex items-center gap-4 delay-200 duration-1000">
               <div className="flex -space-x-3 overflow-hidden">
-                {customers.slice(0, 5).map((c, i) => (
+                {customers.slice(0, 5).map((c) => (
                   <div
                     key={c.id}
-                    className="flex inline-block h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-zinc-100 bg-zinc-50 ring-2 ring-white"
+                    className="relative flex inline-block h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-zinc-100 bg-zinc-50 ring-2 ring-white"
                   >
                     {c.avatar ? (
-                      <img
+                      <Image
                         src={c.avatar}
                         alt={c.name}
-                        className="h-full w-full object-cover"
+                        fill
+                        className="object-cover"
+                        unoptimized
                       />
                     ) : (
                       <span className="text-[8px] font-black text-zinc-300 uppercase">

@@ -95,7 +95,7 @@ export default function AdminAnalyticsPage() {
             setRetention(retData as typeof retention);
           }
         }
-      } catch (err) {
+      } catch {
         if (isMounted.current) toast.error("Failed to load analytics data");
       } finally {
         if (isMounted.current) setIsLoading(false);

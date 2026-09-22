@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import type { OrderItem } from "@/types";
 import { PriceDisplay } from "../PriceDisplay";
 
@@ -13,12 +14,16 @@ export const OrderSummary = React.memo(({ items }: OrderSummaryProps) => {
     <div className="space-y-4">
       {items.map((item, idx) => (
         <div key={idx} className="group/item flex gap-4">
-          <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded border border-zinc-100 bg-zinc-50 transition-shadow group-hover/item:shadow-md">
-            <img
-              src={item.product?.images?.[0]?.url || ""}
-              alt={item.product?.name}
-              className="h-full w-full object-cover transition-transform group-hover/item:scale-105"
-            />
+          <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded border border-zinc-100 bg-zinc-50 transition-shadow group-hover/item:shadow-md">
+            {item.product?.images?.[0]?.url ? (
+              <Image
+                src={item.product.images[0].url}
+                alt={item.product?.name || "Product"}
+                fill
+                className="object-cover transition-transform group-hover/item:scale-105"
+                unoptimized
+              />
+            ) : null}
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-bold tracking-tight text-zinc-900">

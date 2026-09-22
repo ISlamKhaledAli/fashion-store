@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -219,12 +220,14 @@ export const AdminSidebar = ({
             isCollapsed && !isMobileOpen ? "justify-center" : "px-3"
           )}
         >
-          <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-zinc-700 bg-zinc-800">
+          <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-zinc-700 bg-zinc-800">
             {user?.avatar ? (
-              <img
+              <Image
                 src={user.avatar}
                 alt="Avatar"
-                className="h-full w-full object-cover"
+                fill
+                className="object-cover"
+                unoptimized
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-[10px] font-bold text-white">

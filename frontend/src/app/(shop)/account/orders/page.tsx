@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { AccountSidebar } from "@/components/account/AccountSidebar";
 import { orderApi } from "@/lib/api";
 import type { Order } from "@/types";
@@ -404,10 +405,12 @@ function OrderCard({
                   >
                     <div className="relative h-[120px] w-[100px] shrink-0 overflow-hidden rounded-sm bg-surface-container">
                       {item?.product?.images?.[0]?.url ? (
-                        <img
-                          src={item?.product?.images?.[0]?.url || ""}
-                          alt={item?.product?.name || "Product"}
-                          className="h-full w-full object-cover transition-transform duration-500 ease-out hover:scale-105"
+                        <Image
+                          src={item.product.images[0].url}
+                          alt={item.product.name || "Product"}
+                          fill
+                          className="object-cover transition-transform duration-500 ease-out hover:scale-105"
+                          unoptimized
                         />
                       ) : (
                         <div className="flex h-full w-full flex-col items-center justify-center bg-surface-container text-outline-variant">

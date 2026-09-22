@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { motion, useMotionValue, useSpring, animate } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, ArrowRight } from "lucide-react";
@@ -162,10 +163,12 @@ export const MetricCard = ({
                 className="relative h-7 w-7 overflow-hidden rounded-full border-2 border-white shadow-sm ring-2 ring-transparent transition-all group-hover/card:ring-zinc-50"
               >
                 {item.avatar ? (
-                  <img
+                  <Image
                     src={item.avatar}
                     alt={item.name}
-                    className="h-full w-full object-cover"
+                    fill
+                    className="object-cover"
+                    unoptimized
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-zinc-100 text-[8px] font-black text-zinc-500">

@@ -4,10 +4,8 @@ import React from "react";
 import { motion } from "framer-motion";
 
 /**
- * Editorial Diagonal Corner Sweep Page Transition
- * Origin: Top-Left (أعلى اليسار)
- * Timing: 0.70s with smooth S-curve cubic-bezier ease
- * Effect: Unfolds diagonally from top-left across to bottom-right, smoothly sweeping over the viewport.
+ * Diagonal Corner Sweep + Soft Fade Page Transition
+ * Fast editorial reveal (0.35s) from top-left corner with opacity blend
  */
 export default function ShopTemplate({
   children,
@@ -18,23 +16,23 @@ export default function ShopTemplate({
     <motion.div
       initial={{
         clipPath: "polygon(0 0, 0 0, 0 0, 0 0)",
-        opacity: 1,
+        opacity: 0,
       }}
       animate={{
         clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)",
         opacity: 1,
         transition: {
-          duration: 0.7,
-          ease: [0.35, 0.1, 0.25, 1],
-        },
-        transitionEnd: {
-          clipPath: "none",
+          clipPath: {
+            duration: 0.55,
+            ease: [0.65, 0, 0.35, 1],
+          },
+          opacity: {
+            duration: 0.3,
+            ease: "easeOut",
+          },
         },
       }}
       className="min-h-full w-full"
-      style={{
-        willChange: "clip-path",
-      }}
     >
       {children}
     </motion.div>

@@ -19,7 +19,7 @@ interface ProductReviewsProps {
 export const ProductReviews = ({
   productId,
   avgRating,
-  reviewCount,
+  reviewCount: _reviewCount,
 }: ProductReviewsProps) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [showForm, setShowForm] = useState(false);

@@ -270,3 +270,9 @@ cd backend && npm run prisma:studio    # Visual DB browser
 12. **Escape JSX quotes and apostrophes**: Never leave raw `'` or `"` in JSX text (`react/no-unescaped-entities`). Always use `&apos;`, `&ldquo;`, `&rdquo;` or string literals `{"'"}`.
 13. **Strictly avoid `any` in frontend**: Do NOT use `: any` or `as any` (`@typescript-eslint/no-explicit-any`). Use TypeScript generics `<K extends keyof T>`, `unknown`, or concrete interfaces.
 14. **Always verify pre-commit lint**: Run `npx eslint --quiet src` before running `git commit` to ensure husky and lint-staged pass without friction.
+15. **Strict Brand Identity & Design System Adherence (Frontend)**: All frontend pages, components, modals, and dropdowns MUST strictly conform to "The Curator" brand design system:
+    - **Layout Consistency**: All user account pages must use the unified layout structure: `<div className="flex min-h-screen bg-surface"><AccountSidebar /><main className="flex-1 p-8 lg:p-12">`.
+    - **Typography**: Follow brand typographic hierarchy (`text-on-surface`, `text-on-surface-variant`, `tracking-tight font-medium`, standard headings). Do not use arbitrary font families (e.g. ad-hoc `font-serif`) unless specifically required by the brand headline guidelines.
+    - **Loading States**: Never output plain text like "Loading..." or unstyled messages. Always render the brand identity spinner (`animate-spin rounded-full border-2 border-primary border-t-transparent`) or theme-compliant skeleton loaders.
+    - **Interactive Tabs**: Use the established tab style with animated active indicator: `motion.div layoutId="..." className="absolute right-0 bottom-0 left-0 h-0.5 bg-primary"`.
+    - **Color Palette & Tokens**: Exclusively utilize the defined theme tokens from `globals.css` (`bg-surface`, `surface-container-*`, `primary`, `outline-variant`, `text-on-surface`, etc.). Never introduce arbitrary disconnected colors.

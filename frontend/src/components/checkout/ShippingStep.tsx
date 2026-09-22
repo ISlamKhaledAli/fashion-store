@@ -22,6 +22,7 @@ const shippingSchema = z.object({
   city: z.string().min(2, "City is required"),
   state: z.string().min(2, "State is required"),
   zipCode: z.string().min(5, "Valid ZIP code is required"),
+  country: z.string().optional(),
   shippingMethod: z.enum(["standard", "express", "overnight"]),
 });
 

@@ -61,7 +61,7 @@ export default function AdminInventoryPage() {
   const [activeTab, setActiveTab] = useState<
     "ALL" | "LOW" | "OUT" | "IN" | "ARCHIVED"
   >("ALL");
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -70,7 +70,7 @@ export default function AdminInventoryPage() {
   // Quick Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>("");
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [_isUpdating, setIsUpdating] = useState(false);
 
   // Menu State
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -116,7 +116,7 @@ export default function AdminInventoryPage() {
         });
         setInventoryRows(rows);
       }
-    } catch (_err) {
+    } catch {
       setError("Failed to load inventory");
       toast.error("Telemetry failure. Sync impossible.");
     } finally {
@@ -213,7 +213,7 @@ export default function AdminInventoryPage() {
             : item
         )
       );
-    } catch (err) {
+    } catch {
       toast.error("Update failed");
     } finally {
       setIsUpdating(false);
@@ -244,7 +244,7 @@ export default function AdminInventoryPage() {
       );
       fetchInventory();
       setIsConfirmOpen(false);
-    } catch (err) {
+    } catch {
       toast.error("Telemetry error. Status remains unchanged.");
     } finally {
       setIsArchiveLoading(false);

@@ -17,7 +17,7 @@ const steps = [
 export const StepProgress = ({ currentStep }: StepProgressProps) => {
   return (
     <nav className="mb-16 flex items-center gap-8">
-      {steps.map((step, index) => {
+      {steps.map((step) => {
         const isCompleted = currentStep > step.id;
         const isActive = currentStep === step.id;
 

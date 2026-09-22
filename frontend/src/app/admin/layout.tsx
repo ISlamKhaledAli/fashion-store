@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import {
@@ -126,12 +127,14 @@ export default function AdminLayout({
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex cursor-pointer items-center gap-2 rounded-full p-1 transition-colors hover:bg-zinc-100"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-300 bg-zinc-900 text-xs font-bold text-white lg:h-10 lg:w-10">
+                  <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-zinc-300 bg-zinc-900 text-xs font-bold text-white lg:h-10 lg:w-10">
                     {user?.avatar ? (
-                      <img
+                      <Image
                         src={user.avatar}
-                        alt={user.name}
-                        className="h-full w-full rounded-full object-cover"
+                        alt={user.name || "User Avatar"}
+                        fill
+                        className="rounded-full object-cover"
+                        unoptimized
                       />
                     ) : (
                       initials

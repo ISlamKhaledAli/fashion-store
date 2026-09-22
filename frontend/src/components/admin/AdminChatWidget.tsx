@@ -18,7 +18,6 @@ export const AdminChatWidget = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const [isInitialized, setIsInitialized] = useState(false);
@@ -29,7 +28,7 @@ export const AdminChatWidget = () => {
     if (saved && saved !== "[]") {
       try {
         setMessages(JSON.parse(saved));
-      } catch (e) {
+      } catch {
         console.error("Failed to parse admin chat history");
       }
     } else {
@@ -134,7 +133,7 @@ export const AdminChatWidget = () => {
                 }
                 return updated;
               });
-            } catch (e) {
+            } catch {
               // Ignore split JSON chunks
             }
           } else if (
@@ -243,28 +242,28 @@ export const AdminChatWidget = () => {
                 >
                   <ReactMarkdown
                     components={{
-                      p: ({ node, ...props }) => (
+                      p: ({ node: _node, ...props }) => (
                         <p
                           className="mb-2 leading-relaxed last:mb-0"
                           {...props}
                         />
                       ),
-                      ul: ({ node, ...props }) => (
+                      ul: ({ node: _node, ...props }) => (
                         <ul
                           className="mb-2 list-disc space-y-1 pl-4"
                           {...props}
                         />
                       ),
-                      ol: ({ node, ...props }) => (
+                      ol: ({ node: _node, ...props }) => (
                         <ol
                           className="mb-2 list-decimal space-y-1 pl-4"
                           {...props}
                         />
                       ),
-                      li: ({ node, ...props }) => (
+                      li: ({ node: _node, ...props }) => (
                         <li className="" {...props} />
                       ),
-                      strong: ({ node, ...props }) => (
+                      strong: ({ node: _node, ...props }) => (
                         <strong
                           className="font-semibold text-zinc-950"
                           {...props}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, memo } from "react";
+import Image from "next/image";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Category } from "@/types";
@@ -152,10 +153,12 @@ const MediaSection = memo(
       <div className="space-y-4">
         {image ? (
           <div className="group relative mx-auto aspect-[3/4] w-full overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 lg:max-w-xs">
-            <img
+            <Image
               src={image}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
               alt="Preview"
+              unoptimized
             />
             <Button
               type="button"
@@ -299,7 +302,7 @@ export const CategoryDrawer = React.memo(
           setFormData((prev) => ({ ...prev, image: res.data.data.url }));
           toast.success("Image attached securely");
         }
-      } catch (err) {
+      } catch {
         toast.error("Failed to upload image. Please try again.");
       } finally {
         setIsUploading(false);

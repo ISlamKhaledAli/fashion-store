@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { returnApi } from "@/lib/api";
 import type { ReturnRequest, ReturnStatus } from "@/types";
 import { formatCurrency } from "@/lib/utils";
@@ -25,7 +25,7 @@ export default function AdminReturnsPage() {
   const [refundAmountInput, setRefundAmountInput] = useState("");
   const [isProcessingRefund, setIsProcessingRefund] = useState(false);
 
-  const fetchReturns = async () => {
+  const fetchReturns = useCallback(async () => {
     try {
       setLoading(true);
       const res = await returnApi.getAdminReturns({
@@ -39,11 +39,11 @@ export default function AdminReturnsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedStatus]);
 
   useEffect(() => {
     void fetchReturns();
-  }, [selectedStatus]);
+  }, [fetchReturns]);
 
   const handleUpdateStatus = async (id: string, status: ReturnStatus) => {
     try {

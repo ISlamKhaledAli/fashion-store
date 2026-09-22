@@ -147,6 +147,12 @@ export const createOrder = async (
             throw new NotFoundError(`Variant ${item.variantId} not found`);
           }
 
+          if (variant.product.isSaleable === false) {
+            throw new ValidationError(
+              `Product "${variant.product.name}" is exclusively available for rental and cannot be purchased.`
+            );
+          }
+
           if (variant.stock < item.quantity) {
             throw new ConflictError(
               `Insufficient stock for ${variant.product.name}`

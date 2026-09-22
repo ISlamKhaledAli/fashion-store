@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell,
@@ -10,13 +11,16 @@ import {
   RotateCcw,
   Clock,
   Sparkles,
+  ArrowRight,
 } from "lucide-react";
 import { notificationApi } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import type { Notification } from "@/types";
 import { formatDate, cn } from "@/lib/utils";
+import { getNotificationTarget } from "@/lib/notifications";
 
 export const CustomerNotificationBell: React.FC = () => {
+  const router = useRouter();
   const { isAuthenticated } = useAuthStore();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -28,71 +32,68 @@ export const CustomerNotificationBell: React.FC = () => {
     if (!isAuthenticated) return;
     try {
       const res = await notificationApi.getUnreadCount();
-      if (res.data?.data) {
-        setUnreadCount(res.data.data.unreadCount || 0);
+      if (
+        res.data?.success &&
+        typeof res.data?.data?.unreadCount === "number"
+      ) {
+        setUnreadCount(res.data.data.unreadCount);
       }
     } catch {
-      // Graceful silence for unauthenticated or background network
+      // Ignore polling errors
     }
   }, [isAuthenticated]);
 
   const fetchNotifications = useCallback(async () => {
     if (!isAuthenticated) return;
-    setLoading(true);
     try {
+      setLoading(true);
       const res = await notificationApi.getAll({ limit: 8 });
-      if (res.data?.data) {
+      if (res.data?.success && res.data?.data) {
         setNotifications(res.data.data);
       }
     } catch {
-      // Graceful silence
+      // Ignore
     } finally {
       setLoading(false);
     }
   }, [isAuthenticated]);
 
-  // Initial fetch and periodic check every 45s
   useEffect(() => {
     if (!isAuthenticated) return;
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 45000);
+    void fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
   }, [isAuthenticated, fetchUnreadCount]);
 
-  // Click outside to dismiss
   useEffect(() => {
-    const handleOutsideClick = (e: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent) => {
       if (
         containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
+        !containerRef.current.contains(event.target as Node)
       ) {
         setIsOpen(false);
       }
     };
-
-    if (isOpen) {
-      document.addEventListener("mousedown", handleOutsideClick);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
-    };
-  }, [isOpen]);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleToggle = () => {
-    if (!isOpen) {
-      fetchNotifications();
+    const nextState = !isOpen;
+    setIsOpen(nextState);
+    if (nextState) {
+      void fetchNotifications();
     }
-    setIsOpen((prev) => !prev);
   };
 
-  const handleMarkAsRead = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleMarkAsRead = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     try {
       await notificationApi.markAsRead(id);
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
       );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      setUnreadCount((c) => Math.max(0, c - 1));
     } catch {
       // Ignore
     }
@@ -105,6 +106,17 @@ export const CustomerNotificationBell: React.FC = () => {
       setUnreadCount(0);
     } catch {
       // Ignore
+    }
+  };
+
+  const handleNotificationClick = (n: Notification) => {
+    if (!n.isRead) {
+      void handleMarkAsRead(n.id);
+    }
+    setIsOpen(false);
+    const target = getNotificationTarget(n, false);
+    if (target) {
+      router.push(target);
     }
   };
 
@@ -128,14 +140,18 @@ export const CustomerNotificationBell: React.FC = () => {
       <button
         type="button"
         onClick={handleToggle}
-        className="relative flex h-10 w-10 items-center justify-center rounded-full text-on-surface transition-all duration-300 hover:scale-95 hover:bg-surface-container-lowest"
+        className="group relative flex h-10 w-10 items-center justify-center rounded-full text-on-surface transition-all duration-300 hover:scale-95 hover:bg-surface-container-lowest"
         aria-label="View notifications"
         aria-expanded={isOpen}
       >
-        <Bell size={19} strokeWidth={1.5} />
+        <Bell
+          size={19}
+          strokeWidth={1.5}
+          className="transition-transform group-hover:scale-105"
+        />
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-on-primary">
-            {unreadCount > 9 ? "9+" : unreadCount}
+          <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold tracking-tight text-on-primary shadow-xs ring-2 ring-surface">
+            {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
@@ -166,7 +182,7 @@ export const CustomerNotificationBell: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleMarkAllRead}
-                  className="flex items-center gap-1 text-[11px] font-medium text-on-surface-variant transition-colors hover:text-primary"
+                  className="flex cursor-pointer items-center gap-1 text-[11px] font-medium text-on-surface-variant transition-colors hover:text-primary"
                 >
                   <CheckCheck size={13} />
                   <span>Mark all read</span>
@@ -177,11 +193,12 @@ export const CustomerNotificationBell: React.FC = () => {
             {/* List */}
             <div className="max-h-80 divide-y divide-outline-variant/5 overflow-y-auto py-1">
               {loading ? (
-                <div className="py-8 text-center text-xs text-on-surface-variant">
-                  Loading updates...
+                <div className="flex items-center justify-center py-10">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 </div>
               ) : notifications.length === 0 ? (
                 <div className="py-8 text-center">
+                  <Bell className="mx-auto mb-2 h-7 w-7 text-outline-variant/50" />
                   <p className="text-xs font-medium text-on-surface">
                     All caught up
                   </p>
@@ -193,9 +210,7 @@ export const CustomerNotificationBell: React.FC = () => {
                 notifications.map((n) => (
                   <div
                     key={n.id}
-                    onClick={(e) => {
-                      if (!n.isRead) handleMarkAsRead(n.id, e);
-                    }}
+                    onClick={() => handleNotificationClick(n)}
                     className={cn(
                       "flex cursor-pointer items-start gap-3 rounded-xl p-3 transition-colors",
                       n.isRead
@@ -234,14 +249,18 @@ export const CustomerNotificationBell: React.FC = () => {
               )}
             </div>
 
-            {/* Footer link to Orders */}
-            <div className="border-t border-outline-variant/10 pt-2 text-center">
+            {/* Footer link - View All Notifications */}
+            <div className="border-t border-outline-variant/10 pt-3 text-center">
               <Link
-                href="/account/orders"
+                href="/account/notifications"
                 onClick={() => setIsOpen(false)}
-                className="text-[11px] font-semibold text-primary underline hover:opacity-85"
+                className="group flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-surface-container-low"
               >
-                View Order History
+                <span>View all notifications</span>
+                <ArrowRight
+                  size={14}
+                  className="transition-transform group-hover:translate-x-0.5"
+                />
               </Link>
             </div>
           </motion.div>

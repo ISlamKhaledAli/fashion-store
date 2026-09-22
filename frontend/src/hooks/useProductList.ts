@@ -44,7 +44,7 @@ export const useProductList = ({
             setError("Failed to load products");
           }
         }
-      } catch (err) {
+      } catch {
         if (isMounted) {
           setError("An error occurred while fetching products");
           setProducts([]);

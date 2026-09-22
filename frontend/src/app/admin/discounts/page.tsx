@@ -292,7 +292,7 @@ export default function DiscountsPage() {
       if (res.data.success) {
         setDiscounts(res.data.data as unknown as DiscountItem[]);
       }
-    } catch (err) {
+    } catch {
       toast.error("Telemetry failure. Records inaccessible.");
     } finally {
       setIsLoading(false);
@@ -330,7 +330,7 @@ export default function DiscountsPage() {
             d.id === id ? { ...d, isActive: !currentStatus } : d
           )
         );
-      } catch (err) {
+      } catch {
         toast.error("Status update failed");
       }
     },

@@ -222,8 +222,6 @@ MobileProductRow.displayName = "MobileProductRow";
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
-const TABS = ["ALL", "ACTIVE", "DRAFT", "ARCHIVED"];
-
 export default function AdminProductsPage() {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
@@ -247,7 +245,7 @@ export default function AdminProductsPage() {
       if (isMounted.current && res.data.success) {
         setProducts(res.data.data as Product[]);
       }
-    } catch (err) {
+    } catch {
       if (isMounted.current) {
         toast.error("Telemetry failure. Catalog inaccessible.");
       }
@@ -331,7 +329,7 @@ export default function AdminProductsPage() {
         toast.success(`Entry ${newStatus.toLowerCase()}ized`);
         const isMounted = { current: true };
         fetchProducts(isMounted);
-      } catch (err) {
+      } catch {
         toast.error("Protocol error. Status locked.");
       }
     },

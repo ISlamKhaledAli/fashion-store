@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
@@ -105,16 +106,17 @@ const WishlistItemCard = ({
           <span className="material-symbols-outlined text-xs">close</span>
         </Button>
 
-        <div className="mb-6 aspect-[3/4] overflow-hidden bg-surface-container-low ring-1 ring-outline-variant/5">
+        <div className="relative mb-6 aspect-[3/4] overflow-hidden bg-surface-container-low ring-1 ring-outline-variant/5">
           {item?.product?.images?.[0]?.url ? (
-            <img
-              ref={imageRef}
+            <Image
               src={
                 item.product.images.find((img) => img.isMain)?.url ||
                 item.product.images[0].url
               }
               alt={item?.product?.name || "Product"}
-              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+              fill
+              className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+              unoptimized
             />
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center bg-surface-container text-outline-variant transition-transform duration-700 ease-out hover:scale-105">

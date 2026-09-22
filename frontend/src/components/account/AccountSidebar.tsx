@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,11 @@ const menuItems = [
     icon: "location_on",
   },
   {
+    label: "Notifications",
+    href: "/account/notifications",
+    icon: "notifications",
+  },
+  {
     label: "Settings",
     href: "/account/settings",
     icon: "settings",
@@ -52,12 +58,14 @@ export const AccountSidebar = () => {
   return (
     <aside className="sticky top-20 flex min-h-[calc(100vh-5rem)] w-72 shrink-0 flex-col gap-y-2 border-r border-outline-variant/10 bg-surface-container-low p-8">
       <div className="mb-8 flex flex-col items-center text-center">
-        <div className="mb-4 h-20 w-20 overflow-hidden rounded-full bg-surface-container-high ring-1 ring-outline-variant/20">
+        <div className="relative mb-4 h-20 w-20 overflow-hidden rounded-full bg-surface-container-high ring-1 ring-outline-variant/20">
           {user?.avatar ? (
-            <img
+            <Image
               src={user.avatar}
-              alt={user.name}
-              className="h-full w-full object-cover"
+              alt={user.name || "User Avatar"}
+              fill
+              className="object-cover"
+              unoptimized
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-primary/5 text-xl font-bold text-primary">

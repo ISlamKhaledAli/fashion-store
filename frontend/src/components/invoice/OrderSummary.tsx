@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import type { OrderItem } from "@/types";
 
 interface OrderSummaryProps {
@@ -18,31 +19,36 @@ export const OrderSummary = ({ items }: OrderSummaryProps) => {
             display: "grid",
             gridTemplateColumns: "1fr 60px 80px",
             gap: "12px",
-            paddingBottom: "12px",
-            boxSizing: "border-box",
+            borderBottom: "1px solid #e4e4e7",
+            paddingBottom: "8px",
+            marginBottom: "12px",
+            fontSize: "11px",
+            fontWeight: "bold",
+            color: "#71717a",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
           }}
-          className="text-xs font-bold tracking-widest text-zinc-400 uppercase"
         >
-          <div>Product</div>
+          <div>Item Details</div>
           <div style={{ textAlign: "center" }}>Qty</div>
-          <div style={{ textAlign: "right" }}>Price</div>
+          <div style={{ textAlign: "right" }}>Total</div>
         </div>
 
-        {/* Items */}
-        <div className="divide-y divide-zinc-100/50 border-t border-zinc-100">
-          {(items || []).map((item, idx) => (
+        {/* Rows */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {items.map((item, idx) => (
             <div
               key={idx}
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 60px 80px",
                 gap: "12px",
-                padding: "16px 0",
                 alignItems: "center",
-                boxSizing: "border-box",
+                borderBottom:
+                  idx === items.length - 1 ? "none" : "1px solid #f4f4f5",
+                paddingBottom: idx === items.length - 1 ? "0" : "12px",
               }}
             >
-              {/* Product */}
               <div
                 style={{
                   display: "flex",
@@ -53,6 +59,7 @@ export const OrderSummary = ({ items }: OrderSummaryProps) => {
               >
                 <div
                   style={{
+                    position: "relative",
                     width: "56px",
                     height: "72px",
                     flexShrink: 0,
@@ -63,17 +70,17 @@ export const OrderSummary = ({ items }: OrderSummaryProps) => {
                   }}
                 >
                   {item.product.images && item.product.images.length > 0 && (
-                    <img
+                    <Image
                       src={
                         item.product.images.find((img) => img.isMain)?.url ||
                         item.product.images[0].url
                       }
                       alt={item.product.name}
+                      fill
                       style={{
-                        width: "100%",
-                        height: "100%",
                         objectFit: "cover",
                       }}
+                      unoptimized
                     />
                   )}
                 </div>

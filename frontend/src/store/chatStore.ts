@@ -217,7 +217,7 @@ export const useChatStore = create<ChatState>()(
                   const content = parsed.choices?.[0]?.delta?.content || "";
                   assistantReply += content;
                   get().updateLastMessage(assistantReply);
-                } catch (e) {
+                } catch {
                   // Ignore split JSON chunks
                 }
               }

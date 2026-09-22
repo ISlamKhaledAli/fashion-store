@@ -9,9 +9,8 @@ import {
 } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { Button } from "@/components/ui/Button";
-import api from "@/lib/axios";
 import { useCartStore } from "@/store/cartStore";
-import { addressApi } from "@/lib/api";
+import { addressApi, orderApi, paymentApi } from "@/lib/api";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || "");
 
@@ -38,10 +37,10 @@ const CheckoutForm = ({
   addressId,
   shippingMethod,
   promoCode,
-  total,
-  subtotal,
-  shipping,
-  discountAmount,
+  total: _total,
+  subtotal: _subtotal,
+  shipping: _shipping,
+  discountAmount: _discountAmount,
 }: CheckoutFormProps) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -68,7 +67,7 @@ const CheckoutForm = ({
       // We pass the existing paymentIntentId so the backend links them
       let orderId = "";
       try {
-        const orderRes = await api.post("/orders", {
+        const orderRes = await orderApi.create({
           addressId,
           stripePaymentId: paymentIntentId,
           notes: "Created via checkout flow",
@@ -116,7 +115,7 @@ const CheckoutForm = ({
       ) {
         // 4. Verification/Acknowledge Success (Frontend confirmation)
         try {
-          await api.put(`/orders/${orderId}/payment`, {
+          await orderApi.updatePayment(orderId, {
             stripePaymentId: paymentIntent.id,
             paymentStatus: "PAID",
           });
@@ -133,7 +132,7 @@ const CheckoutForm = ({
       } else {
         setError("Payment was not completed. Please try again.");
       }
-    } catch (err: unknown) {
+    } catch {
       setError("An unexpected error occurred during payment.");
     } finally {
       setLoading(false);
@@ -218,13 +217,13 @@ export const PaymentStep = ({
         const addresses = (addressRes.data?.data || []) as { id: string }[];
         setAddressId(addresses[0]?.id || null);
 
-        const res = await api.post("/payment/intent", {
+        const res = await paymentApi.createIntent({
           amount: total,
           shippingMethod,
           promoCode: promoCode || undefined,
         });
 
-        if (res.data.success) {
+        if (res.data.success && res.data.data) {
           setClientSecret(res.data.data.clientSecret);
           setPaymentIntentId(res.data.data.paymentIntentId);
           setLastTotal(total);
@@ -260,7 +259,7 @@ export const PaymentStep = ({
     return (
       <div className="space-y-4 py-24 text-center">
         <p className="text-error">
-          Failed to initialize payment. Please try again.
+          {error || "Failed to initialize payment. Please try again."}
         </p>
         <Button variant="outline" onClick={onBack}>
           Back to Shipping

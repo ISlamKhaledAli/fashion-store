@@ -1,7 +1,7 @@
 // Service Worker for The Curator PWA
-const CACHE_NAME = 'the-curator-v1';
+const _CACHE_NAME = 'the-curator-v1';
 
-self.addEventListener('install', (event) => {
+self.addEventListener('install', (_event) => {
   self.skipWaiting();
 });
 

@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { notificationApi } from "@/lib/api";
 import type { Notification } from "@/types";
 import {
@@ -11,10 +13,13 @@ import {
   Clock,
   Package,
   Sparkles,
+  ArrowRight,
 } from "lucide-react";
 import { formatRelativeTime } from "@/lib/utils";
+import { getNotificationTarget } from "@/lib/notifications";
 
 export const NotificationBell: React.FC = () => {
+  const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -24,11 +29,14 @@ export const NotificationBell: React.FC = () => {
   const fetchUnreadCount = async () => {
     try {
       const res = await notificationApi.getUnreadCount();
-      if (res.data?.success && res.data?.data) {
-        setUnreadCount(res.data.data.unreadCount || 0);
+      if (
+        res.data?.success &&
+        typeof res.data?.data?.unreadCount === "number"
+      ) {
+        setUnreadCount(res.data.data.unreadCount);
       }
     } catch {
-      // ignore
+      // Silently ignore polling failures
     }
   };
 
@@ -40,7 +48,7 @@ export const NotificationBell: React.FC = () => {
         setNotifications(res.data.data);
       }
     } catch {
-      // ignore
+      // Ignore
     } finally {
       setLoading(false);
     }
@@ -48,10 +56,7 @@ export const NotificationBell: React.FC = () => {
 
   useEffect(() => {
     void fetchUnreadCount();
-    const interval = setInterval(() => {
-      void fetchUnreadCount();
-    }, 45000); // 45 seconds polling
-
+    const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -69,9 +74,9 @@ export const NotificationBell: React.FC = () => {
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
       );
-      setUnreadCount((c) => Math.max(0, c - 1));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch {
-      // ignore
+      // Ignore
     }
   };
 
@@ -81,7 +86,18 @@ export const NotificationBell: React.FC = () => {
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch {
-      // ignore
+      // Ignore
+    }
+  };
+
+  const handleNotificationClick = (n: Notification) => {
+    if (!n.isRead) {
+      void handleMarkAsRead(n.id);
+    }
+    setIsOpen(false);
+    const target = getNotificationTarget(n, true);
+    if (target) {
+      router.push(target);
     }
   };
 
@@ -113,7 +129,7 @@ export const NotificationBell: React.FC = () => {
       case "NEW_ORDER":
         return <Package className="h-4 w-4 text-emerald-500" />;
       default:
-        return <Sparkles className="h-4 w-4 text-zinc-400" />;
+        return <Sparkles className="h-4 w-4 text-amber-500" />;
     }
   };
 
@@ -122,20 +138,21 @@ export const NotificationBell: React.FC = () => {
       <button
         type="button"
         onClick={handleToggle}
-        className="relative rounded-full p-2 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+        className="group relative flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200/80 bg-white text-zinc-600 shadow-xs transition-all hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
         aria-label="Notifications"
+        aria-expanded={isOpen}
       >
-        <Bell className="h-5 w-5" />
+        <Bell className="h-4.5 w-4.5 transition-transform group-hover:scale-105" />
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white shadow-xs">
+          <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-bold tracking-tight text-white shadow-xs ring-2 ring-white dark:ring-zinc-900">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-50 mt-2 w-80 rounded-xl border border-zinc-200 bg-white shadow-xl sm:w-96 dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex items-center justify-between border-b border-zinc-100 p-3.5 dark:border-zinc-800">
+        <div className="animate-in fade-in slide-in-from-top-2 absolute right-0 z-50 mt-2 w-80 rounded-2xl border border-zinc-200/80 bg-white shadow-xl duration-200 sm:w-96 dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="flex items-center justify-between border-b border-zinc-100 p-4 dark:border-zinc-800">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                 Alerts &amp; Notifications
@@ -151,7 +168,7 @@ export const NotificationBell: React.FC = () => {
               <button
                 type="button"
                 onClick={handleMarkAllAsRead}
-                className="flex items-center gap-1 text-[11px] font-medium text-amber-600 hover:text-amber-700 dark:text-amber-400"
+                className="flex cursor-pointer items-center gap-1 text-[11px] font-semibold text-zinc-900 transition-colors hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-300"
               >
                 <Check className="h-3.5 w-3.5" />
                 Mark all read
@@ -159,45 +176,67 @@ export const NotificationBell: React.FC = () => {
             )}
           </div>
 
-          <div className="max-h-[380px] divide-y divide-zinc-100 overflow-y-auto dark:divide-zinc-800">
+          <div className="max-h-[380px] divide-y divide-zinc-100/80 overflow-y-auto dark:divide-zinc-800/80">
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-amber-600 border-t-transparent" />
+              <div className="flex justify-center py-10">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-950 border-t-transparent dark:border-zinc-100" />
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-8 text-center text-xs text-zinc-500">
+              <div className="py-10 text-center text-xs text-zinc-500">
+                <Bell className="mx-auto mb-2 h-7 w-7 text-zinc-300 dark:text-zinc-700" />
                 No notifications right now. Everything is running smoothly!
               </div>
             ) : (
               notifications.map((n) => (
                 <div
                   key={n.id}
-                  onClick={() => !n.isRead && handleMarkAsRead(n.id)}
-                  className={`flex cursor-pointer gap-3 p-3.5 transition-colors ${
+                  onClick={() => handleNotificationClick(n)}
+                  className={`group flex cursor-pointer items-start gap-3.5 p-3.5 transition-colors ${
                     n.isRead
-                      ? "bg-transparent opacity-70 hover:opacity-100"
-                      : "bg-amber-50/40 hover:bg-amber-50/70 dark:bg-amber-950/20 dark:hover:bg-amber-950/30"
+                      ? "bg-transparent opacity-75 hover:bg-zinc-50/80 hover:opacity-100 dark:hover:bg-zinc-800/40"
+                      : "bg-zinc-100/70 hover:bg-zinc-100 dark:bg-zinc-800/50 dark:hover:bg-zinc-800/80"
                   }`}
                 >
-                  <div className="mt-0.5 shrink-0">
+                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-zinc-200/60 bg-zinc-50 dark:border-zinc-700/60 dark:bg-zinc-800">
                     {getNotificationIcon(n.type)}
                   </div>
-                  <div className="flex-1 space-y-0.5">
+                  <div className="min-w-0 flex-1 space-y-0.5">
                     <div className="flex items-center justify-between gap-1">
-                      <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                      <h4
+                        className={`truncate text-xs font-semibold ${
+                          n.isRead
+                            ? "text-zinc-800 dark:text-zinc-200"
+                            : "text-zinc-950 dark:text-white"
+                        }`}
+                      >
                         {n.title}
                       </h4>
-                      <span className="text-[10px] text-zinc-400">
+                      <span className="shrink-0 text-[10px] text-zinc-400">
                         {formatRelativeTime(n.createdAt)}
                       </span>
                     </div>
-                    <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                    <p className="line-clamp-2 text-xs text-zinc-600 dark:text-zinc-400">
                       {n.message}
                     </p>
                   </div>
+                  {!n.isRead && (
+                    <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-zinc-950 dark:bg-zinc-100" />
+                  )}
                 </div>
               ))
             )}
+          </div>
+
+          {/* Footer - View All Notifications */}
+          <div className="border-t border-zinc-100 p-2.5 text-center dark:border-zinc-800">
+            <Link
+              href="/admin/notifications"
+              onClick={() => setIsOpen(false)}
+              className="group flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800/60 dark:hover:text-white"
+            >
+              <span>View all notifications</span>
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            </Link>
           </div>
         </div>
       )}

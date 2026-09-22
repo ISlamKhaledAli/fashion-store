@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import {
   Mail,
   Ban,
@@ -214,12 +215,14 @@ export const CustomerDetailPanel = ({
       <div className="space-y-8">
         {/* Profile Header */}
         <div className="border-border/40 flex flex-col items-center border-b pb-6 text-center">
-          <div className="mb-4 flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-zinc-100 bg-zinc-50 shadow-inner">
+          <div className="relative mb-4 flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-zinc-100 bg-zinc-50 shadow-inner">
             {customer.avatar ? (
-              <img
-                className="h-full w-full object-cover"
+              <Image
+                className="object-cover"
                 src={customer.avatar}
                 alt={customer.name}
+                fill
+                unoptimized
               />
             ) : (
               <span className="text-2xl font-black text-zinc-400">

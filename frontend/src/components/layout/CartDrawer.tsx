@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/store/cartStore";
-import { useAuthStore } from "@/store/authStore";
 import { formatCurrency } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
@@ -20,7 +19,6 @@ export const CartDrawer = () => {
     updateQuantity,
     getTotalPrice,
   } = useCartStore();
-  const { isAuthenticated } = useAuthStore();
 
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(() => {
     if (typeof window !== "undefined") {

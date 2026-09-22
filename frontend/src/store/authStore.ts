@@ -33,7 +33,7 @@ export const useAuthStore = create<AuthState>()(
             for (const item of items) {
               try {
                 await cartApi.addItem(item.variantId, item.quantity);
-              } catch (_err) {
+              } catch {
                 // Silently ignore sync errors (likely duplicates on server)
               }
             }
@@ -49,17 +49,23 @@ export const useAuthStore = create<AuthState>()(
         }
       },
       setUser: (user) => set({ user }),
-      logout: () => {
-        set({
-          user: null,
-          isAuthenticated: false,
-        });
+      logout: async () => {
         try {
-          import("./chatStore").then((m) =>
-            m.useChatStore.getState().clearChat()
-          );
+          const { authApi } = await import("@/lib/api");
+          await authApi.logout();
         } catch (err) {
-          console.error("Failed to clear chat on logout:", err);
+          console.error("Backend logout failed:", err);
+        } finally {
+          set({
+            user: null,
+            isAuthenticated: false,
+          });
+          try {
+            const { useChatStore } = await import("./chatStore");
+            useChatStore.getState().clearChat();
+          } catch (err) {
+            console.error("Failed to clear chat on logout:", err);
+          }
         }
       },
     }),

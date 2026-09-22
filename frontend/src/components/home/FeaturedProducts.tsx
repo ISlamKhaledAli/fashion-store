@@ -41,7 +41,7 @@ export const FeaturedProducts = () => {
         if (response.data.success && Array.isArray(response.data.data)) {
           setProducts(response.data.data);
         }
-      } catch (err) {
+      } catch {
         // Handled silently
       } finally {
         setIsLoading(false);

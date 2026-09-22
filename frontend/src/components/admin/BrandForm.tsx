@@ -77,7 +77,7 @@ export const BrandForm: React.FC<BrandFormProps> = ({
         setLogo(res.data.data.url);
         toast.success("Logo uploaded successfully");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to upload logo");
     } finally {
       setIsUploading(false);
@@ -102,7 +102,7 @@ export const BrandForm: React.FC<BrandFormProps> = ({
         toast.success("Brand created successfully");
       }
       onSuccess();
-    } catch (error) {
+    } catch {
       toast.error(`Failed to ${isEditing ? "update" : "create"} brand`);
     } finally {
       setIsSubmitting(false);
@@ -116,7 +116,7 @@ export const BrandForm: React.FC<BrandFormProps> = ({
       await adminApi.deleteBrand(brand.id);
       toast.success("Brand deleted successfully");
       onSuccess();
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete brand");
     } finally {
       setIsDeleting(false);

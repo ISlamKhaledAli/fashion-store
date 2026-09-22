@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { adminRentalApi } from "@/lib/api";
 import type { Rental, RentalStatus } from "@/types";
@@ -40,7 +40,7 @@ export default function AdminRentalsPage() {
   const [lateFeeAmount, setLateFeeAmount] = useState("15");
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [rentalsRes, analyticsRes] = await Promise.allSettled([
@@ -65,11 +65,11 @@ export default function AdminRentalsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedStatus, searchQuery]);
 
   useEffect(() => {
     void fetchData();
-  }, [selectedStatus]);
+  }, [fetchData]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();

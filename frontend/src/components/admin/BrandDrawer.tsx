@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, memo } from "react";
+import Image from "next/image";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Brand } from "@/types";
@@ -133,10 +134,12 @@ const MediaSection = memo(
       <div className="space-y-4">
         {logo ? (
           <div className="group relative mx-auto flex aspect-[3/4] w-full items-center justify-center overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 p-8 lg:max-w-xs">
-            <img
+            <Image
               src={logo}
-              className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-110"
+              fill
+              className="object-contain p-4 transition-transform duration-500 group-hover:scale-110"
               alt="Logo Preview"
+              unoptimized
             />
             <Button
               type="button"
@@ -270,7 +273,7 @@ export const BrandDrawer = React.memo(
           setFormData((prev) => ({ ...prev, logo: res.data.data.url }));
           toast.success("Logo attached securely");
         }
-      } catch (err) {
+      } catch {
         toast.error("Failed to upload insignia. Please try again.");
       } finally {
         setIsUploading(false);

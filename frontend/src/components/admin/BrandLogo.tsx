@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface BrandLogoProps {
@@ -48,24 +49,13 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       )}
     >
       {src ? (
-        <div className="flex h-full w-full items-center justify-center p-2 transition-transform duration-500 hover:scale-110">
-          <img
+        <div className="relative flex h-full w-full items-center justify-center p-2 transition-transform duration-500 hover:scale-110">
+          <Image
             src={src}
             alt={`${name} logo`}
-            className={cn(
-              "pointer-events-none max-h-full max-w-full object-contain",
-              className
-            )}
-            onLoad={(e) => {
-              (e.currentTarget as HTMLImageElement).classList.add(
-                "opacity-100"
-              );
-            }}
-            onError={(e) => {
-              // Hide broken image if it fails to load
-              (e.currentTarget as HTMLImageElement).classList.add("hidden");
-              // Parent can show background initials instead if we had a state here
-            }}
+            fill
+            className={cn("pointer-events-none object-contain p-2", className)}
+            unoptimized
           />
         </div>
       ) : (

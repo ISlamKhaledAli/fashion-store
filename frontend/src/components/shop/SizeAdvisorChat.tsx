@@ -164,7 +164,7 @@ export const SizeAdvisorChat: React.FC<SizeAdvisorChatProps> = ({
                     : msg
                 )
               );
-            } catch (e) {
+            } catch {
               // Ignore split JSON chunks
             }
           }

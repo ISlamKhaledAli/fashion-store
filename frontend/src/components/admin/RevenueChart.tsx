@@ -63,8 +63,8 @@ CustomTooltip.displayName = "CustomTooltip";
 export const RevenueChart = ({
   data,
   isLoading,
-  range,
-  onRangeChange,
+  range: _range,
+  onRangeChange: _onRangeChange,
 }: RevenueChartProps) => {
   if (isLoading) {
     return (

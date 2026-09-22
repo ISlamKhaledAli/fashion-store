@@ -13,6 +13,7 @@ import {
 import type { Order, UserMeasurements, WishlistItem } from "@/types";
 import { formatCurrency, cn } from "@/lib/utils";
 import Link from "next/link";
+import Image from "next/image";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
@@ -660,11 +661,13 @@ function QuickReorderItem({
       onClick={onReorder}
       className="group flex cursor-pointer gap-4 rounded-sm border border-outline-variant/5 bg-surface-container-lowest p-4 transition-all duration-500 hover:bg-surface-container-low"
     >
-      <div className="h-20 w-20 overflow-hidden rounded-sm bg-surface-container ring-1 ring-outline-variant/10">
-        <img
+      <div className="relative h-20 w-20 overflow-hidden rounded-sm bg-surface-container ring-1 ring-outline-variant/10">
+        <Image
           src={image}
-          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+          className="object-cover transition-transform duration-700 group-hover:scale-110"
           alt={name}
+          fill
+          unoptimized
         />
       </div>
       <div className="flex flex-col justify-between py-1">

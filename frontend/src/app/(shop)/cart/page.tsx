@@ -20,7 +20,6 @@ export default function CartPage() {
     setPromo,
     syncingIds,
   } = useCartStore();
-  const { isAuthenticated } = useAuthStore();
 
   const [isPromoOpen, setIsPromoOpen] = useState(false);
   const [promoCode, setPromoCode] = useState("");

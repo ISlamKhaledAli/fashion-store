@@ -1,6 +1,7 @@
 "use client";
 
 import React, { memo } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Upload, Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -49,10 +50,12 @@ export const MediaSection = memo(
             )}
           >
             <div className="group/img relative aspect-[3/4] overflow-hidden">
-              <img
+              <Image
                 src={img.url}
-                className="h-full w-full object-cover"
+                className="object-cover"
                 alt="Product piece"
+                fill
+                unoptimized
               />
               <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover/img:opacity-100">
                 <Button

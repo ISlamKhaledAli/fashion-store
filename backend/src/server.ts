@@ -12,6 +12,7 @@ const PORT = env.PORT || 5000;
 import { setupCleanupJobs } from "./jobs/cleanupAbandonedOrders";
 import { setupRentalExpiryJobs } from "./jobs/rentalExpiryJob";
 import { setupStockAlertJobs } from "./jobs/stockAlertJob";
+import { setupAbandonedCartRecoveryJobs } from "./jobs/abandonedCartRecovery";
 
 export async function startServer() {
   try {
@@ -22,6 +23,7 @@ export async function startServer() {
     setupCleanupJobs();
     setupRentalExpiryJobs();
     setupStockAlertJobs();
+    setupAbandonedCartRecoveryJobs();
 
     return app.listen(PORT, () => {
       logger.info(`🚀 Server running on port ${PORT} in ${env.NODE_ENV} mode`);

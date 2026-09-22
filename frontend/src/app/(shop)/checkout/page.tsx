@@ -105,7 +105,7 @@ function CheckoutPageContent() {
       try {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setShippingData(JSON.parse(savedShipping));
-      } catch (e) {}
+      } catch {}
     }
 
     // 2. Handle Stripe redirect
@@ -157,7 +157,7 @@ function CheckoutPageContent() {
         city: data.city,
         state: data.state,
         zip: data.zipCode,
-        country: "US",
+        country: data.country || "EG",
         label: "Shipping Address",
       });
 

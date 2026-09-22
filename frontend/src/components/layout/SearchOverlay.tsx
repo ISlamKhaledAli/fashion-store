@@ -24,7 +24,6 @@ export const SearchOverlay = () => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load recent searches from localStorage

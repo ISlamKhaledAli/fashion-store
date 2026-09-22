@@ -25,18 +25,6 @@ const SORT_OPTIONS = [
   { label: "Price High-Low", value: "price:desc" },
 ];
 
-const initialState: FilterState = {
-  category: [],
-  brand: [],
-  size: [],
-  color: [],
-  minPrice: 0,
-  maxPrice: 2000,
-  sort: "createdAt:desc",
-};
-
-// Removed redundant local Action type to use imported FilterAction
-
 function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -48,7 +36,7 @@ function SearchContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isMoreLoading, setIsMoreLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const viewMode: "grid" | "list" = "grid";
 
   const state: FilterState = React.useMemo(
     () => ({

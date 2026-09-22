@@ -76,7 +76,7 @@ export default function AdminOrdersPage() {
             setPagination(res.data.pagination);
           }
         }
-      } catch (error) {
+      } catch {
         if (isMounted.current) {
           console.error("Failed to load orders");
         }
@@ -142,7 +142,7 @@ export default function AdminOrdersPage() {
           const isMounted = { current: true };
           await fetchOrders(pagination.page, isMounted);
         }
-      } catch (error) {
+      } catch {
         toast.error("Failed to update orders");
       } finally {
         setLoading(false);

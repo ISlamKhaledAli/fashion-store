@@ -42,7 +42,7 @@ export const Categories = () => {
         if (response.data.success && Array.isArray(response.data.data)) {
           setCategories(response.data.data);
         }
-      } catch (err) {
+      } catch {
         // Handled silently
       } finally {
         setIsLoading(false);

@@ -77,7 +77,7 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
         console.error("Failed to parse saved chat state", e);
       }
     }
-  }, []);
+  }, [days]);
 
   // Save state whenever relevant dependencies change
   useEffect(() => {
@@ -193,7 +193,7 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({
                   m.id === tempId ? { ...m, content: m.content + content } : m
                 )
               );
-            } catch (e) {
+            } catch {
               // Ignore split JSON chunks
             }
           } else if (

@@ -7,6 +7,7 @@ import {
   getRentalById,
   requestRentalReturn,
   cancelRental,
+  confirmRentalPayment,
 } from "../controllers/rental.controller";
 import { authMiddleware, optionalAuthMiddleware } from "../middleware/auth";
 
@@ -26,6 +27,7 @@ router.get(
 router.post("/", authMiddleware, createRental);
 router.get("/", authMiddleware, getUserRentals);
 router.get("/:id", authMiddleware, getRentalById);
+router.put("/:id/payment", authMiddleware, confirmRentalPayment);
 router.post("/:id/return", authMiddleware, requestRentalReturn);
 router.put("/:id/cancel", authMiddleware, cancelRental);
 
