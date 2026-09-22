@@ -160,7 +160,7 @@ export default function ProductDetailPage({ params, searchParams }: PageProps) {
     <main className="min-h-screen pt-24">
       <ProductJsonLd product={product} />
       {/* 1. Header Section: Image + Primary Info */}
-      <section className="mx-auto grid max-w-[1440px] grid-cols-1 gap-16 bg-transparent px-8 py-16 lg:grid-cols-12 lg:gap-24 lg:px-12">
+      <section className="mx-auto grid max-w-[1440px] grid-cols-1 gap-8 bg-transparent px-4 py-6 sm:gap-12 sm:px-8 sm:py-16 lg:grid-cols-12 lg:gap-24 lg:px-12">
         {/* Gallery Column */}
         <div className="lg:col-span-7">
           <ImageGallery

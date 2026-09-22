@@ -182,10 +182,10 @@ export const PwaInstallPrompt: React.FC = () => {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 60, opacity: 0 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed right-4 bottom-5 left-4 z-50 mx-auto max-w-sm md:hidden"
+            className="fixed right-4 bottom-20 left-4 z-40 mx-auto max-w-sm md:hidden"
             aria-label="The Curator Application"
           >
-            <div className="relative flex items-center justify-between gap-4 border border-stone-200 bg-white/95 px-4 py-3 shadow-[0_12px_32px_rgba(0,0,0,0.08)] backdrop-blur-xl dark:border-stone-800 dark:bg-stone-950/95">
+            <div className="relative flex items-center justify-between gap-4 rounded-xl border border-stone-200 bg-white/95 px-4 py-3 shadow-[0_12px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl dark:border-stone-800 dark:bg-stone-950/95">
               {/* Monogram */}
               <div className="relative h-10 w-10 shrink-0 overflow-hidden border border-stone-900 bg-stone-950 dark:border-stone-700">
                 <Image
