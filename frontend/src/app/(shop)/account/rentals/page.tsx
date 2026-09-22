@@ -142,10 +142,10 @@ export default function UserRentalsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen bg-surface">
+      <div className="flex min-h-screen flex-col bg-surface lg:flex-row">
         <AccountSidebar />
 
-        <main className="flex-1 p-8 lg:p-12">
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-12">
           <div className="mb-8">
             <h1 className="font-serif text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl dark:text-zinc-100">
               My Rentals &amp; Bookings

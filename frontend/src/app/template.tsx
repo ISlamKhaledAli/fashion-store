@@ -2,18 +2,29 @@
 
 import React from "react";
 import { motion } from "framer-motion";
+import { usePathname } from "next/navigation";
 
 /**
- * Diagonal Corner Sweep + Soft Fade Page Transition
- * Fast editorial reveal (0.35s) from top-left corner with opacity blend
+ * Global Editorial Page Transition
+ * Diagonal Corner Sweep with Soft Opacity Fade
+ * Applied to storefront & public pages, bypassed on /admin dashboard routes for maximum productivity
  */
-export default function ShopTemplate({
+export default function RootTemplate({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const isAdminRoute = pathname?.startsWith("/admin");
+
+  // Bypass transition animation completely inside admin dashboard
+  if (isAdminRoute) {
+    return <div className="min-h-full w-full">{children}</div>;
+  }
+
   return (
     <motion.div
+      key={pathname}
       initial={{
         clipPath: "polygon(0 0, 0 0, 0 0, 0 0)",
         opacity: 0,

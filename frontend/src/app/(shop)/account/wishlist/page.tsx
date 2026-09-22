@@ -219,12 +219,12 @@ export default function WishlistPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen bg-surface">
+      <div className="flex min-h-screen flex-col bg-surface lg:flex-row">
         <AccountSidebar />
 
-        <main className="flex-1 px-16 py-12">
-          <header className="mb-16">
-            <h1 className="mb-4 text-4xl font-medium tracking-tighter text-on-surface">
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-12">
+          <header className="mb-8 lg:mb-16">
+            <h1 className="mb-4 text-2xl font-medium tracking-tighter text-on-surface sm:text-4xl">
               My Wishlist {!loading && `(${items.length} items)`}
             </h1>
             <div className="h-px w-full bg-outline-variant opacity-15" />

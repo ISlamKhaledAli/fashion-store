@@ -163,21 +163,21 @@ export default function AccountPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen bg-surface">
+      <div className="flex min-h-screen flex-col bg-surface lg:flex-row">
         <AccountSidebar />
 
-        <main className="flex-1 p-12">
-          <header className="mb-12">
-            <h1 className="text-3xl font-medium tracking-tight text-on-surface">
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-12">
+          <header className="mb-8 lg:mb-12">
+            <h1 className="text-2xl font-medium tracking-tight text-on-surface sm:text-3xl">
               Good morning, {user?.name.split(" ")[0]}
             </h1>
-            <p className="mt-1 text-on-surface-variant">
+            <p className="mt-1 text-sm text-on-surface-variant">
               Everything you need to manage your boutique experience.
             </p>
           </header>
 
           {/* Metric Cards */}
-          <section className="mb-16 grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
+          <section className="mb-12 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:mb-16 lg:grid-cols-5">
             <MetricCard
               label="Total Orders"
               value={loading ? undefined : orders.length.toString()}

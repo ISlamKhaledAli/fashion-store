@@ -248,6 +248,18 @@ export interface Customer360Profile extends Omit<AdminCustomer, "orders"> {
   measurements?: UserMeasurements | null;
 }
 
+export interface HeroSlide {
+  id?: string;
+  tagline: string;
+  title: string;
+  description: string;
+  ctaText: string;
+  ctaLink: string;
+  secondaryCtaText?: string;
+  secondaryCtaLink?: string;
+  imageUrl: string;
+}
+
 export interface HeroContent {
   tagline: string;
   title: string;
@@ -258,6 +270,9 @@ export interface HeroContent {
   secondaryCtaLink: string;
   imageUrl: string;
   stats: Array<{ value: string; label: string }>;
+  slides?: HeroSlide[];
+  autoplaySpeed?: number; // In seconds (default: 6)
+  autoplayEnabled?: boolean; // Toggle auto-sliding
 }
 
 export interface BrandStoryContent {

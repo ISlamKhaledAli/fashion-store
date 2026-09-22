@@ -30,6 +30,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 import { contentApi, adminApi } from "@/lib/api";
 import type {
+  HeroSlide,
   HeroContent,
   BrandStoryContent,
   CtaBannerContent,
@@ -163,21 +164,39 @@ export default function AdminContentPage() {
     closable: true,
   });
 
+  const [activeHeroSlideIndex, setActiveHeroSlideIndex] = useState(0);
   const [hero, setHero] = useState<HeroContent>({
     tagline: "Winter / Spring 2026",
     title: "Modern Elegance Redefined",
     description:
-      "Architectural silhouettes crafted with uncompromising materials.",
+      "Architectural silhouettes crafted with uncompromising materials. Built for the modern aesthete who demands form and function in equal measure.",
     ctaText: "Explore Collection",
     ctaLink: "/products",
-    secondaryCtaText: "Our Story",
-    secondaryCtaLink: "/about",
+    secondaryCtaText: "View Lookbook",
+    secondaryCtaLink: "/products",
     imageUrl:
       "https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=1600&q=80",
     stats: [
-      { value: "100%", label: "Sustainable Sourcing" },
-      { value: "48h", label: "Express Delivery" },
-      { value: "Limited", label: "Edition Pieces" },
+      { value: "48h", label: "Express delivery" },
+      { value: "100%", label: "Curated archive" },
+      { value: "24/7", label: "Style concierge" },
+    ],
+    autoplaySpeed: 6,
+    autoplayEnabled: true,
+    slides: [
+      {
+        id: "slide-1",
+        tagline: "Winter / Spring 2026",
+        title: "Modern Elegance Redefined",
+        description:
+          "Architectural silhouettes crafted with uncompromising materials. Built for the modern aesthete who demands form and function in equal measure.",
+        ctaText: "Explore Collection",
+        ctaLink: "/products",
+        secondaryCtaText: "View Lookbook",
+        secondaryCtaLink: "/products",
+        imageUrl:
+          "https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=1600&q=80",
+      },
     ],
   });
 
@@ -444,8 +463,37 @@ export default function AdminContentPage() {
             ...prev,
             ...(map.announcement_bar as AnnouncementBarContent),
           }));
-        if (map.home_hero)
-          setHero((prev) => ({ ...prev, ...(map.home_hero as HeroContent) }));
+        if (map.home_hero) {
+          const heroData = map.home_hero as HeroContent;
+          const loadedSlides =
+            Array.isArray(heroData.slides) && heroData.slides.length > 0
+              ? heroData.slides
+              : [
+                  {
+                    id: "slide-1",
+                    tagline: heroData.tagline || "Winter / Spring 2026",
+                    title: heroData.title || "Modern Elegance Redefined",
+                    description:
+                      heroData.description ||
+                      "Architectural silhouettes crafted with uncompromising materials. Built for the modern aesthete who demands form and function in equal measure.",
+                    ctaText: heroData.ctaText || "Explore Collection",
+                    ctaLink: heroData.ctaLink || "/products",
+                    secondaryCtaText:
+                      heroData.secondaryCtaText || "View Lookbook",
+                    secondaryCtaLink: heroData.secondaryCtaLink || "/products",
+                    imageUrl:
+                      heroData.imageUrl ||
+                      "https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=1600&q=80",
+                  },
+                ];
+          setHero((prev) => ({
+            ...prev,
+            ...heroData,
+            autoplaySpeed: heroData.autoplaySpeed ?? 6,
+            autoplayEnabled: heroData.autoplayEnabled ?? true,
+            slides: loadedSlides,
+          }));
+        }
         if (map.home_brand_story)
           setBrandStory((prev) => ({
             ...prev,
@@ -545,6 +593,102 @@ export default function AdminContentPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // --- Handlers for Hero Slides ---
+  const handleAddHeroSlide = () => {
+    const newSlide: HeroSlide = {
+      id: `slide-${Date.now()}`,
+      tagline: "New Collection",
+      title: "Atmospheric Precision",
+      description:
+        "Discover minimalist silhouettes crafted for effortless distinction.",
+      ctaText: "Explore Now",
+      ctaLink: "/products",
+      secondaryCtaText: "View Story",
+      secondaryCtaLink: "/about",
+      imageUrl:
+        "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1600&q=80",
+    };
+    const updatedSlides = [...(hero.slides || []), newSlide];
+    setHero((prev) => ({ ...prev, slides: updatedSlides }));
+    setActiveHeroSlideIndex(updatedSlides.length - 1);
+    toast.success("New slide added to Hero");
+  };
+
+  const handleDeleteHeroSlide = (indexToDelete: number) => {
+    const currentSlides = hero.slides || [];
+    if (currentSlides.length <= 1) {
+      toast.error("You must have at least one hero slide");
+      return;
+    }
+    const updatedSlides = currentSlides.filter((_, i) => i !== indexToDelete);
+    setHero((prev) => ({ ...prev, slides: updatedSlides }));
+    setActiveHeroSlideIndex((prev) =>
+      prev >= updatedSlides.length ? updatedSlides.length - 1 : prev
+    );
+    toast.success("Slide removed");
+  };
+
+  const handleUpdateHeroSlide = (
+    index: number,
+    field: keyof HeroSlide,
+    val: string
+  ) => {
+    const currentSlides = [...(hero.slides || [])];
+    if (!currentSlides[index]) return;
+    currentSlides[index] = {
+      ...currentSlides[index],
+      [field]: val,
+    };
+    if (index === 0) {
+      setHero((prev) => ({
+        ...prev,
+        slides: currentSlides,
+        [field]: val,
+      }));
+    } else {
+      setHero((prev) => ({
+        ...prev,
+        slides: currentSlides,
+      }));
+    }
+  };
+
+  const handleSaveHero = async () => {
+    const currentSlides =
+      hero.slides && hero.slides.length > 0
+        ? hero.slides
+        : [
+            {
+              id: "slide-1",
+              tagline: hero.tagline,
+              title: hero.title,
+              description: hero.description,
+              ctaText: hero.ctaText,
+              ctaLink: hero.ctaLink,
+              secondaryCtaText: hero.secondaryCtaText,
+              secondaryCtaLink: hero.secondaryCtaLink,
+              imageUrl: hero.imageUrl,
+            },
+          ];
+
+    const firstSlide = currentSlides[0];
+    const payload: HeroContent = {
+      ...hero,
+      tagline: firstSlide.tagline,
+      title: firstSlide.title,
+      description: firstSlide.description,
+      ctaText: firstSlide.ctaText,
+      ctaLink: firstSlide.ctaLink,
+      secondaryCtaText: firstSlide.secondaryCtaText || "",
+      secondaryCtaLink: firstSlide.secondaryCtaLink || "",
+      imageUrl: firstSlide.imageUrl,
+      slides: currentSlides,
+    };
+
+    setHero(payload);
+    await saveSection("home_hero", payload);
   };
 
   // --- Handlers for FAQ ---
@@ -992,161 +1136,351 @@ export default function AdminContentPage() {
       {/* Tab 1: Homepage (Hero, Brand Story, CTA Banner) */}
       {activeTab === "home" && (
         <div className="space-y-10">
-          {/* Section: Hero */}
+          {/* Section: Hero Carousel & Slides */}
           <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8 dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="mb-6 flex items-center justify-between border-b border-zinc-100 pb-4 dark:border-zinc-800">
+            <div className="mb-6 flex flex-col gap-4 border-b border-zinc-100 pb-4 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800">
               <div>
-                <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
-                  Landing Hero Section
-                </h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+                    Landing Hero Carousel
+                  </h2>
+                  <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-primary uppercase">
+                    {(hero.slides || []).length}{" "}
+                    {(hero.slides || []).length === 1 ? "Slide" : "Slides"}
+                  </span>
+                </div>
                 <p className="text-xs text-zinc-500">
-                  Main banner displayed when visitors enter the flagship store.
+                  Manage multi-image carousel slides, custom headlines, button
+                  actions, and imagery for the storefront entrance.
                 </p>
               </div>
-              <Button
-                variant="primary"
-                size="sm"
-                disabled={isSaving}
-                onClick={() => saveSection("home_hero", hero)}
-                className="flex items-center gap-2 text-xs"
-              >
-                <Save size={14} />
-                Save Hero
-              </Button>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddHeroSlide}
+                  className="flex items-center gap-1.5 text-xs"
+                >
+                  <Plus size={14} />
+                  Add Slide
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  disabled={isSaving}
+                  onClick={handleSaveHero}
+                  className="flex items-center gap-2 text-xs"
+                >
+                  <Save size={14} />
+                  Save Hero Carousel
+                </Button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <div className="space-y-4">
+            {/* Slide Navigation Tabs */}
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-100 bg-zinc-50 p-2 dark:border-zinc-800 dark:bg-zinc-950">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {(hero.slides || []).map((slide, idx) => {
+                  const isActive = idx === activeHeroSlideIndex;
+                  return (
+                    <button
+                      key={slide.id || idx}
+                      type="button"
+                      onClick={() => setActiveHeroSlideIndex(idx)}
+                      className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold tracking-wide uppercase transition-all ${
+                        isActive
+                          ? "bg-zinc-950 text-white shadow-xs dark:bg-zinc-100 dark:text-zinc-950"
+                          : "bg-white text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                      }`}
+                    >
+                      <span>Slide {idx + 1}</span>
+                      {slide.title && (
+                        <span className="max-w-[120px] truncate text-[10px] opacity-70">
+                          ({slide.title})
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Delete slide button */}
+              {(hero.slides || []).length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => handleDeleteHeroSlide(activeHeroSlideIndex)}
+                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40"
+                  title="Remove this slide"
+                >
+                  <Trash2 size={13} />
+                  <span>Delete Slide {activeHeroSlideIndex + 1}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Carousel Behavior & Speed Settings */}
+            <div className="mb-6 grid grid-cols-1 gap-4 rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-4 sm:grid-cols-2 dark:border-zinc-800 dark:bg-zinc-950/50">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <label className="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
-                    Tagline
-                  </label>
-                  <Input
-                    value={hero.tagline}
-                    onChange={(e) =>
-                      setHero({ ...hero, tagline: e.target.value })
-                    }
+                  <span className="text-xs font-semibold tracking-wider text-zinc-900 uppercase dark:text-zinc-100">
+                    Auto-Play Sliding
+                  </span>
+                  <p className="text-[11px] text-zinc-500">
+                    Automatically advance to next banner
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setHero((prev) => ({
+                      ...prev,
+                      autoplayEnabled: prev.autoplayEnabled === false,
+                    }))
+                  }
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                    hero.autoplayEnabled !== false
+                      ? "bg-primary"
+                      : "bg-zinc-300 dark:bg-zinc-700"
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                      hero.autoplayEnabled !== false
+                        ? "translate-x-5"
+                        : "translate-x-0"
+                    }`}
                   />
-                </div>
+                </button>
+              </div>
 
-                <div>
-                  <label className="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
-                    Main Title
-                  </label>
-                  <Input
-                    value={hero.title}
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold tracking-wider text-zinc-900 uppercase dark:text-zinc-100">
+                      Slide Duration
+                    </span>
+                    <span className="rounded-md bg-zinc-200 px-2 py-0.5 font-mono text-xs font-bold text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100">
+                      {hero.autoplaySpeed ?? 6}s
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={2}
+                    max={15}
+                    step={1}
+                    value={hero.autoplaySpeed ?? 6}
+                    disabled={hero.autoplayEnabled === false}
                     onChange={(e) =>
-                      setHero({ ...hero, title: e.target.value })
+                      setHero((prev) => ({
+                        ...prev,
+                        autoplaySpeed: Number(e.target.value),
+                      }))
                     }
+                    className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-zinc-200 accent-primary disabled:opacity-40 dark:bg-zinc-700"
                   />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
-                    Description
-                  </label>
-                  <Textarea
-                    rows={3}
-                    value={hero.description}
-                    onChange={(e) =>
-                      setHero({ ...hero, description: e.target.value })
-                    }
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
-                      Primary CTA Text
-                    </label>
-                    <Input
-                      value={hero.ctaText}
-                      onChange={(e) =>
-                        setHero({ ...hero, ctaText: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
-                      Primary CTA Link
-                    </label>
-                    <Input
-                      value={hero.ctaLink}
-                      onChange={(e) =>
-                        setHero({ ...hero, ctaLink: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
-                      Secondary CTA Text
-                    </label>
-                    <Input
-                      value={hero.secondaryCtaText}
-                      onChange={(e) =>
-                        setHero({ ...hero, secondaryCtaText: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
-                      Secondary CTA Link
-                    </label>
-                    <Input
-                      value={hero.secondaryCtaLink}
-                      onChange={(e) =>
-                        setHero({ ...hero, secondaryCtaLink: e.target.value })
-                      }
-                    />
+                  <div className="mt-1 flex justify-between text-[10px] text-zinc-400">
+                    <span>Fast (2s)</span>
+                    <span>Standard (6s)</span>
+                    <span>Relaxed (15s)</span>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div className="space-y-4">
-                <ImageField
-                  label="Hero Background Image"
-                  value={hero.imageUrl}
-                  onChange={(url) => setHero({ ...hero, imageUrl: url })}
-                  aspectRatio="aspect-16/10"
-                  recommendedSize="1920 × 1080 (16:9)"
-                />
+            {/* Current Active Slide Form */}
+            {(() => {
+              const currentSlides = hero.slides || [];
+              const safeIdx =
+                activeHeroSlideIndex < currentSlides.length
+                  ? activeHeroSlideIndex
+                  : 0;
+              const activeSlide: HeroSlide = currentSlides[safeIdx] || {
+                id: "slide-1",
+                tagline: hero.tagline,
+                title: hero.title,
+                description: hero.description,
+                ctaText: hero.ctaText,
+                ctaLink: hero.ctaLink,
+                secondaryCtaText: hero.secondaryCtaText,
+                secondaryCtaLink: hero.secondaryCtaLink,
+                imageUrl: hero.imageUrl,
+              };
 
-                <div className="pt-2">
-                  <label className="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
-                    Hero Stats Cards
-                  </label>
-                  <div className="mt-2 space-y-2">
-                    {hero.stats.map((stat, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
+              return (
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
+                        Tagline / Season (Slide {safeIdx + 1})
+                      </label>
+                      <Input
+                        value={activeSlide.tagline}
+                        placeholder="e.g. Winter / Spring 2026"
+                        onChange={(e) =>
+                          handleUpdateHeroSlide(
+                            safeIdx,
+                            "tagline",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
+                        Main Title (Slide {safeIdx + 1})
+                      </label>
+                      <Input
+                        value={activeSlide.title}
+                        placeholder="e.g. Modern Elegance Redefined"
+                        onChange={(e) =>
+                          handleUpdateHeroSlide(
+                            safeIdx,
+                            "title",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
+                        Description (Slide {safeIdx + 1})
+                      </label>
+                      <Textarea
+                        rows={3}
+                        value={activeSlide.description}
+                        placeholder="Architectural silhouettes crafted with uncompromising materials..."
+                        onChange={(e) =>
+                          handleUpdateHeroSlide(
+                            safeIdx,
+                            "description",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
+                          Primary CTA Text
+                        </label>
                         <Input
-                          placeholder="Value (e.g. 48h)"
-                          value={stat.value}
-                          onChange={(e) => {
-                            const copy = [...hero.stats];
-                            copy[idx].value = e.target.value;
-                            setHero({ ...hero, stats: copy });
-                          }}
-                          wrapperClassName="w-1/3"
-                        />
-                        <Input
-                          placeholder="Label (e.g. Express delivery)"
-                          value={stat.label}
-                          onChange={(e) => {
-                            const copy = [...hero.stats];
-                            copy[idx].label = e.target.value;
-                            setHero({ ...hero, stats: copy });
-                          }}
-                          wrapperClassName="flex-1"
+                          value={activeSlide.ctaText}
+                          placeholder="Explore Collection"
+                          onChange={(e) =>
+                            handleUpdateHeroSlide(
+                              safeIdx,
+                              "ctaText",
+                              e.target.value
+                            )
+                          }
                         />
                       </div>
-                    ))}
+                      <div>
+                        <label className="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
+                          Primary CTA Link
+                        </label>
+                        <Input
+                          value={activeSlide.ctaLink}
+                          placeholder="/products"
+                          onChange={(e) =>
+                            handleUpdateHeroSlide(
+                              safeIdx,
+                              "ctaLink",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
+                          Secondary CTA Text
+                        </label>
+                        <Input
+                          value={activeSlide.secondaryCtaText || ""}
+                          placeholder="View Lookbook (Optional)"
+                          onChange={(e) =>
+                            handleUpdateHeroSlide(
+                              safeIdx,
+                              "secondaryCtaText",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
+                          Secondary CTA Link
+                        </label>
+                        <Input
+                          value={activeSlide.secondaryCtaLink || ""}
+                          placeholder="/about"
+                          onChange={(e) =>
+                            handleUpdateHeroSlide(
+                              safeIdx,
+                              "secondaryCtaLink",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <ImageField
+                      label={`Hero Background Image (Slide ${safeIdx + 1})`}
+                      value={activeSlide.imageUrl}
+                      onChange={(url) =>
+                        handleUpdateHeroSlide(safeIdx, "imageUrl", url)
+                      }
+                      aspectRatio="aspect-16/10"
+                      recommendedSize="1920 × 1080 (16:9)"
+                    />
+
+                    <div className="pt-2">
+                      <label className="text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
+                        Hero Stats Cards (Global)
+                      </label>
+                      <div className="mt-2 space-y-2">
+                        {hero.stats.map((stat, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <Input
+                              placeholder="Value (e.g. 48h)"
+                              value={stat.value}
+                              onChange={(e) => {
+                                const copy = [...hero.stats];
+                                copy[idx].value = e.target.value;
+                                setHero({ ...hero, stats: copy });
+                              }}
+                              wrapperClassName="w-1/3"
+                            />
+                            <Input
+                              placeholder="Label (e.g. Express delivery)"
+                              value={stat.label}
+                              onChange={(e) => {
+                                const copy = [...hero.stats];
+                                copy[idx].label = e.target.value;
+                                setHero({ ...hero, stats: copy });
+                              }}
+                              wrapperClassName="flex-1"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
 
           {/* Section: Brand Story / Manifesto */}

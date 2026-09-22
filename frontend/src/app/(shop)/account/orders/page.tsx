@@ -103,15 +103,15 @@ export default function OrdersPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen bg-surface">
+      <div className="flex min-h-screen flex-col bg-surface lg:flex-row">
         <AccountSidebar />
 
-        <main className="flex-1 p-12">
-          <header className="mb-12">
-            <h1 className="mb-4 text-5xl font-medium tracking-tight text-on-surface">
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-12">
+          <header className="mb-8 lg:mb-12">
+            <h1 className="mb-2 text-3xl font-medium tracking-tight text-on-surface sm:text-5xl">
               My Orders
             </h1>
-            <p className="max-w-xl leading-relaxed text-on-surface-variant">
+            <p className="max-w-xl text-sm leading-relaxed text-on-surface-variant sm:text-base">
               Track your recent purchases, manage returns, and explore your
               history with the collection.
             </p>

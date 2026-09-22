@@ -102,10 +102,10 @@ export default function CustomerReturnsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen bg-surface">
+      <div className="flex min-h-screen flex-col bg-surface lg:flex-row">
         <AccountSidebar />
 
-        <main className="flex-1 px-8 py-12 lg:px-16">
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-12">
           <div className="mx-auto max-w-5xl space-y-10">
             {/* Header */}
             <div className="flex flex-col justify-between gap-4 border-b border-outline-variant/15 pb-8 sm:flex-row sm:items-center">
