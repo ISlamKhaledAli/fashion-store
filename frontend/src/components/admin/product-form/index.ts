@@ -6,4 +6,5 @@ export * from "./VariantGeneratorSection";
 export * from "./FeaturesSection";
 export * from "./AccordionsSection";
 export * from "./SearchPresenceSection";
+export * from "./BranchPickupSection";
 export * from "./FormSkeleton";

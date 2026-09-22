@@ -121,7 +121,7 @@ export default function AdminReturnsPage() {
   return (
     <div className="space-y-8 p-6 lg:p-10">
       <div>
-        <h1 className="font-serif text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl dark:text-zinc-100">
+        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl dark:text-zinc-100">
           Order Returns &amp; Refunds
         </h1>
         <p className="mt-1 text-xs text-zinc-500">
@@ -293,7 +293,7 @@ export default function AdminReturnsPage() {
       {activeRefundReturn && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
           <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
-            <h3 className="font-serif text-base font-bold text-zinc-900 dark:text-zinc-100">
+            <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
               Confirm Stripe Refund
             </h3>
             <p className="mt-1 text-xs text-zinc-500">

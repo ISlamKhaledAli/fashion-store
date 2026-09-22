@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Plus, Check, Eye } from "lucide-react";
 import type { Product } from "@/types";
@@ -30,6 +31,7 @@ export const ProductCard = ({
   variant = "default",
   isListView = false,
 }: ProductCardProps) => {
+  const router = useRouter();
   const { addItem, toggleDrawer } = useCartStore();
   const { isAuthenticated } = useAuthStore();
   const {
@@ -93,6 +95,11 @@ export const ProductCard = ({
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (product.isRentable && product.isSaleable === false) {
+      router.push(`/products/${product.slug}`);
+      return;
+    }
 
     if (isAnimating.current) return;
     if (!selectedVariant) {

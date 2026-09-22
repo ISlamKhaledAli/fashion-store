@@ -23,6 +23,7 @@ import {
   FeaturesSection,
   AccordionsSection,
   SearchPresenceSection,
+  BranchPickupSection,
   FormSkeleton,
 } from "./product-form";
 
@@ -91,10 +92,12 @@ export const ProductFormPanel = ({
     variants: (product?.variants ?? []) as Partial<Variant>[],
     features: (product?.features ?? []) as ProductFeature[],
     details: (product?.details ?? []) as AccordionItem[],
+    isSaleable: product?.isSaleable ?? true,
     isRentable: product?.isRentable ?? false,
     rentalPrice: product?.rentalPrice ?? 0,
     securityDeposit: product?.securityDeposit ?? 0,
     maxRentalDays: product?.maxRentalDays ?? 14,
+    pickupLocations: product?.pickupLocations ?? [],
   });
 
   const flatCategoryOptions = useMemo(() => {
@@ -169,10 +172,12 @@ export const ProductFormPanel = ({
               variants: full.variants,
               features: full.features || [],
               details: full.details || [],
+              isSaleable: full.isSaleable ?? true,
               isRentable: full.isRentable ?? false,
               rentalPrice: full.rentalPrice ?? 0,
               securityDeposit: full.securityDeposit ?? 0,
               maxRentalDays: full.maxRentalDays ?? 14,
+              pickupLocations: full.pickupLocations ?? [],
             });
           }
         } catch (err) {
@@ -193,10 +198,12 @@ export const ProductFormPanel = ({
             variants: product.variants,
             features: product.features || [],
             details: product.details || [],
+            isSaleable: product.isSaleable ?? true,
             isRentable: product.isRentable ?? false,
             rentalPrice: product.rentalPrice ?? 0,
             securityDeposit: product.securityDeposit ?? 0,
             maxRentalDays: product.maxRentalDays ?? 14,
+            pickupLocations: product.pickupLocations ?? [],
           });
         } finally {
           setFetching(false);
@@ -218,10 +225,12 @@ export const ProductFormPanel = ({
         variants: [],
         features: [],
         details: [],
+        isSaleable: true,
         isRentable: false,
         rentalPrice: 0,
         securityDeposit: 0,
         maxRentalDays: 14,
+        pickupLocations: [],
       });
       setFetching(false);
     }
@@ -689,6 +698,7 @@ export const ProductFormPanel = ({
     // Sanitize Payload
     const sanitizedPayload = {
       ...formData,
+      pickupLocations: formData.pickupLocations || [],
       variants: formData.variants.filter((v) => v.size || v.color || v.sku), // Remove empty rows
       images: formData.images.filter(
         (img) => !img.publicId.startsWith("temp-")
@@ -739,6 +749,7 @@ export const ProductFormPanel = ({
     <AdminDrawer
       isOpen={isOpen}
       onClose={onClose}
+      width="w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl"
       title={product ? "Refine Piece" : "New Archive"}
       subtitle={
         product
@@ -787,6 +798,11 @@ export const ProductFormPanel = ({
               margin={margin}
               onFieldChange={handleFieldChange}
               errors={formErrors}
+            />
+
+            <BranchPickupSection
+              pickupLocations={formData.pickupLocations}
+              onFieldChange={handleFieldChange}
             />
 
             <MediaSection

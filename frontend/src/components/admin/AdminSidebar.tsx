@@ -30,7 +30,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/Button";
 import { CloseButton } from "@/components/ui/CloseButton";
-import { NotificationBell } from "./NotificationBell";
 
 interface AdminSidebarProps {
   isCollapsed: boolean;
@@ -39,26 +38,67 @@ interface AdminSidebarProps {
   onMobileClose: () => void;
 }
 
-const navLinks = [
-  { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
-  { name: "Rentals", href: "/admin/rentals", icon: Clock },
-  { name: "Returns", href: "/admin/returns", icon: RotateCcw },
-  { name: "Products", href: "/admin/products", icon: Package },
-  { name: "Reviews", href: "/admin/reviews", icon: Star },
-  { name: "Shipping", href: "/admin/shipping", icon: Truck },
-  { name: "Content", href: "/admin/content", icon: LayoutTemplate },
-  { name: "Messages", href: "/admin/messages", icon: Inbox },
-  { name: "Newsletter", href: "/admin/newsletter", icon: Mail },
-  { name: "Customers", href: "/admin/customers", icon: Users },
-  { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
-  { name: "Activity", href: "/admin/activity", icon: Activity },
-  { name: "Notifications", href: "/admin/notifications", icon: Bell },
-  { name: "Categories", href: "/admin/categories", icon: FolderTree },
-  { name: "Brands", href: "/admin/brands", icon: Tag },
-  { name: "Inventory", href: "/admin/inventory", icon: Warehouse },
-  { name: "Discounts", href: "/admin/discounts", icon: Tags },
-  { name: "Settings", href: "/admin/settings", icon: Settings },
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{
+    size?: number;
+    strokeWidth?: number;
+    className?: string;
+  }>;
+}
+
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+// Ordered strictly from most critical / frequently accessed to least
+const navSections: NavSection[] = [
+  {
+    title: "Core Operations",
+    items: [
+      { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
+      { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
+      { name: "Products", href: "/admin/products", icon: Package },
+      { name: "Inventory", href: "/admin/inventory", icon: Warehouse },
+      { name: "Customers", href: "/admin/customers", icon: Users },
+    ],
+  },
+  {
+    title: "Fulfillment & Orders",
+    items: [
+      { name: "Returns", href: "/admin/returns", icon: RotateCcw },
+      { name: "Rentals", href: "/admin/rentals", icon: Clock },
+      { name: "Shipping", href: "/admin/shipping", icon: Truck },
+    ],
+  },
+  {
+    title: "Sales & Marketing",
+    items: [
+      { name: "Discounts", href: "/admin/discounts", icon: Tags },
+      { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+      { name: "Reviews", href: "/admin/reviews", icon: Star },
+      { name: "Messages", href: "/admin/messages", icon: Inbox },
+      { name: "Newsletter", href: "/admin/newsletter", icon: Mail },
+    ],
+  },
+  {
+    title: "Catalog & Content",
+    items: [
+      { name: "Categories", href: "/admin/categories", icon: FolderTree },
+      { name: "Brands", href: "/admin/brands", icon: Tag },
+      { name: "Content", href: "/admin/content", icon: LayoutTemplate },
+    ],
+  },
+  {
+    title: "System & Admin",
+    items: [
+      { name: "Notifications", href: "/admin/notifications", icon: Bell },
+      { name: "Activity", href: "/admin/activity", icon: Activity },
+      { name: "Settings", href: "/admin/settings", icon: Settings },
+    ],
+  },
 ];
 
 export const AdminSidebar = ({
@@ -68,7 +108,7 @@ export const AdminSidebar = ({
   onMobileClose,
 }: AdminSidebarProps) => {
   const pathname = usePathname();
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
 
   const sidebarContent = (
     <>
@@ -106,12 +146,6 @@ export const AdminSidebar = ({
           )}
         </AnimatePresence>
 
-        {!isCollapsed && (
-          <div className="mr-2 ml-auto hidden lg:block">
-            <NotificationBell />
-          </div>
-        )}
-
         {/* Mobile close button */}
         <CloseButton
           onClick={onMobileClose}
@@ -121,46 +155,60 @@ export const AdminSidebar = ({
       </div>
 
       {/* Nav Section */}
-      <nav className="no-scrollbar flex-1 space-y-1 overflow-x-hidden overflow-y-auto py-6">
-        {navLinks.map((link) => {
-          const isActive = pathname === link.href;
-          return (
-            <Link
-              key={link.name}
-              href={link.href}
-              onClick={onMobileClose}
-              className={cn(
-                "group relative flex h-12 items-center px-6 transition-all",
-                isActive
-                  ? "border-l-4 border-white bg-zinc-900 text-white"
-                  : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-100"
-              )}
-            >
-              <link.icon
-                size={18}
-                strokeWidth={isActive ? 2 : 1.5}
-                className={cn(
-                  "min-w-[18px]",
-                  isCollapsed && !isMobileOpen ? "mx-auto" : "mr-4"
-                )}
-              />
-              {(!isCollapsed || isMobileOpen) && (
-                <motion.span
-                  initial={{ opacity: 0, x: -5 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="text-sm font-medium tracking-tight whitespace-nowrap"
+      <nav className="no-scrollbar flex-1 space-y-4 overflow-x-hidden overflow-y-auto py-4">
+        {navSections.map((section, sIndex) => (
+          <div key={section.title} className="space-y-0.5">
+            {/* Section Header */}
+            {!isCollapsed || isMobileOpen ? (
+              <div className="px-6 pt-2 pb-1 text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
+                {section.title}
+              </div>
+            ) : sIndex > 0 ? (
+              <div className="mx-3 my-2 border-t border-zinc-900" />
+            ) : null}
+
+            {/* Section Items */}
+            {section.items.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  onClick={onMobileClose}
+                  className={cn(
+                    "group relative flex h-10 items-center px-6 transition-all",
+                    isActive
+                      ? "border-l-4 border-white bg-zinc-900 font-medium text-white"
+                      : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100"
+                  )}
                 >
-                  {link.name}
-                </motion.span>
-              )}
-              {isCollapsed && !isMobileOpen && (
-                <div className="pointer-events-none absolute left-full z-[60] ml-4 rounded bg-white px-3 py-2 text-xs font-bold whitespace-nowrap text-zinc-950 opacity-0 shadow-xl transition-opacity group-hover:opacity-100">
-                  {link.name}
-                </div>
-              )}
-            </Link>
-          );
-        })}
+                  <link.icon
+                    size={17}
+                    strokeWidth={isActive ? 2 : 1.5}
+                    className={cn(
+                      "min-w-[17px]",
+                      isCollapsed && !isMobileOpen ? "mx-auto" : "mr-3.5"
+                    )}
+                  />
+                  {(!isCollapsed || isMobileOpen) && (
+                    <motion.span
+                      initial={{ opacity: 0, x: -5 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="text-xs font-medium tracking-tight whitespace-nowrap"
+                    >
+                      {link.name}
+                    </motion.span>
+                  )}
+                  {isCollapsed && !isMobileOpen && (
+                    <div className="pointer-events-none absolute left-full z-[60] ml-4 rounded bg-white px-3 py-1.5 text-xs font-bold whitespace-nowrap text-zinc-950 opacity-0 shadow-xl transition-opacity group-hover:opacity-100">
+                      {link.name}
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Bottom Profile Section */}

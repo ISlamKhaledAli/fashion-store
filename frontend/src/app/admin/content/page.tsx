@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { Select } from "@/components/ui/Select";
 import { contentApi, adminApi } from "@/lib/api";
 import type {
   HeroContent,
@@ -465,8 +466,17 @@ export default function AdminContentPage() {
             ...prev,
             ...(map.home_cta_banner as CtaBannerContent),
           }));
-        if (map.footer)
-          setFooter((prev) => ({ ...prev, ...(map.footer as FooterContent) }));
+        if (map.footer) {
+          const footerData = map.footer as FooterContent;
+          setFooter((prev) => ({
+            ...prev,
+            ...footerData,
+            socialLinks: {
+              ...prev.socialLinks,
+              ...(footerData.socialLinks || {}),
+            },
+          }));
+        }
         if (Array.isArray(map.nav_links) && map.nav_links.length > 0)
           setNavLinks(map.nav_links as NavLinkItem[]);
         if (map.contact)
@@ -615,7 +625,7 @@ export default function AdminContentPage() {
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-light tracking-tight text-zinc-950 sm:text-3xl dark:text-zinc-50">
-            Content <span className="font-serif italic">Studio</span>
+            Content <span className="font-semibold">Studio</span>
           </h1>
           <p className="mt-1 text-xs text-zinc-500">
             Manage storefront imagery, editorial copy, salon addresses, FAQs,
@@ -1119,7 +1129,7 @@ export default function AdminContentPage() {
                             copy[idx].value = e.target.value;
                             setHero({ ...hero, stats: copy });
                           }}
-                          className="w-1/3"
+                          wrapperClassName="w-1/3"
                         />
                         <Input
                           placeholder="Label (e.g. Express delivery)"
@@ -1129,7 +1139,7 @@ export default function AdminContentPage() {
                             copy[idx].label = e.target.value;
                             setHero({ ...hero, stats: copy });
                           }}
-                          className="flex-1"
+                          wrapperClassName="flex-1"
                         />
                       </div>
                     ))}
@@ -1613,7 +1623,8 @@ export default function AdminContentPage() {
                             copy[idx].num = e.target.value;
                             setAbout({ ...about, pillars: copy });
                           }}
-                          className="w-16 font-mono"
+                          wrapperClassName="w-16 shrink-0"
+                          className="w-full text-center font-mono"
                         />
                         <Input
                           value={pillar.title}
@@ -2192,7 +2203,8 @@ export default function AdminContentPage() {
                             copy[idx].num = e.target.value;
                             setPwaModal({ ...pwaModal, benefits: copy });
                           }}
-                          className="w-16 font-mono"
+                          wrapperClassName="w-16 shrink-0"
+                          className="w-full text-center font-mono"
                         />
                         <Input
                           value={benefit.title}
@@ -2269,19 +2281,21 @@ export default function AdminContentPage() {
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex flex-1 items-center gap-3">
-                      <select
+                      <Select
+                        variant="filter"
                         value={item.category}
-                        onChange={(e) =>
-                          handleUpdateFaq(idx, "category", e.target.value)
+                        onChange={(val) =>
+                          handleUpdateFaq(idx, "category", val)
                         }
-                        className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
-                      >
-                        <option value="shipping">Shipping & Delivery</option>
-                        <option value="returns">Returns & Exchanges</option>
-                        <option value="sizing">Sizing & Garment Care</option>
-                        <option value="payments">Payments & Security</option>
-                        <option value="orders">Orders & Packaging</option>
-                      </select>
+                        options={[
+                          { value: "shipping", label: "Shipping & Delivery" },
+                          { value: "returns", label: "Returns & Exchanges" },
+                          { value: "sizing", label: "Sizing & Garment Care" },
+                          { value: "payments", label: "Payments & Security" },
+                          { value: "orders", label: "Orders & Packaging" },
+                        ]}
+                        className="w-48 shrink-0"
+                      />
                       <Input
                         value={item.question}
                         placeholder="Question title"

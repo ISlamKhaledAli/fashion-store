@@ -97,7 +97,7 @@ export function ConfirmDialog({
         {/* Editorial Title */}
         <h3
           id="confirm-dialog-title"
-          className="mt-1 font-serif text-xl font-medium tracking-tight text-stone-900"
+          className="mt-1 font-sans text-xl font-bold tracking-tight text-stone-900"
         >
           {title}
         </h3>

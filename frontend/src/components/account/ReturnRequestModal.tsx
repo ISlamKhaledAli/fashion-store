@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertCircle, RotateCcw, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
 import { returnApi } from "@/lib/api";
 import type { Order } from "@/types";
 import { toast } from "sonner";
@@ -136,36 +138,22 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Reason selector */}
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
-                Return Reason
-              </label>
-              <select
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                className="w-full rounded-lg border border-outline-variant/30 bg-surface px-3.5 py-2.5 text-sm text-on-surface transition-colors focus:border-primary focus:outline-none"
-              >
-                {RETURN_REASONS.map((r) => (
-                  <option key={r.value} value={r.value}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Return Reason"
+              value={reason}
+              onChange={setReason}
+              options={RETURN_REASONS}
+              className="w-full"
+            />
 
             {/* Detailed Description */}
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
-                Additional Atelier Notes (Optional)
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Provide any details regarding fit, condition, or collection preferences..."
-                rows={3}
-                className="w-full rounded-lg border border-outline-variant/30 bg-surface px-3.5 py-2.5 text-sm text-on-surface transition-colors placeholder:text-on-surface-variant/50 focus:border-primary focus:outline-none"
-              />
-            </div>
+            <Textarea
+              label="Additional Atelier Notes (Optional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Provide any details regarding fit, condition, or collection preferences..."
+              rows={3}
+            />
 
             {/* Courier Collection Policy Note */}
             <div className="flex items-start gap-2.5 rounded-lg bg-surface-container-high/40 p-3 text-xs text-on-surface-variant">

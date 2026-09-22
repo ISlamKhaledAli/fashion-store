@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { UploadCloud } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { Select } from "@/components/ui/Select";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface CategoryFormProps {
@@ -157,25 +158,19 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-[10px] font-bold tracking-widest text-zinc-400 uppercase">
-            Parent Category
-          </label>
-          <select
-            className="w-full cursor-pointer appearance-none rounded-md border-none bg-zinc-50 px-4 py-3 text-sm transition-all focus:ring-1 focus:ring-zinc-900"
-            value={formData.parentId}
-            onChange={(e) =>
-              setFormData((p) => ({ ...p, parentId: e.target.value }))
-            }
-          >
-            <option value="">None (Root Category)</option>
-            {parentOptions.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <Select
+          label="Parent Category"
+          value={formData.parentId}
+          onChange={(val) => setFormData((p) => ({ ...p, parentId: val }))}
+          options={[
+            { value: "", label: "None (Root Category)" },
+            ...parentOptions.map((cat) => ({
+              value: cat.id,
+              label: cat.name,
+            })),
+          ]}
+          className="w-full"
+        />
 
         <div className="space-y-2">
           <label className="text-[10px] font-bold tracking-widest text-zinc-400 uppercase">

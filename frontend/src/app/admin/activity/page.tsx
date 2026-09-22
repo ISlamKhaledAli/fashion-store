@@ -12,6 +12,8 @@ import {
   User as UserIcon,
   Tag,
   FileText,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { adminApi } from "@/lib/api";
 import { toast } from "sonner";
@@ -20,6 +22,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { AuditLog, PaginationData } from "@/types";
 import { cn } from "@/lib/utils";
+import { ActivityDetailsViewer } from "@/components/admin/ActivityDetailsViewer";
 
 const ENTITY_OPTIONS = [
   { label: "All Entities", value: "ALL" },
@@ -121,7 +124,7 @@ export default function AdminActivityPage() {
             <div className="rounded-lg bg-primary/10 p-2 text-primary">
               <Activity className="h-5 w-5" />
             </div>
-            <h1 className="font-serif text-2xl font-medium tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight">
               Activity &amp; Audit Trail
             </h1>
           </div>
@@ -292,19 +295,28 @@ export default function AdminActivityPage() {
                         onClick={() =>
                           setExpandedLogId(isExpanded ? null : log.id)
                         }
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+                        className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-2 py-1 text-[11px] font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                       >
                         <FileText className="h-3 w-3" />
-                        {isExpanded ? "Hide Payload" : "View Payload"}
+                        <span>
+                          {isExpanded ? "Hide Details" : "View Details"}
+                        </span>
+                        {isExpanded ? (
+                          <ChevronUp className="h-3 w-3" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3" />
+                        )}
                       </button>
                     )}
                   </div>
 
-                  {/* Expanded JSON details */}
-                  {isExpanded && hasDetails && (
-                    <pre className="mt-2 overflow-x-auto rounded-lg border border-neutral-800 bg-neutral-950 p-3 font-mono text-xs text-neutral-200">
-                      {JSON.stringify(log.details, null, 2)}
-                    </pre>
+                  {/* Expanded human-friendly details */}
+                  {isExpanded && hasDetails && log.details && (
+                    <ActivityDetailsViewer
+                      details={log.details}
+                      action={log.action}
+                      entity={log.entity}
+                    />
                   )}
                 </div>
               );

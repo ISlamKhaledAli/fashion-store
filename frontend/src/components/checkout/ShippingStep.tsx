@@ -9,6 +9,10 @@ import { Button } from "@/components/ui/Button";
 import { cn, formatCurrency } from "@/lib/utils";
 import { cartApi } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton";
+import {
+  LocationPicker,
+  type LocationData,
+} from "@/components/ui/LocationPicker";
 
 const shippingSchema = z.object({
   firstName: z.string().min(2, "First name is required"),
@@ -73,6 +77,13 @@ export const ShippingStep = ({ onNext, initialData }: ShippingStepProps) => {
 
   const selectedMethod = watch("shippingMethod");
 
+  const handleLocationSelect = (loc: LocationData) => {
+    if (loc.street) setValue("address", loc.street, { shouldValidate: true });
+    if (loc.city) setValue("city", loc.city, { shouldValidate: true });
+    if (loc.state) setValue("state", loc.state, { shouldValidate: true });
+    if (loc.zip) setValue("zipCode", loc.zip, { shouldValidate: true });
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-right-8 space-y-12 duration-700">
       <div>
@@ -80,11 +91,18 @@ export const ShippingStep = ({ onNext, initialData }: ShippingStepProps) => {
           Shipping Details
         </h1>
         <p className="text-sm text-on-surface-variant">
-          Please enter your delivery information below.
+          Please enter your delivery information below or use auto-detect.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onNext)} className="space-y-10">
+      <form onSubmit={handleSubmit(onNext)} className="space-y-8">
+        {/* Quick GPS Location Picker */}
+        <LocationPicker
+          compact
+          onLocationSelect={handleLocationSelect}
+          className="mb-2"
+        />
+
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <Input

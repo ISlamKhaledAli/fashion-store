@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { Select } from "@/components/ui/Select";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { reviewApi } from "@/lib/api";
@@ -243,24 +244,20 @@ export default function AdminReviewsPage() {
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold tracking-widest text-zinc-400 uppercase">
-              Rating:
-            </span>
-            <select
-              value={ratingFilter}
-              onChange={(e) => setRatingFilter(Number(e.target.value))}
-              aria-label="Filter reviews by star rating"
-              className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-800 transition-colors focus:border-zinc-900 focus:outline-hidden dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
-            >
-              <option value={0}>All Ratings</option>
-              <option value={5}>5 Stars ★★★★★</option>
-              <option value={4}>4 Stars ★★★★☆</option>
-              <option value={3}>3 Stars ★★★☆☆</option>
-              <option value={2}>2 Stars ★★☆☆☆</option>
-              <option value={1}>1 Star ★☆☆☆☆</option>
-            </select>
-          </div>
+          <Select
+            variant="filter"
+            labelPrefix="Rating:"
+            value={String(ratingFilter)}
+            onChange={(val) => setRatingFilter(Number(val))}
+            options={[
+              { value: "0", label: "All Ratings" },
+              { value: "5", label: "5 Stars ★★★★★" },
+              { value: "4", label: "4 Stars ★★★★☆" },
+              { value: "3", label: "3 Stars ★★★☆☆" },
+              { value: "2", label: "2 Stars ★★☆☆☆" },
+              { value: "1", label: "1 Star ★☆☆☆☆" },
+            ]}
+          />
         </div>
       </div>
 

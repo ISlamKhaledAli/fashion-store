@@ -49,11 +49,11 @@
   --radius-xl: 0.5rem;
   --radius-full: 0.75rem;
 
-  /* Fonts - Luxury Fashion Typography */
-  --font-sans: var(--font-sans), var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-serif: var(--font-serif), "Playfair Display", Didot, "Bodoni MT", Georgia, serif;
-  --font-inter: var(--font-inter), sans-serif;
-  --font-headline: var(--font-serif);
+  /* Fonts - Unified Brand Identity Typography (Plus Jakarta Sans) */
+  --font-sans: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-inter: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-headline: var(--font-sans);
   --font-body: var(--font-sans);
   --font-label: var(--font-sans);
 }
@@ -83,7 +83,7 @@
 body {
   background-color: var(--background) !important;
   color: var(--foreground) !important;
-  font-family: var(--font-inter);
+  font-family: var(--font-sans) !important;
   -webkit-font-smoothing: antialiased;
   overflow-x: clip;
   max-width: 100%;
@@ -95,6 +95,7 @@ html {
   color-scheme: only light !important;
   overflow-x: clip;
   max-width: 100%;
+  font-family: var(--font-sans);
 }
 
 /* Cinematic Utilities */
@@ -131,37 +132,190 @@ html {
   animation: cart-bounce 0.3s ease-out;
 }
 
-/* Premium Scrollbar — ultra-thin, fades in on hover */
-.premium-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.3s ease;
+/* ═══════════════════════════════════════════════════════════════
+   Luxury Global Scrollbar System — Bespoke The Curator Design
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 1. Chrome, Edge, Safari, Opera (Blink & WebKit engines) */
+::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
 }
 
-.premium-scrollbar:hover {
-  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+::-webkit-scrollbar-track {
+  background: transparent !important;
 }
 
-.premium-scrollbar::-webkit-scrollbar {
-  width: 4px;
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
-.premium-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+::-webkit-scrollbar-corner {
+  background: transparent !important;
 }
 
-.premium-scrollbar::-webkit-scrollbar-thumb {
-  background-color: transparent;
-  border-radius: 9999px;
-  transition: background-color 0.3s ease;
+::-webkit-scrollbar-thumb {
+  background: rgba(3, 3, 4, 0.25) !important;
+  border-radius: 9999px !important;
+  transition: background 0.2s ease !important;
 }
 
-.premium-scrollbar:hover::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.15);
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(3, 3, 4, 0.65) !important;
 }
 
-.premium-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(0, 0, 0, 0.3);
+::-webkit-scrollbar-thumb:active {
+  background: #030304 !important;
+}
+
+/* Dark mode and dark containers (Admin sidebar, dark modals, etc.) */
+.dark ::-webkit-scrollbar-thumb,
+aside::-webkit-scrollbar-thumb,
+nav::-webkit-scrollbar-thumb,
+[class*="bg-zinc-950"]::-webkit-scrollbar-thumb,
+[class*="bg-black"]::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22) !important;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover,
+aside::-webkit-scrollbar-thumb:hover,
+nav::-webkit-scrollbar-thumb:hover,
+[class*="bg-zinc-950"]::-webkit-scrollbar-thumb:hover,
+[class*="bg-black"]::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.55) !important;
+}
+
+.dark ::-webkit-scrollbar-thumb:active,
+aside::-webkit-scrollbar-thumb:active {
+  background: #ffffff !important;
+}
+
+/* 2. Firefox ONLY (Firefox does not support ::-webkit-scrollbar) */
+@supports not selector(::-webkit-scrollbar) {
+  html,
+  body,
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(3, 3, 4, 0.3) transparent;
+  }
+
+  .dark,
+  .dark *,
+  aside,
+  aside * {
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Luxury Text Selection System
+   ═══════════════════════════════════════════════════════════════ */
+::selection {
+  background-color: #030304;
+  color: #ffffff;
+}
+
+.dark ::selection {
+  background-color: #ffffff;
+  color: #030304;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Form Controls Focus & Outline Neutralization
+   ═══════════════════════════════════════════════════════════════ */
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible,
+select:focus,
+select:focus-visible {
+  outline: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Luxury Form Autofill & Native Controls Neutralization
+   ═══════════════════════════════════════════════════════════════ */
+/* Prevent browser default yellow/blue autofill backgrounds */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill {
+  -webkit-text-fill-color: var(--color-on-surface, #1a1c1d) !important;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active,
+.dark textarea:-webkit-autofill {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0 1000px #18181b inset !important;
+  box-shadow: 0 0 0 1000px #18181b inset !important;
+}
+
+/* Date and Time Picker Indicators */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  filter: grayscale(100%);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) grayscale(100%);
+}
+
+/* Custom Range Slider Thumb */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background-color: #030304;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background-color: #030304;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.dark input[type="range"]::-webkit-slider-thumb {
+  background-color: #ffffff;
+  border-color: #030304;
+}
+
+.dark input[type="range"]::-moz-range-thumb {
+  background-color: #ffffff;
+  border-color: #030304;
 }
 
 @keyframes softGlow {
@@ -226,5 +380,36 @@ tr:hover .vibrant-img,
   [role="button"][aria-disabled="true"],
   input:disabled {
     cursor: not-allowed;
+  }
+
+  /* Form Controls Brand Identity Defaults */
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: #030304;
+    cursor: pointer;
+  }
+
+  .dark input[type="checkbox"],
+  .dark input[type="radio"] {
+    accent-color: #ffffff;
+  }
+
+  input[type="range"] {
+    accent-color: #030304;
+    cursor: pointer;
+  }
+
+  .dark input[type="range"] {
+    accent-color: #ffffff;
+  }
+
+  /* Remove default spinner arrows on number inputs for clean luxury look */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
   }
 }

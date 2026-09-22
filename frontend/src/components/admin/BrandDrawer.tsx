@@ -369,7 +369,7 @@ export const BrandDrawer = React.memo(
                         {formData.slug || "new-maison"}
                       </span>
                     </div>
-                    <p className="line-clamp-2 font-serif text-[13px] leading-relaxed text-zinc-500 italic">
+                    <p className="line-clamp-2 text-[13px] leading-relaxed text-zinc-500 italic">
                       {formData.description ||
                         "Refining the history and curated vision of this maison within the Cinematic repository... "}
                     </p>

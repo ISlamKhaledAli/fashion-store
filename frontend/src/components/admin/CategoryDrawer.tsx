@@ -423,7 +423,7 @@ export const CategoryDrawer = React.memo(
                         {formData.slug || "new-pathway"}
                       </span>
                     </div>
-                    <p className="line-clamp-2 font-serif text-[13px] leading-relaxed text-zinc-500 italic">
+                    <p className="line-clamp-2 text-[13px] leading-relaxed text-zinc-500 italic">
                       {formData.description ||
                         "Refining the intersection of modern utility and timeless editorial aesthetics... "}
                     </p>

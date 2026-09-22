@@ -16,6 +16,7 @@ import { adminBannerApi, adminApi } from "@/lib/api";
 import type { Banner } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { toast } from "sonner";
@@ -465,17 +466,17 @@ export const BannerManager = () => {
             </div>
           </div>
 
-          <label className="text-foreground flex cursor-pointer items-center gap-2 pt-2 text-xs">
-            <input
-              type="checkbox"
+          <div className="pt-2">
+            <Checkbox
               checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              className="border-border h-4 w-4 rounded text-primary focus:ring-primary"
+              onCheckedChange={setIsActive}
+              label={
+                <span className="text-xs font-medium">
+                  Active &amp; published immediately
+                </span>
+              }
             />
-            <span className="font-medium">
-              Active &amp; published immediately
-            </span>
-          </label>
+          </div>
 
           <div className="border-border/40 flex items-center justify-end gap-2 border-t pt-4">
             <Button

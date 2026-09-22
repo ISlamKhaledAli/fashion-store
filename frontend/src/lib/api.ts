@@ -447,6 +447,10 @@ export const rentalApi = {
   requestReturn: (id: string, data?: { notes?: string }) =>
     api.post<ApiResponse<Rental>>(`/rentals/${id}/return`, data || {}),
   cancel: (id: string) => api.put<ApiResponse<Rental>>(`/rentals/${id}/cancel`),
+  getSalons: () =>
+    api.get<ApiResponse<Array<{ name: string; address: string }>>>(
+      "/rentals/salons"
+    ),
 };
 
 export const notificationApi = {

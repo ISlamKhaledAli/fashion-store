@@ -31,7 +31,7 @@ export const SearchPresenceSection: React.FC<SearchPresenceSectionProps> = ({
           <ArrowRight size={10} className="text-zinc-400" />
           <span className="truncate">{slug || "item-pathway"}</span>
         </div>
-        <p className="line-clamp-2 font-serif text-[13px] leading-relaxed text-zinc-500 italic">
+        <p className="line-clamp-2 text-[13px] leading-relaxed text-zinc-500 italic">
           {description ||
             "Refining the intersection of modern utility and timeless editorial aesthetics... "}
         </p>

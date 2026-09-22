@@ -97,6 +97,13 @@ export const DEFAULT_SITE_CONTENT: Record<string, unknown> = {
     brandDescription:
       "The Curator is a premium fashion destination dedicated to architectural silhouettes, uncompromising materials, and timeless design.",
     copyrightText: "© 2026 The Curator. All rights reserved.",
+    socialLinks: {
+      instagram: "https://instagram.com",
+      twitter: "https://x.com",
+      facebook: "https://facebook.com",
+      pinterest: "https://pinterest.com",
+      tiktok: "https://tiktok.com",
+    },
   },
 
   contact: {

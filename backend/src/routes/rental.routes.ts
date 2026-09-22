@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   checkAvailability,
+  getRentalSalons,
   createRental,
   getUserRentals,
   getRentalById,
@@ -10,6 +11,9 @@ import {
 import { authMiddleware, optionalAuthMiddleware } from "../middleware/auth";
 
 const router = Router();
+
+// Public salons endpoint
+router.get("/salons", optionalAuthMiddleware, getRentalSalons);
 
 // Availability can be checked by guests
 router.get(

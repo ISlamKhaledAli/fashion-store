@@ -16,6 +16,8 @@ import { StatusBadge } from "./StatusBadge";
 import { PriceDisplay } from "./PriceDisplay";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { Select } from "@/components/ui/Select";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { AdminDrawer } from "./AdminDrawer";
 import { adminApi } from "@/lib/api";
 import { toast } from "sonner";
@@ -100,24 +102,20 @@ const TrackingFulfillmentSection = ({
 
       <div className="space-y-3">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div>
-            <label className="mb-1 block text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
-              Carrier
-            </label>
-            <select
-              value={carrier}
-              onChange={(e) => setCarrier(e.target.value)}
-              aria-label="Select shipping carrier"
-              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-800 transition-colors focus:border-zinc-900 focus:outline-hidden dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
-            >
-              <option value="DHL">DHL Express</option>
-              <option value="FedEx">FedEx</option>
-              <option value="UPS">UPS</option>
-              <option value="Aramex">Aramex</option>
-              <option value="USPS">USPS</option>
-              <option value="Other">Other Carrier</option>
-            </select>
-          </div>
+          <Select
+            label="Carrier"
+            value={carrier}
+            onChange={setCarrier}
+            options={[
+              { value: "DHL", label: "DHL Express" },
+              { value: "FedEx", label: "FedEx" },
+              { value: "UPS", label: "UPS" },
+              { value: "Aramex", label: "Aramex" },
+              { value: "USPS", label: "USPS" },
+              { value: "Other", label: "Other Carrier" },
+            ]}
+            className="w-full"
+          />
 
           <div className="sm:col-span-2">
             <label className="mb-1 block text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
@@ -271,17 +269,17 @@ const CancelOrderModal = ({
           />
         </div>
 
-        <label className="text-foreground flex cursor-pointer items-center gap-2.5 pt-1 text-xs">
-          <input
-            type="checkbox"
+        <div className="pt-1">
+          <Checkbox
             checked={restock}
-            onChange={(e) => setRestock(e.target.checked)}
-            className="border-border h-4 w-4 rounded text-primary focus:ring-primary"
+            onCheckedChange={setRestock}
+            label={
+              <span className="text-foreground text-xs">
+                Automatically return item quantities back to available inventory
+              </span>
+            }
           />
-          <span>
-            Automatically return item quantities back to available inventory
-          </span>
-        </label>
+        </div>
 
         <div className="border-border/40 flex items-center justify-end gap-2 border-t pt-4">
           <Button

@@ -19,6 +19,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { useCartStore } from "@/store/cartStore";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Select } from "@/components/ui/Select";
 
 export default function AccountPage() {
   const { user } = useAuthStore();
@@ -396,24 +397,23 @@ export default function AccountPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-xs font-bold tracking-widest text-on-surface-variant uppercase">
-                      Fit Preference
-                    </label>
-                    <select
+                    <Select
+                      label="Fit Preference"
                       value={formData.fitPreference || ""}
-                      onChange={(e) =>
+                      onChange={(val) =>
                         setFormData({
                           ...formData,
-                          fitPreference: e.target.value,
+                          fitPreference: val,
                         })
                       }
-                      className="w-full rounded-lg border border-outline-variant/30 bg-surface px-4 py-2.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-primary focus:outline-none"
-                    >
-                      <option value="">Select fit...</option>
-                      <option value="slim">Slim Fit</option>
-                      <option value="regular">Regular Fit</option>
-                      <option value="relaxed">Relaxed Fit</option>
-                    </select>
+                      options={[
+                        { value: "", label: "Select fit..." },
+                        { value: "slim", label: "Slim Fit" },
+                        { value: "regular", label: "Regular Fit" },
+                        { value: "relaxed", label: "Relaxed Fit" },
+                      ]}
+                      className="w-full"
+                    />
                   </div>
                   <div>
                     <label className="mb-2 block text-xs font-bold tracking-widest text-on-surface-variant uppercase">

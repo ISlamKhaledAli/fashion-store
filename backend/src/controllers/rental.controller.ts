@@ -94,6 +94,7 @@ export const checkAvailability = async (
         rentalPeriods: variant.product.rentalPeriods,
         dailyPrice: variant.product.rentalPrice,
         securityDeposit: variant.product.securityDeposit || 0,
+        maxRentalDays: variant.product.maxRentalDays || 14,
       },
     });
   } catch (error) {
@@ -175,6 +176,17 @@ export const createRental = async (
       );
     }
 
+    const days = Math.max(
+      1,
+      Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+    );
+
+    if (product.maxRentalDays && days > product.maxRentalDays) {
+      throw new ValidationError(
+        `Rental duration of ${days} days exceeds the maximum allowed duration of ${product.maxRentalDays} days for this item`
+      );
+    }
+
     // Calculate price
     let rentalPrice = 0;
     if (data.rentalPeriodId) {
@@ -186,10 +198,6 @@ export const createRental = async (
       }
       rentalPrice = period.price;
     } else {
-      const days = Math.max(
-        1,
-        Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-      );
       rentalPrice = (product.rentalPrice || 0) * days;
     }
 
@@ -460,6 +468,37 @@ export const cancelRental = async (
       success: true,
       message: "Rental reservation cancelled and inventory restored",
       data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const DEFAULT_SALONS = [
+  { name: "Cairo Flagship Salon", address: "15 Brazil St, Zamalek, Cairo" },
+  { name: "Alexandria Boutique", address: "Glim Bay, Alexandria" },
+];
+
+export const getRentalSalons = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const setting = await prisma.storeSettings.findUnique({
+      where: { key: "storeSalons" },
+    });
+
+    let salons = DEFAULT_SALONS;
+    if (setting && Array.isArray(setting.value) && setting.value.length > 0) {
+      salons = setting.value as typeof DEFAULT_SALONS;
+    }
+
+    return sendResponse({
+      res,
+      status: 200,
+      success: true,
+      data: salons,
     });
   } catch (error) {
     next(error);

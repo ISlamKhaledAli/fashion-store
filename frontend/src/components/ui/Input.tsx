@@ -8,12 +8,37 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   variant?: "default" | "floating";
   icon?: React.ReactNode;
+  wrapperClassName?: string;
+}
+
+const LAYOUT_CLASS_REGEX =
+  /^(?:[a-z0-9_-]+:)*(w-|min-w-|max-w-|flex-|shrink|grow|basis-|col-span-|row-span-)/;
+
+function partitionClasses(classes?: string) {
+  if (!classes) return { layoutClasses: "", restClasses: "" };
+  const classList = classes.split(/\s+/).filter(Boolean);
+  const layout: string[] = [];
+  const rest: string[] = [];
+
+  for (const cls of classList) {
+    if (LAYOUT_CLASS_REGEX.test(cls)) {
+      layout.push(cls);
+    } else {
+      rest.push(cls);
+    }
+  }
+
+  return {
+    layoutClasses: layout.join(" "),
+    restClasses: rest.join(" "),
+  };
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   (
     {
       className,
+      wrapperClassName,
       label,
       error,
       variant = "default",
@@ -24,9 +49,13 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
+    const { layoutClasses, restClasses } = partitionClasses(className);
+
     if (variant === "floating") {
       return (
-        <div className="w-full space-y-1">
+        <div
+          className={cn("w-full space-y-1", layoutClasses, wrapperClassName)}
+        >
           <div className="group/input relative">
             {icon && (
               <div className="pointer-events-none absolute top-1/2 left-4 flex -translate-y-1/2 items-center justify-center text-on-surface-variant transition-colors peer-focus:text-primary">
@@ -46,10 +75,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
               ref={ref}
               placeholder=" " // Required for peer-placeholder-shown to work
               className={cn(
-                "peer w-full rounded-md border border-outline-variant/30 bg-surface-container-lowest px-4 pt-6 pb-2 text-sm transition-all focus:border-primary focus:ring-0",
+                "peer w-full rounded-md border border-outline-variant/30 bg-surface-container-lowest px-4 pt-6 pb-2 text-sm transition-all focus:border-primary focus:ring-0 focus:outline-none",
                 error && "border-error/50",
                 icon && "pl-11",
-                className
+                restClasses
               )}
               {...props}
             />
@@ -68,7 +97,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 {label}
               </label>
             )}
-            <div className="absolute bottom-0 left-0 h-[1px] w-0 rounded-b-md bg-primary transition-all duration-500 group-focus-within/input:w-full" />
+            <div className="pointer-events-none absolute bottom-0 left-0 h-[1px] w-0 rounded-b-md bg-primary transition-all duration-500 group-focus-within/input:w-full" />
           </div>
           {error && (
             <p className="pt-1 text-[10px] font-medium tracking-wider text-error uppercase">
@@ -80,7 +109,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     }
 
     return (
-      <div className="w-full space-y-2">
+      <div className={cn("w-full space-y-2", layoutClasses, wrapperClassName)}>
         {label && (
           <label
             className="text-xs font-bold tracking-widest text-on-surface-variant uppercase"
@@ -108,14 +137,14 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             placeholder={placeholder}
             className={cn(
-              "w-full rounded-md border border-outline-variant/30 bg-surface-container-lowest px-4 py-3 text-sm transition-all placeholder:font-light placeholder:text-outline-variant focus:border-primary focus:ring-0",
+              "w-full rounded-md border border-outline-variant/30 bg-surface-container-lowest px-4 py-3 text-sm transition-all placeholder:font-light placeholder:text-outline-variant focus:border-primary focus:ring-0 focus:outline-none",
               error && "border-error",
               icon && "pl-11",
-              className
+              restClasses
             )}
             {...props}
           />
-          <div className="absolute bottom-0 left-0 h-[2px] w-0 rounded-b-md bg-primary transition-all duration-500 group-focus-within/input:w-full" />
+          <div className="pointer-events-none absolute bottom-0 left-0 h-[2px] w-0 rounded-b-md bg-primary transition-all duration-500 group-focus-within/input:w-full" />
         </div>
         {error && (
           <p className="text-[10px] font-medium tracking-wider text-error uppercase">

@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { Globe, Share2, Sparkles } from "lucide-react";
-import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { contentApi, newsletterApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import type { FooterContent } from "@/types";
+import { AnimatePresence, motion } from "framer-motion";
+import { Globe, Share2, Sparkles } from "lucide-react";
+import Link from "next/link";
+import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { RegionModal } from "./RegionModal";
 import { ShareModal } from "./ShareModal";
-import { toast } from "sonner";
-import { contentApi, newsletterApi } from "@/lib/api";
-import type { FooterContent } from "@/types";
 
 const defaultFooterContent: FooterContent = {
   brandDescription:
@@ -42,7 +42,28 @@ export const Footer = () => {
       .getByKey<FooterContent>("footer")
       .then((res) => {
         if (res.data.success && res.data.data) {
-          setFooterData(res.data.data as FooterContent);
+          const apiData = res.data.data as FooterContent;
+          setFooterData((prev) => ({
+            brandDescription: apiData.brandDescription || prev.brandDescription,
+            copyrightText: apiData.copyrightText || prev.copyrightText,
+            socialLinks: {
+              instagram:
+                apiData.socialLinks?.instagram ||
+                defaultFooterContent.socialLinks?.instagram,
+              twitter:
+                apiData.socialLinks?.twitter ||
+                defaultFooterContent.socialLinks?.twitter,
+              facebook:
+                apiData.socialLinks?.facebook ||
+                defaultFooterContent.socialLinks?.facebook,
+              pinterest:
+                apiData.socialLinks?.pinterest ||
+                defaultFooterContent.socialLinks?.pinterest,
+              tiktok:
+                apiData.socialLinks?.tiktok ||
+                defaultFooterContent.socialLinks?.tiktok,
+            },
+          }));
         }
       })
       .catch(() => {});
@@ -214,20 +235,24 @@ export const Footer = () => {
 
         {/* Social Presence Row */}
         <div className="flex flex-col items-center justify-between gap-4 border-t border-outline-variant/10 py-8 sm:flex-row">
-          <div className="text-[10px] font-bold tracking-[0.25em] text-on-surface-variant uppercase">
-            Atelier Dispatches & Social
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500/80" />
+            <span className="text-[10px] font-bold tracking-[0.25em] text-on-surface-variant uppercase">
+              Atelier Dispatches & Social
+            </span>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             {footerData.socialLinks?.instagram && (
               <a
                 href={footerData.socialLinks.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Follow The Curator on Instagram"
-                className="text-on-surface-variant transition-colors hover:text-primary"
+                title="Instagram"
+                className="group flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant/20 bg-surface-container-lowest/50 text-on-surface-variant/70 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-pink-500/40 hover:bg-pink-500/10 hover:text-pink-500 hover:shadow-xs"
               >
                 <svg
-                  className="h-4 w-4"
+                  className="h-4 w-4 transition-transform duration-300 ease-out group-hover:scale-110"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -241,10 +266,11 @@ export const Footer = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Follow The Curator on X"
-                className="text-on-surface-variant transition-colors hover:text-primary"
+                title="X (Twitter)"
+                className="group flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant/20 bg-surface-container-lowest/50 text-on-surface-variant/70 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-on-surface/40 hover:bg-surface-container-high hover:text-on-surface hover:shadow-xs"
               >
                 <svg
-                  className="h-4 w-4"
+                  className="h-3.5 w-3.5 transition-transform duration-300 ease-out group-hover:scale-110"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -258,10 +284,11 @@ export const Footer = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Follow The Curator on Facebook"
-                className="text-on-surface-variant transition-colors hover:text-primary"
+                title="Facebook"
+                className="group flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant/20 bg-surface-container-lowest/50 text-on-surface-variant/70 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-blue-500/40 hover:bg-blue-500/10 hover:text-blue-500 hover:shadow-xs"
               >
                 <svg
-                  className="h-4 w-4"
+                  className="h-4 w-4 transition-transform duration-300 ease-out group-hover:scale-110"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -275,10 +302,11 @@ export const Footer = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Follow The Curator on Pinterest"
-                className="text-on-surface-variant transition-colors hover:text-primary"
+                title="Pinterest"
+                className="group flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant/20 bg-surface-container-lowest/50 text-on-surface-variant/70 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-500 hover:shadow-xs"
               >
                 <svg
-                  className="h-4 w-4"
+                  className="h-4 w-4 transition-transform duration-300 ease-out group-hover:scale-110"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -292,10 +320,11 @@ export const Footer = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Follow The Curator on TikTok"
-                className="text-on-surface-variant transition-colors hover:text-primary"
+                title="TikTok"
+                className="group flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant/20 bg-surface-container-lowest/50 text-on-surface-variant/70 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-zinc-950 hover:bg-zinc-950 hover:text-white hover:shadow-xs dark:hover:border-white dark:hover:bg-white dark:hover:text-black"
               >
                 <svg
-                  className="h-4 w-4"
+                  className="h-4 w-4 transition-transform duration-300 ease-out group-hover:scale-110"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -311,7 +340,7 @@ export const Footer = () => {
             {footerData.copyrightText ||
               `© ${new Date().getFullYear()} Curator. All Rights Reserved.`}
           </p>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-1 sm:gap-1.5">
             <button
               type="button"
               onClick={() =>
@@ -319,14 +348,14 @@ export const Footer = () => {
               }
               aria-label="The Curator Atelier App"
               title="Install Atelier App"
-              className="group flex cursor-pointer items-center gap-1.5 text-on-surface-variant/50 transition-colors hover:text-amber-500"
+              className="group relative flex h-8 cursor-pointer items-center rounded-full px-2 text-on-surface-variant/60 transition-all duration-500 ease-out hover:bg-amber-500/10 hover:text-amber-500"
             >
               <Sparkles
-                className="text-amber-500 transition-transform group-hover:scale-110"
-                size={18}
+                className="shrink-0 text-amber-500 transition-transform duration-500 ease-out group-hover:scale-110"
+                size={17}
                 strokeWidth={1.5}
               />
-              <span className="hidden text-[11px] font-medium tracking-wider text-amber-500 uppercase opacity-0 transition-opacity group-hover:opacity-100 sm:inline">
+              <span className="max-w-0 overflow-hidden text-[11px] font-medium tracking-wider whitespace-nowrap text-amber-500 uppercase opacity-0 transition-all duration-500 ease-out group-hover:max-w-28 group-hover:ps-1.5 group-hover:opacity-100">
                 Atelier App
               </span>
             </button>
@@ -336,14 +365,14 @@ export const Footer = () => {
               onClick={() => setIsRegionModalOpen(true)}
               aria-label="Change Region and Currency"
               title="Region & Currency"
-              className="group flex cursor-pointer items-center gap-1.5 text-on-surface-variant/50 transition-colors hover:text-primary"
+              className="group relative flex h-8 cursor-pointer items-center rounded-full px-2 text-on-surface-variant/60 transition-all duration-500 ease-out hover:bg-surface-container-high/70 hover:text-primary"
             >
               <Globe
-                className="transition-transform group-hover:scale-110"
-                size={20}
+                className="shrink-0 transition-transform duration-500 ease-out group-hover:scale-110"
+                size={17}
                 strokeWidth={1.5}
               />
-              <span className="hidden text-[11px] font-medium tracking-wider uppercase opacity-0 transition-opacity group-hover:opacity-100 sm:inline">
+              <span className="max-w-0 overflow-hidden text-[11px] font-medium tracking-wider whitespace-nowrap uppercase opacity-0 transition-all duration-500 ease-out group-hover:max-w-24 group-hover:ps-1.5 group-hover:opacity-100">
                 Region
               </span>
             </button>
@@ -353,14 +382,14 @@ export const Footer = () => {
               onClick={() => setIsShareModalOpen(true)}
               aria-label="Share Store"
               title="Share Collection"
-              className="group flex cursor-pointer items-center gap-1.5 text-on-surface-variant/50 transition-colors hover:text-primary"
+              className="group relative flex h-8 cursor-pointer items-center rounded-full px-2 text-on-surface-variant/60 transition-all duration-500 ease-out hover:bg-surface-container-high/70 hover:text-primary"
             >
               <Share2
-                className="transition-transform group-hover:scale-110"
-                size={20}
+                className="shrink-0 transition-transform duration-500 ease-out group-hover:scale-110"
+                size={17}
                 strokeWidth={1.5}
               />
-              <span className="hidden text-[11px] font-medium tracking-wider uppercase opacity-0 transition-opacity group-hover:opacity-100 sm:inline">
+              <span className="max-w-0 overflow-hidden text-[11px] font-medium tracking-wider whitespace-nowrap uppercase opacity-0 transition-all duration-500 ease-out group-hover:max-w-24 group-hover:ps-1.5 group-hover:opacity-100">
                 Share
               </span>
             </button>

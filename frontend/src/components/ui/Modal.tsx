@@ -13,6 +13,7 @@ interface ModalProps {
   children: React.ReactNode;
   maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl";
   className?: string;
+  bodyClassName?: string;
 }
 
 const maxWidthMap = {
@@ -34,6 +35,7 @@ export function Modal({
   children,
   maxWidth = "md",
   className,
+  bodyClassName,
 }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -75,21 +77,21 @@ export function Modal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className={cn(
-              "pointer-events-auto w-full overflow-hidden rounded-2xl border border-zinc-100 bg-white shadow-xl",
+              "pointer-events-auto flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl border border-outline-variant/15 bg-surface text-on-surface shadow-2xl",
               maxWidthMap[maxWidth],
               className
             )}
           >
             {(title || onClose) && (
-              <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4">
+              <div className="flex shrink-0 items-center justify-between border-b border-outline-variant/10 px-6 py-4">
                 <div>
                   {title && (
-                    <h3 className="text-lg font-bold tracking-tight text-zinc-950">
+                    <h3 className="text-lg font-bold tracking-tight text-on-surface">
                       {title}
                     </h3>
                   )}
                   {description && (
-                    <p className="mt-0.5 text-xs font-medium text-zinc-400">
+                    <p className="mt-0.5 text-xs font-medium text-on-surface-variant">
                       {description}
                     </p>
                   )}
@@ -97,13 +99,17 @@ export function Modal({
                 {onClose && (
                   <CloseButton
                     onClick={onClose}
-                    className="cursor-pointer p-1.5 hover:bg-zinc-100"
+                    className="cursor-pointer p-1.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
                     size={18}
                   />
                 )}
               </div>
             )}
-            <div className="p-6">{children}</div>
+            <div
+              className={cn("flex-1 overflow-y-auto p-5 sm:p-6", bodyClassName)}
+            >
+              {children}
+            </div>
           </motion.div>
         </div>
       )}

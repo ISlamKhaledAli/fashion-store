@@ -176,7 +176,7 @@ export default function AdminMessagesPage() {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-light tracking-tight text-zinc-950 sm:text-3xl dark:text-zinc-50">
-              Concierge <span className="font-serif italic">Inquiries</span>
+              Concierge <span className="font-semibold">Inquiries</span>
             </h1>
             {unreadCount > 0 && (
               <span className="rounded-full bg-amber-500/10 px-3 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">

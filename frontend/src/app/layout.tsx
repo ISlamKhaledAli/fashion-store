@@ -3,6 +3,7 @@ import { Inter, Playfair_Display, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { NavigationObserver } from "@/components/layout/NavigationObserver";
+import { TopProgressBar } from "@/components/layout/TopProgressBar";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -102,7 +103,11 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
         />
       </head>
-      <body className="bg-surface text-on-surface" suppressHydrationWarning>
+      <body
+        className="bg-surface font-sans text-on-surface"
+        suppressHydrationWarning
+      >
+        <TopProgressBar />
         <NavigationObserver />
         {children}
         <Toaster position="bottom-right" richColors />

@@ -66,6 +66,26 @@ export const ProductBadge: React.FC<ProductBadgeProps> = ({
           "bg-amber-950/90 text-amber-200 border border-amber-500/30 shadow-sm backdrop-blur-md",
       });
     }
+
+    if (product.isRentable && product.isSaleable === false) {
+      badges.push({
+        key: "rent-only",
+        label: "Rent Only",
+        style:
+          "bg-primary text-on-primary border border-outline-variant shadow-sm backdrop-blur-md",
+      });
+    } else if (
+      product.isRentable &&
+      product.isSaleable !== false &&
+      badges.length < 2
+    ) {
+      badges.push({
+        key: "rent-available",
+        label: "Rent or Buy",
+        style:
+          "bg-surface-container-high text-on-surface border border-outline-variant shadow-sm backdrop-blur-md",
+      });
+    }
   }
 
   if (badges.length === 0) return null;

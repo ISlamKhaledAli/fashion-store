@@ -40,10 +40,12 @@ export const createProductSchema = z.object({
   images: z.array(imageSchema).optional(),
   features: z.array(featureSchema).optional().nullable(),
   details: z.array(detailSchema).optional().nullable(),
+  isSaleable: z.boolean().optional(),
   isRentable: z.boolean().optional(),
   rentalPrice: z.number().min(0).optional().nullable(),
   securityDeposit: z.number().min(0).optional().nullable(),
   maxRentalDays: z.number().int().min(1).optional().nullable(),
+  pickupLocations: z.array(z.string()).optional(),
 });
 
 export const updateProductSchema = z.object({
@@ -81,8 +83,10 @@ export const updateProductSchema = z.object({
     .optional(),
   features: z.array(featureSchema).optional().nullable(),
   details: z.array(detailSchema).optional().nullable(),
+  isSaleable: z.boolean().optional(),
   isRentable: z.boolean().optional(),
   rentalPrice: z.number().min(0).optional().nullable(),
   securityDeposit: z.number().min(0).optional().nullable(),
   maxRentalDays: z.number().int().min(1).optional().nullable(),
+  pickupLocations: z.array(z.string()).optional(),
 });

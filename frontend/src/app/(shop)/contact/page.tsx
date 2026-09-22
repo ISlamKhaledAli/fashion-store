@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { Select } from "@/components/ui/Select";
 import { contactApi, contentApi } from "@/lib/api";
 import type { ContactPageContent } from "@/types";
 
@@ -240,27 +241,21 @@ export default function ContactPage() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
-                      Department
-                    </label>
-                    <select
-                      value={formData.department}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          department: e.target.value,
-                        }))
-                      }
-                      className="w-full rounded-xl border border-outline-variant/30 bg-surface px-4 py-3 text-sm text-on-surface transition-colors focus:border-primary focus:outline-none"
-                    >
-                      {departments.map((dep) => (
-                        <option key={dep} value={dep}>
-                          {dep}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <Select
+                    label="Department"
+                    value={formData.department}
+                    onChange={(val) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        department: val,
+                      }))
+                    }
+                    options={departments.map((dep) => ({
+                      label: dep,
+                      value: dep,
+                    }))}
+                    className="w-full"
+                  />
 
                   <div className="space-y-2">
                     <label className="text-xs font-semibold tracking-wider text-on-surface-variant uppercase">

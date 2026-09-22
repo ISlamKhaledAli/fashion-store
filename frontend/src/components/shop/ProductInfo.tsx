@@ -45,7 +45,14 @@ export const ProductInfo = ({
   const router = useRouter();
 
   const isFavorite = isInWishlist(product.id);
-  const [purchaseMode, setPurchaseMode] = useState<"BUY" | "RENT">("BUY");
+  const isRentOnly = Boolean(
+    product.isRentable && product.isSaleable === false
+  );
+  const isBoth = Boolean(product.isRentable && product.isSaleable !== false);
+
+  const [purchaseMode, setPurchaseMode] = useState<"BUY" | "RENT">(() => {
+    return product.isRentable && product.isSaleable === false ? "RENT" : "BUY";
+  });
 
   const availableSizes = product.variants
     .filter((v) => v.color === selectedColor)
@@ -148,16 +155,32 @@ export const ProductInfo = ({
         />
       </div>
 
-      {product.isRentable && (
-        <div className="flex rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
+      {/* If Rent Only: show exclusive rental notice */}
+      {isRentOnly && (
+        <div className="flex items-center justify-between border border-outline-variant/60 bg-surface-container-low px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-primary" />
+            <span className="font-label text-xs tracking-widest text-on-surface uppercase">
+              Archival Rental Exclusive
+            </span>
+          </div>
+          <span className="text-[11px] font-medium text-on-surface-variant">
+            Available only for scheduled bookings
+          </span>
+        </div>
+      )}
+
+      {/* If Both: show mode switcher */}
+      {isBoth && (
+        <div className="flex border border-outline-variant bg-surface p-1">
           <button
             type="button"
             onClick={() => setPurchaseMode("BUY")}
             className={cn(
-              "flex-1 rounded-md py-2.5 text-xs font-semibold tracking-wider uppercase transition-all",
+              "flex-1 py-2 font-label text-xs tracking-widest uppercase transition-all",
               purchaseMode === "BUY"
-                ? "bg-white text-zinc-900 shadow-xs dark:bg-zinc-900 dark:text-zinc-100"
-                : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400"
+                ? "bg-primary text-on-primary shadow-xs"
+                : "text-on-surface-variant hover:text-on-surface"
             )}
           >
             Buy To Own
@@ -166,14 +189,14 @@ export const ProductInfo = ({
             type="button"
             onClick={() => setPurchaseMode("RENT")}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-md py-2.5 text-xs font-semibold tracking-wider uppercase transition-all",
+              "flex flex-1 items-center justify-center gap-1.5 py-2 font-label text-xs tracking-widest uppercase transition-all",
               purchaseMode === "RENT"
-                ? "bg-amber-600 text-white shadow-xs dark:bg-amber-600"
-                : "text-amber-700 hover:text-amber-800 dark:text-amber-400"
+                ? "bg-primary text-on-primary shadow-xs"
+                : "text-on-surface-variant hover:text-on-surface"
             )}
           >
-            <span>Rent & Reserve</span>
-            <span className="rounded-sm bg-white/20 px-1 py-0.5 text-[10px]">
+            <span>Rent &amp; Reserve</span>
+            <span className="rounded-xs bg-surface-container-high px-1 py-0.5 text-[9px] text-on-surface">
               Rental
             </span>
           </button>
@@ -379,6 +402,20 @@ export const ProductInfo = ({
             Complimentary Carbon-Neutral Shipping
           </p>
         </div>
+
+        {product.pickupLocations && product.pickupLocations.length > 0 && (
+          <div className="flex items-start gap-4">
+            <span className="material-symbols-outlined mt-0.5 text-on-surface-variant">
+              storefront
+            </span>
+            <div className="text-sm text-on-surface-variant">
+              <span className="font-medium text-on-surface">
+                Boutique Salon Pickup Available:
+              </span>{" "}
+              <span>{product.pickupLocations.join(", ")}</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

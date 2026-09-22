@@ -1,19 +1,20 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency, cn } from "@/lib/utils";
 import type { Product, Variant } from "@/types";
 import { rentalApi } from "@/lib/api";
 import { Button } from "../ui/Button";
+import { Select } from "../ui/Select";
 import {
-  Calendar,
-  Clock,
+  Calendar as CalendarIcon,
   ShieldCheck,
   MapPin,
   Truck,
   AlertCircle,
   CheckCircle2,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -22,64 +23,149 @@ interface RentalSelectorProps {
   selectedVariant: Variant | undefined;
 }
 
+interface StoreSalon {
+  name: string;
+  address: string;
+}
+
+const DEFAULT_SALONS: StoreSalon[] = [
+  { name: "Cairo Flagship Salon", address: "15 Brazil St, Zamalek, Cairo" },
+  { name: "Alexandria Boutique", address: "Glim Bay, Alexandria" },
+];
+
 export const RentalSelector: React.FC<RentalSelectorProps> = ({
   product,
   selectedVariant,
 }) => {
   const router = useRouter();
 
-  // Selected period
-  const periods = product.rentalPeriods?.filter((p) => p.isActive) || [];
-  const [selectedPeriodId, setSelectedPeriodId] = useState<string>(
-    periods[0]?.id || ""
-  );
+  // Admin max rental duration limit (defaults to 14 if not set)
+  const maxAllowedDays = Math.max(1, product.maxRentalDays || 14);
+  const baseDailyRate =
+    product.rentalPrice || Math.round(product.price * 0.15) || 25;
 
-  // Dates
+  // Dates helpers
+  const formatDateToISO = (d: Date) => d.toISOString().split("T")[0];
+
   const getTomorrowString = () => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
-    return d.toISOString().split("T")[0];
+    return formatDateToISO(d);
   };
 
   const [startDate, setStartDate] = useState<string>(getTomorrowString());
+  // Default customer selected days to 3 (or max if max < 3)
+  const [selectedDays, setSelectedDays] = useState<number>(
+    Math.min(3, maxAllowedDays)
+  );
+
   const [fulfillment, setFulfillment] = useState<"DELIVERY" | "STORE_PICKUP">(
     "DELIVERY"
   );
-  const [salonLocation, setSalonLocation] = useState<string>(
-    "Cairo Flagship Salon (Zamalek)"
+  const [salons, setSalons] = useState<StoreSalon[]>(DEFAULT_SALONS);
+  const [selectedSalon, setSelectedSalon] = useState<string>(
+    DEFAULT_SALONS[0].name
   );
+
+  // Filter salons if admin has configured specific pickupLocations for this product
+  const availableSalons = useMemo(() => {
+    if (
+      product.pickupLocations &&
+      Array.isArray(product.pickupLocations) &&
+      product.pickupLocations.length > 0
+    ) {
+      const filtered = salons.filter((s) =>
+        product.pickupLocations!.includes(s.name)
+      );
+      return filtered.length > 0 ? filtered : salons;
+    }
+    return salons;
+  }, [salons, product.pickupLocations]);
+
   const [isChecking, setIsChecking] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
 
-  const selectedPeriod = periods.find((p) => p.id === selectedPeriodId);
-  const rentalDays = selectedPeriod
-    ? selectedPeriod.days
-    : product.maxRentalDays || 3;
+  // Fetch dynamic salons configured by admin
+  useEffect(() => {
+    let isMounted = true;
+    rentalApi
+      .getSalons()
+      .then((res) => {
+        if (isMounted && res.data?.data && res.data.data.length > 0) {
+          const list = res.data.data;
+          setSalons(list);
+          const validSalons =
+            product.pickupLocations && product.pickupLocations.length > 0
+              ? list.filter((s: StoreSalon) =>
+                  product.pickupLocations!.includes(s.name)
+                )
+              : list;
+          if (validSalons.length > 0) {
+            setSelectedSalon(validSalons[0].name);
+          }
+        }
+      })
+      .catch(() => {
+        // Fallback to defaults
+      });
 
-  // Compute calculated end date
-  const computeEndDate = (start: string, days: number) => {
-    if (!start) return "";
-    const d = new Date(start);
-    d.setDate(d.getDate() + days);
-    return d.toISOString().split("T")[0];
+    return () => {
+      isMounted = false;
+    };
+  }, [product.pickupLocations]);
+
+  // Compute calculated end date from start date + selectedDays
+  const endDate = useMemo(() => {
+    if (!startDate) return "";
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + selectedDays);
+    return formatDateToISO(d);
+  }, [startDate, selectedDays]);
+
+  // Compute maximum return date string for datepicker constraint
+  const maxReturnDateStr = useMemo(() => {
+    if (!startDate) return "";
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + maxAllowedDays);
+    return formatDateToISO(d);
+  }, [startDate, maxAllowedDays]);
+
+  // Handle return date change directly from date input
+  const handleReturnDateChange = (newReturnDate: string) => {
+    if (!startDate || !newReturnDate) return;
+    const start = new Date(startDate);
+    const end = new Date(newReturnDate);
+    const diffTime = end.getTime() - start.getTime();
+    const days = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    if (days < 1) {
+      toast.error("Return date must be at least 1 day after pickup");
+      return;
+    }
+
+    if (days > maxAllowedDays) {
+      toast.error(
+        `Atelier policy permits a maximum of ${maxAllowedDays} days for this garment`
+      );
+      setSelectedDays(maxAllowedDays);
+      return;
+    }
+
+    setSelectedDays(days);
   };
 
-  const endDate = computeEndDate(startDate, rentalDays);
-
   // Price calculations
-  const rentalPrice = selectedPeriod
-    ? selectedPeriod.price
-    : (product.rentalPrice || 0) * rentalDays;
+  const rentalFee = baseDailyRate * selectedDays;
   const securityDeposit = product.securityDeposit || 0;
-  const totalAmount = rentalPrice + securityDeposit;
+  const totalAmount = rentalFee + securityDeposit;
 
-  // Check availability on date or variant change
+  // Check schedule availability whenever dates or variant change
   useEffect(() => {
     if (!selectedVariant?.id || !startDate || !endDate) return;
 
     let isMounted = true;
+    setIsChecking(true);
 
-    // Asynchronously verify schedule availability without synchronous cascading renders
     void (async () => {
       try {
         const res = await rentalApi.checkAvailability(selectedVariant.id, {
@@ -112,7 +198,7 @@ export const RentalSelector: React.FC<RentalSelectorProps> = ({
     }
 
     if (isAvailable === false) {
-      toast.error("This item is not available for the selected dates");
+      toast.error("This item is unavailable for the selected dates");
       return;
     }
 
@@ -122,76 +208,102 @@ export const RentalSelector: React.FC<RentalSelectorProps> = ({
       startDate,
       endDate,
       fulfillment,
-      ...(selectedPeriodId ? { rentalPeriodId: selectedPeriodId } : {}),
       ...(fulfillment === "STORE_PICKUP"
-        ? { pickupLocation: salonLocation }
+        ? { pickupLocation: selectedSalon }
         : {}),
     });
 
     router.push(`/rental/checkout?${params.toString()}`);
   };
 
+  // Generate quick days options (e.g. 1, 2, 3, 4, 7... up to maxAllowedDays)
+  const quickDayOptions = useMemo(() => {
+    const defaultOptions = [1, 2, 3, 4, 7, 10, 14];
+    const available = defaultOptions.filter((d) => d <= maxAllowedDays);
+    if (!available.includes(maxAllowedDays) && maxAllowedDays > 1) {
+      available.push(maxAllowedDays);
+    }
+    return available.sort((a, b) => a - b);
+  }, [maxAllowedDays]);
+
   return (
-    <div className="space-y-6 rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/40">
-      {/* Header Banner */}
-      <div className="flex items-center justify-between border-b border-zinc-200 pb-3 dark:border-zinc-800">
-        <div className="flex items-center gap-2">
-          <Clock className="h-5 w-5 text-amber-600 dark:text-amber-500" />
-          <h3 className="font-serif text-base font-semibold tracking-wide text-zinc-900 dark:text-zinc-100">
-            Exclusive Rental Booking
-          </h3>
+    <div className="space-y-6 rounded-none border border-outline-variant bg-surface-container-lowest p-6 shadow-xs transition-all">
+      {/* Luxury Editorial Header */}
+      <div className="flex items-center justify-between border-b border-outline-variant/60 pb-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="font-headline text-lg font-normal tracking-wide text-on-surface">
+              Archival Rental Reservation
+            </span>
+            <span className="rounded-full bg-surface-container-high px-2.5 py-0.5 font-label text-[10px] font-semibold tracking-widest text-on-surface-variant uppercase">
+              Haute Atelier
+            </span>
+          </div>
+          <p className="font-sans text-xs text-on-surface-variant">
+            Reserve this collector piece for your upcoming private event
+          </p>
         </div>
-        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-          Luxury Wear
-        </span>
       </div>
 
-      {/* Select Rental Period */}
-      {periods.length > 0 && (
-        <div className="space-y-2">
-          <label className="block text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
+      {/* 1. Flexible Duration Selection */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between">
+          <label className="font-label text-xs tracking-widest text-on-surface uppercase">
             1. Select Rental Duration
           </label>
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-            {periods.map((period) => {
-              const isSelected = selectedPeriodId === period.id;
-              return (
-                <button
-                  type="button"
-                  key={period.id}
-                  onClick={() => setSelectedPeriodId(period.id)}
-                  className={cn(
-                    "relative flex flex-col items-center justify-center rounded-lg border p-3 text-center transition-all",
-                    isSelected
-                      ? "border-zinc-900 bg-white shadow-xs dark:border-zinc-100 dark:bg-zinc-800"
-                      : "border-zinc-200 bg-zinc-100/50 hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/60"
-                  )}
-                >
-                  <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                    {period.label}
-                  </span>
-                  <span className="mt-1 font-serif text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                    {formatCurrency(period.price)}
-                  </span>
-                  {isSelected && (
-                    <div className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-zinc-900 dark:bg-zinc-100" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          <span className="text-[11px] font-medium text-on-surface-variant">
+            Atelier limit: Max {maxAllowedDays} days
+          </span>
         </div>
-      )}
 
-      {/* Dates Selection */}
-      <div className="space-y-2">
-        <label className="block text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
+        {/* Quick Days Selector Pills */}
+        <div className="flex flex-wrap gap-2">
+          {quickDayOptions.map((days) => {
+            const isSelected = selectedDays === days;
+            return (
+              <button
+                key={days}
+                type="button"
+                onClick={() => setSelectedDays(days)}
+                className={cn(
+                  "cursor-pointer border px-3.5 py-2 text-xs font-medium tracking-wider uppercase transition-all",
+                  isSelected
+                    ? "border-primary bg-primary text-on-primary shadow-xs"
+                    : "border-outline-variant bg-surface text-on-surface hover:border-primary"
+                )}
+              >
+                {days} {days === 1 ? "Day" : "Days"}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center justify-between pt-1 text-[11px] text-on-surface-variant">
+          <span>
+            Current selection:{" "}
+            <strong className="font-semibold text-on-surface">
+              {selectedDays} {selectedDays === 1 ? "Day" : "Days"}
+            </strong>{" "}
+            (@ {formatCurrency(baseDailyRate)}/day)
+          </span>
+          {selectedDays === maxAllowedDays && (
+            <span className="font-medium text-amber-700 dark:text-amber-400">
+              Maximum allowed booking
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* 2. Date Selection (Start Date & Return Date) */}
+      <div className="space-y-2.5">
+        <label className="font-label text-xs tracking-widest text-on-surface uppercase">
           2. Reserve Booking Dates
         </label>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {/* Start Date */}
           <div className="space-y-1">
-            <span className="text-[11px] font-medium text-zinc-500">
-              Start Date (Delivery/Pickup)
+            <span className="font-label text-[10px] tracking-wider text-on-surface-variant uppercase">
+              Delivery / Pickup Date
             </span>
             <div className="relative">
               <input
@@ -199,124 +311,149 @@ export const RentalSelector: React.FC<RentalSelectorProps> = ({
                 min={getTomorrowString()}
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 pl-9 text-xs text-zinc-900 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                className="w-full border border-outline-variant bg-surface px-3 py-2.5 pl-9 text-xs text-on-surface transition-colors outline-none focus:border-primary"
               />
-              <Calendar className="absolute top-2.5 left-2.5 h-4 w-4 text-zinc-400" />
+              <CalendarIcon className="pointer-events-none absolute top-3 left-3 h-3.5 w-3.5 text-on-surface-variant" />
             </div>
           </div>
 
+          {/* Return Date (Customer can adjust or read dynamic end date) */}
           <div className="space-y-1">
-            <span className="text-[11px] font-medium text-zinc-500">
-              Return Date ({rentalDays} Days)
+            <span className="font-label text-[10px] tracking-wider text-on-surface-variant uppercase">
+              Return Date ({selectedDays} Days)
             </span>
             <div className="relative">
               <input
                 type="date"
-                disabled
+                min={startDate}
+                max={maxReturnDateStr}
                 value={endDate}
-                className="w-full cursor-not-allowed rounded-md border border-zinc-200 bg-zinc-100 px-3 py-2 pl-9 text-xs text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+                onChange={(e) => handleReturnDateChange(e.target.value)}
+                className="w-full border border-outline-variant bg-surface px-3 py-2.5 pl-9 text-xs text-on-surface transition-colors outline-none focus:border-primary"
               />
-              <Calendar className="absolute top-2.5 left-2.5 h-4 w-4 text-zinc-400" />
+              <CalendarIcon className="pointer-events-none absolute top-3 left-3 h-3.5 w-3.5 text-on-surface-variant" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Fulfillment Options */}
-      <div className="space-y-2">
-        <label className="block text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400">
+      {/* 3. Fulfillment Method */}
+      <div className="space-y-2.5">
+        <label className="font-label text-xs tracking-widest text-on-surface uppercase">
           3. Fulfillment Method
         </label>
         <div className="grid grid-cols-2 gap-2">
+          {/* Courier Delivery */}
           <button
             type="button"
             onClick={() => setFulfillment("DELIVERY")}
             className={cn(
-              "flex items-center justify-center gap-2 rounded-lg border py-2.5 text-xs font-medium transition-all",
+              "flex items-center justify-center gap-2 border py-2.5 text-xs font-medium tracking-wide uppercase transition-all",
               fulfillment === "DELIVERY"
-                ? "border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-950"
-                : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                ? "border-primary bg-primary text-on-primary"
+                : "border-outline-variant bg-surface text-on-surface hover:border-primary"
             )}
           >
-            <Truck className="h-4 w-4" />
+            <Truck className="h-3.5 w-3.5" />
             Courier Delivery
           </button>
+
+          {/* Salon Pickup */}
           <button
             type="button"
             onClick={() => setFulfillment("STORE_PICKUP")}
             className={cn(
-              "flex items-center justify-center gap-2 rounded-lg border py-2.5 text-xs font-medium transition-all",
+              "flex items-center justify-center gap-2 border py-2.5 text-xs font-medium tracking-wide uppercase transition-all",
               fulfillment === "STORE_PICKUP"
-                ? "border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-950"
-                : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                ? "border-primary bg-primary text-on-primary"
+                : "border-outline-variant bg-surface text-on-surface hover:border-primary"
             )}
           >
-            <MapPin className="h-4 w-4" />
+            <MapPin className="h-3.5 w-3.5" />
             Salon Pickup
           </button>
         </div>
 
+        {/* Courier Delivery Notice */}
+        {fulfillment === "DELIVERY" && (
+          <div className="mt-2 rounded-none border border-outline-variant/60 bg-surface-container-low p-3 text-xs text-on-surface-variant">
+            <div className="flex items-center gap-2 font-medium text-on-surface">
+              <Truck className="h-4 w-4 text-primary" />
+              <span>White-Glove Doorstep Delivery</span>
+            </div>
+            <p className="mt-1 text-[11px] leading-relaxed">
+              Your piece will be securely dispatched to your address. You can
+              enter or select your shipping address at the next checkout
+              confirmation step.
+            </p>
+          </div>
+        )}
+
+        {/* Salon Pickup Location Selector (Dynamically configured by Admin) */}
         {fulfillment === "STORE_PICKUP" && (
           <div className="mt-2">
-            <select
-              value={salonLocation}
-              onChange={(e) => setSalonLocation(e.target.value)}
-              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-xs text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
-            >
-              <option value="Cairo Flagship Salon (Zamalek)">
-                Cairo Flagship Salon — 15 Brazil St, Zamalek
-              </option>
-              <option value="Alexandria Boutique (Glim Bay)">
-                Alexandria Boutique — Glim Bay Plaza
-              </option>
-            </select>
+            <Select
+              label="Select Salon Flagship"
+              value={selectedSalon}
+              onChange={setSelectedSalon}
+              options={availableSalons.map((salon) => ({
+                value: salon.name,
+                label: `${salon.name} — ${salon.address}`,
+              }))}
+              className="w-full"
+            />
           </div>
         )}
       </div>
 
-      {/* Availability Status */}
+      {/* Schedule Availability Notice */}
       <div className="flex items-center gap-2 text-xs">
         {isChecking ? (
-          <span className="text-zinc-500">
-            Checking schedule availability...
+          <span className="font-sans text-[11px] text-on-surface-variant">
+            Verifying atelier archive schedule...
           </span>
         ) : isAvailable === true ? (
-          <span className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 className="h-4 w-4" /> Available for booking on
+          <span className="flex items-center gap-1.5 font-medium text-emerald-700 dark:text-emerald-400">
+            <CheckCircle2 className="h-4 w-4" /> Available for reservation on
             selected dates
           </span>
         ) : isAvailable === false ? (
-          <span className="flex items-center gap-1.5 font-medium text-rose-600 dark:text-rose-400">
-            <AlertCircle className="h-4 w-4" /> Unavailable for these dates.
-            Please try another period.
+          <span className="flex items-center gap-1.5 font-medium text-rose-700 dark:text-rose-400">
+            <AlertCircle className="h-4 w-4" /> Currently booked for these
+            dates. Please try another range.
           </span>
         ) : null}
       </div>
 
-      {/* Pricing Breakdown */}
-      <div className="space-y-1.5 rounded-lg bg-zinc-100/70 p-3.5 text-xs dark:bg-zinc-800/60">
-        <div className="flex justify-between text-zinc-600 dark:text-zinc-400">
-          <span>Rental Fee ({rentalDays} Days)</span>
-          <span className="font-medium text-zinc-900 dark:text-zinc-100">
-            {formatCurrency(rentalPrice)}
+      {/* Pricing Breakdown Card */}
+      <div className="space-y-2 border border-outline-variant/60 bg-surface-container-low p-4 text-xs">
+        <div className="flex justify-between text-on-surface-variant">
+          <span>
+            Rental Fee ({selectedDays} {selectedDays === 1 ? "Day" : "Days"})
+          </span>
+          <span className="font-medium text-on-surface">
+            {formatCurrency(rentalFee)}
           </span>
         </div>
+
         {securityDeposit > 0 && (
-          <div className="flex justify-between text-zinc-600 dark:text-zinc-400">
+          <div className="flex justify-between text-on-surface-variant">
             <span className="flex items-center gap-1">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
               Refundable Security Deposit
             </span>
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">
+            <span className="font-medium text-on-surface">
               {formatCurrency(securityDeposit)}
             </span>
           </div>
         )}
-        <div className="border-t border-zinc-200/80 pt-2 text-xs text-zinc-500 dark:border-zinc-700/80 dark:text-zinc-400">
-          Deposit is automatically released back to your card once the item is
-          inspected and returned.
+
+        <div className="border-t border-outline-variant/60 pt-2 text-[11px] leading-relaxed text-on-surface-variant">
+          The security deposit is securely held and automatically released back
+          to your card once the item is inspected upon return.
         </div>
-        <div className="flex justify-between border-t border-zinc-300/80 pt-2 font-serif text-sm font-bold text-zinc-900 dark:border-zinc-700 dark:text-zinc-100">
+
+        <div className="flex justify-between border-t border-outline-variant pt-2 font-headline text-base font-semibold text-on-surface">
           <span>Total Today</span>
           <span>{formatCurrency(totalAmount)}</span>
         </div>
@@ -326,9 +463,10 @@ export const RentalSelector: React.FC<RentalSelectorProps> = ({
       <Button
         onClick={handleProceedToRentalCheckout}
         disabled={isAvailable === false || isChecking || !selectedVariant}
-        className="w-full bg-amber-600 py-3.5 text-sm font-medium text-white shadow-md hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-700"
+        className="w-full border-none bg-primary py-4 font-label text-xs tracking-widest text-on-primary uppercase transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        Reserve & Rent Now
+        <span>Reserve &amp; Rent Now</span>
+        <ChevronRight className="ml-1 h-3.5 w-3.5" />
       </Button>
     </div>
   );

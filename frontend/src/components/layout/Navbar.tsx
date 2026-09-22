@@ -218,7 +218,7 @@ export const Navbar = () => {
                   setIsMobileMenuOpen(false);
                   window.dispatchEvent(new CustomEvent("open-pwa-install"));
                 }}
-                className="flex min-h-12 cursor-pointer items-center justify-between border-b border-outline-variant/10 font-serif text-base font-semibold text-amber-600 dark:text-amber-400"
+                className="flex min-h-12 cursor-pointer items-center justify-between border-b border-outline-variant/10 font-sans text-base font-semibold text-amber-600 dark:text-amber-400"
               >
                 <span className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-amber-500" />

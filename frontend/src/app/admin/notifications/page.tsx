@@ -186,7 +186,7 @@ export default function AdminNotificationsPage() {
               Operations Hub
             </span>
           </div>
-          <h1 className="mt-1 font-serif text-3xl font-light tracking-tight text-zinc-900 dark:text-zinc-100">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl dark:text-zinc-100">
             System Notifications &amp; Alerts
           </h1>
           <p className="mt-1 text-xs text-zinc-500">

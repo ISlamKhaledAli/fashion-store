@@ -75,10 +75,12 @@ export interface Product {
   status?: string;
   features?: { icon: string; title: string; description: string }[];
   details?: { title: string; content: string }[];
+  isSaleable?: boolean;
   isRentable?: boolean;
   rentalPrice?: number | null;
   securityDeposit?: number | null;
   maxRentalDays?: number | null;
+  pickupLocations?: string[];
   rentalPeriods?: RentalPeriod[];
   createdAt: string;
 }
@@ -535,6 +537,7 @@ export interface RentalAvailabilityResponse {
   rentalPeriods?: RentalPeriod[];
   dailyPrice?: number | null;
   securityDeposit?: number;
+  maxRentalDays?: number | null;
 }
 
 // ─── NOTIFICATION TYPES ───

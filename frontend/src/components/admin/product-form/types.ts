@@ -32,10 +32,12 @@ export type ProductFormData = {
   variants: Partial<Variant>[];
   features: ProductFeature[];
   details: AccordionItem[];
+  isSaleable?: boolean;
   isRentable?: boolean;
   rentalPrice?: number;
   securityDeposit?: number;
   maxRentalDays?: number;
+  pickupLocations?: string[];
 };
 
 export type HandleProductFieldChange = <K extends keyof ProductFormData>(

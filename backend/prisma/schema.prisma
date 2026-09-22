@@ -98,10 +98,12 @@ model Product {
   featured     Boolean        @default(false)
   features     Json?
   details      Json?
+  isSaleable   Boolean        @default(true)
   isRentable   Boolean        @default(false)
   rentalPrice  Float?
   securityDeposit Float?
   maxRentalDays Int?
+  pickupLocations String[]     @default([])
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   orderItems   OrderItem[]

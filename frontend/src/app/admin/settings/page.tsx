@@ -13,10 +13,14 @@ import {
   AlertTriangle,
   Clock,
   ShoppingBag,
+  MapPin,
+  Trash2,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { contentApi, adminSettingsApi } from "@/lib/api";
 
@@ -39,6 +43,7 @@ interface AdminSettingsState {
   enableSecurityDeposit: boolean;
   defaultLateFeePerDay: number;
   maxRentalExtensionDays: number;
+  storeSalons: Array<{ name: string; address: string }>;
   // Abandoned Cart Recovery
   enableAbandonedCartRecovery: boolean;
   abandonedCartEmailDelay: number;
@@ -63,6 +68,10 @@ const defaultSettings: AdminSettingsState = {
   enableSecurityDeposit: true,
   defaultLateFeePerDay: 15,
   maxRentalExtensionDays: 7,
+  storeSalons: [
+    { name: "Cairo Flagship Salon", address: "15 Brazil St, Zamalek, Cairo" },
+    { name: "Alexandria Boutique", address: "Glim Bay, Alexandria" },
+  ],
   enableAbandonedCartRecovery: true,
   abandonedCartEmailDelay: 60,
   abandonedCartDiscountPercent: 5,
@@ -76,21 +85,37 @@ export default function AdminSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<AdminSettingsTab>("general");
   const [showResetModal, setShowResetModal] = useState(false);
+  const [newSalonName, setNewSalonName] = useState("");
+  const [newSalonAddress, setNewSalonAddress] = useState("");
 
   useEffect(() => {
     let isMounted = true;
-    contentApi
-      .getByKey<AdminSettingsState>("admin_settings")
-      .then((res) => {
-        if (isMounted && res.data?.data) {
-          setSettings((prev) => ({ ...prev, ...res.data.data }));
-          try {
-            localStorage.setItem(
-              "curator_admin_settings",
-              JSON.stringify(res.data.data)
-            );
-          } catch {}
+    Promise.allSettled([
+      contentApi.getByKey<AdminSettingsState>("admin_settings"),
+      adminSettingsApi.getSettings(),
+    ])
+      .then(([contentRes, adminRes]) => {
+        if (!isMounted) return;
+        let merged = { ...defaultSettings };
+        if (contentRes.status === "fulfilled" && contentRes.value.data?.data) {
+          merged = { ...merged, ...contentRes.value.data.data };
         }
+        if (adminRes.status === "fulfilled" && adminRes.value.data?.data) {
+          const adminData = adminRes.value.data.data as Record<string, unknown>;
+          if (Array.isArray(adminData.storeSalons)) {
+            merged.storeSalons = adminData.storeSalons as Array<{
+              name: string;
+              address: string;
+            }>;
+          }
+        }
+        setSettings(merged);
+        try {
+          localStorage.setItem(
+            "curator_admin_settings",
+            JSON.stringify(merged)
+          );
+        } catch {}
       })
       .catch(() => {
         try {
@@ -150,6 +175,7 @@ export default function AdminSettingsPage() {
           "abandonedCartDiscountPercent",
           settings.abandonedCartDiscountPercent
         ),
+        adminSettingsApi.updateSetting("storeSalons", settings.storeSalons),
       ]);
       try {
         localStorage.setItem(
@@ -399,21 +425,18 @@ export default function AdminSettingsPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold tracking-wider text-zinc-700 uppercase">
-                  Default Store Currency
-                </label>
-                <select
-                  value={settings.currency}
-                  onChange={(e) => handleChange("currency", e.target.value)}
-                  className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none"
-                >
-                  <option value="USD">USD ($) — United States Dollar</option>
-                  <option value="EUR">EUR (€) — Euro</option>
-                  <option value="GBP">GBP (£) — British Pound</option>
-                  <option value="JPY">JPY (¥) — Japanese Yen</option>
-                </select>
-              </div>
+              <Select
+                label="Default Store Currency"
+                value={settings.currency}
+                onChange={(val) => handleChange("currency", val)}
+                options={[
+                  { value: "USD", label: "USD ($) — United States Dollar" },
+                  { value: "EUR", label: "EUR (€) — Euro" },
+                  { value: "GBP", label: "GBP (£) — British Pound" },
+                  { value: "JPY", label: "JPY (¥) — Japanese Yen" },
+                ]}
+                className="w-full"
+              />
 
               <div>
                 <label className="mb-1.5 block text-xs font-semibold tracking-wider text-zinc-700 uppercase">
@@ -649,6 +672,128 @@ export default function AdminSettingsPage() {
                     Maximum extra days customer can request to extend their
                     wear.
                   </span>
+                </div>
+              </div>
+
+              {/* Salon Pickup Locations Section */}
+              <div className="border-t border-zinc-100 pt-6 dark:border-zinc-800">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <h4 className="flex items-center gap-1.5 text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                      <MapPin className="h-4 w-4 text-zinc-700 dark:text-zinc-300" />
+                      Salon Pickup Locations
+                    </h4>
+                    <p className="mt-0.5 text-xs text-zinc-500">
+                      Manage boutique flagship branches where customers can
+                      collect and return luxury pieces.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                    {settings.storeSalons?.length || 0} Locations
+                  </span>
+                </div>
+
+                {/* List of active salon locations */}
+                <div className="mb-4 space-y-2.5">
+                  {(settings.storeSalons || []).map((salon, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50/70 p-3.5 dark:border-zinc-800 dark:bg-zinc-900/60"
+                    >
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                            {salon.name}
+                          </span>
+                        </div>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                          {salon.address}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSettings((prev) => ({
+                            ...prev,
+                            storeSalons: (prev.storeSalons || []).filter(
+                              (_, i) => i !== idx
+                            ),
+                          }));
+                          toast.info("Salon removed from draft");
+                        }}
+                        className="text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/30"
+                      >
+                        <Trash2 className="mr-1 h-3.5 w-3.5" />
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+
+                  {(!settings.storeSalons ||
+                    settings.storeSalons.length === 0) && (
+                    <div className="rounded-xl border border-dashed border-zinc-300 p-4 text-center text-xs text-zinc-500 dark:border-zinc-700">
+                      No salon pickup locations configured yet. Add your first
+                      boutique salon below.
+                    </div>
+                  )}
+                </div>
+
+                {/* Add New Salon Form */}
+                <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+                  <h5 className="mb-3 flex items-center gap-1.5 text-xs font-bold tracking-wider text-zinc-900 uppercase dark:text-zinc-100">
+                    <Plus className="h-3.5 w-3.5" /> Add New Boutique / Salon
+                  </h5>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
+                        Salon Name
+                      </label>
+                      <Input
+                        placeholder="e.g. Cairo Flagship Salon (Zamalek)"
+                        value={newSalonName}
+                        onChange={(e) => setNewSalonName(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
+                        Full Address &amp; Landmarks
+                      </label>
+                      <Input
+                        placeholder="e.g. 15 Brazil St, Zamalek, Cairo"
+                        value={newSalonAddress}
+                        onChange={(e) => setNewSalonAddress(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-3.5 flex justify-end">
+                    <Button
+                      type="button"
+                      disabled={!newSalonName.trim() || !newSalonAddress.trim()}
+                      onClick={() => {
+                        if (!newSalonName.trim() || !newSalonAddress.trim())
+                          return;
+                        setSettings((prev) => ({
+                          ...prev,
+                          storeSalons: [
+                            ...(prev.storeSalons || []),
+                            {
+                              name: newSalonName.trim(),
+                              address: newSalonAddress.trim(),
+                            },
+                          ],
+                        }));
+                        setNewSalonName("");
+                        setNewSalonAddress("");
+                        toast.success("Salon location added to settings draft");
+                      }}
+                      className="text-xs"
+                    >
+                      <Plus className="mr-1 h-3.5 w-3.5" />
+                      Add Salon Location
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>

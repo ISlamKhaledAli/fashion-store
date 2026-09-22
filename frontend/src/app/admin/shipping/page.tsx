@@ -108,7 +108,7 @@ export default function AdminShippingPage() {
     <div className="space-y-8 p-6 lg:p-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-serif text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl dark:text-zinc-100">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl dark:text-zinc-100">
             Shipping Zones &amp; Delivery Rules
           </h1>
           <p className="mt-1 text-xs text-zinc-500">
@@ -148,7 +148,7 @@ export default function AdminShippingPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Truck className="h-4 w-4 text-amber-600" />
-                    <h3 className="font-serif text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                    <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
                       {zone.name}
                     </h3>
                   </div>
@@ -228,7 +228,7 @@ export default function AdminShippingPage() {
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
           <div className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
-            <h3 className="font-serif text-lg font-bold text-zinc-900 dark:text-zinc-100">
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
               {editingZone ? "Edit Shipping Zone" : "New Shipping Zone"}
             </h3>
 

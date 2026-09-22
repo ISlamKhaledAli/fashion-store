@@ -237,7 +237,7 @@ export default function AdminNewsletterPage() {
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-light tracking-tight text-zinc-950 sm:text-3xl dark:text-zinc-50">
-            Newsletter & <span className="font-serif italic">Subscribers</span>
+            Newsletter & <span className="font-semibold">Subscribers</span>
           </h1>
           <p className="mt-1 text-xs text-zinc-500">
             Review client mailing list members, update subscription preferences,

@@ -50,7 +50,7 @@ export const AccountSidebar = () => {
   const { user } = useAuthStore();
 
   return (
-    <aside className="sticky top-20 flex min-h-[calc(100vh-5rem)] w-72 flex-col gap-y-2 border-r border-outline-variant/10 bg-surface-container-low p-8">
+    <aside className="sticky top-20 flex min-h-[calc(100vh-5rem)] w-72 shrink-0 flex-col gap-y-2 border-r border-outline-variant/10 bg-surface-container-low p-8">
       <div className="mb-8 flex flex-col items-center text-center">
         <div className="mb-4 h-20 w-20 overflow-hidden rounded-full bg-surface-container-high ring-1 ring-outline-variant/20">
           {user?.avatar ? (

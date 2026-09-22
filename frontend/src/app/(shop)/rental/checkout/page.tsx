@@ -6,8 +6,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { productApi, rentalApi, addressApi } from "@/lib/api";
 import type { Product, Variant, Address, RentalPeriod } from "@/types";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import {
   Clock,
@@ -17,6 +18,8 @@ import {
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
+  Plus,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,6 +44,20 @@ function RentalCheckoutContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successRentalId, setSuccessRentalId] = useState<string | null>(null);
+
+  // Inline Address Form State
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
+  const [addressForm, setAddressForm] = useState({
+    firstName: "",
+    lastName: "",
+    street: "",
+    city: "",
+    state: "",
+    zip: "",
+    phone: "",
+    country: "EG",
+  });
 
   useEffect(() => {
     let active = true;
@@ -69,6 +86,9 @@ function RentalCheckoutContent() {
           const defaultAddr = addrList.find((a) => a.isDefault) || addrList[0];
           if (defaultAddr) {
             setSelectedAddressId(defaultAddr.id);
+          } else {
+            // No address exists, open address form immediately
+            setShowAddressForm(true);
           }
         }
       } catch (err) {
@@ -112,11 +132,53 @@ function RentalCheckoutContent() {
   const securityDeposit = product?.securityDeposit || 0;
   const totalCost = rentalFee + securityDeposit;
 
+  const handleCreateAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (
+      !addressForm.firstName.trim() ||
+      !addressForm.lastName.trim() ||
+      !addressForm.street.trim() ||
+      !addressForm.city.trim()
+    ) {
+      toast.error("Please fill in first name, last name, street, and city");
+      return;
+    }
+
+    setIsSavingAddress(true);
+    try {
+      const res = await addressApi.create({
+        firstName: addressForm.firstName.trim(),
+        lastName: addressForm.lastName.trim(),
+        street: addressForm.street.trim(),
+        city: addressForm.city.trim(),
+        state: addressForm.state.trim() || addressForm.city.trim(),
+        zip: addressForm.zip.trim() || "11511",
+        country: addressForm.country || "EG",
+        phone: addressForm.phone.trim() || undefined,
+        isDefault: addresses.length === 0,
+      });
+
+      if (res.data?.success && res.data?.data) {
+        const created = res.data.data as Address;
+        setAddresses((prev) => [created, ...prev]);
+        setSelectedAddressId(created.id);
+        setShowAddressForm(false);
+        toast.success("Delivery address saved successfully");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to save address";
+      toast.error(msg);
+    } finally {
+      setIsSavingAddress(false);
+    }
+  };
+
   const handleConfirmReservation = async () => {
     if (!product || !selectedVariant) return;
 
     if (fulfillment === "DELIVERY" && !selectedAddressId) {
-      toast.error("Please choose or add a delivery address");
+      toast.error("Please provide a delivery address before confirming");
+      setShowAddressForm(true);
       return;
     }
 
@@ -138,7 +200,7 @@ function RentalCheckoutContent() {
 
       if (res.data?.success && res.data?.data?.rental) {
         setSuccessRentalId(res.data.data.rental.id);
-        toast.success("Rental reserved successfully!");
+        toast.success("Rental reservation booked successfully!");
       }
     } catch (err: unknown) {
       const message =
@@ -154,35 +216,38 @@ function RentalCheckoutContent() {
   if (isLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }
 
   if (successRentalId) {
     return (
-      <div className="mx-auto max-w-xl px-4 py-16 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
+      <div className="mx-auto max-w-xl px-4 py-20 text-center">
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
           <CheckCircle2 className="h-8 w-8" />
         </div>
-        <h1 className="font-serif text-3xl font-bold text-zinc-900 dark:text-zinc-100">
-          Booking Confirmed!
+        <h1 className="font-headline text-3xl font-normal text-on-surface">
+          Reservation Confirmed
         </h1>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          Your luxury wear rental reservation has been successfully booked. You
-          can track your dates, fulfillment, and return schedule in your
-          account.
+        <p className="mt-2 font-sans text-xs leading-relaxed text-on-surface-variant">
+          Your luxury wear booking has been reserved in our atelier schedule.
+          You can track dates, collection status, and return arrangements in
+          your account.
         </p>
 
         <div className="mt-8 flex justify-center gap-4">
           <Link href="/account/rentals">
-            <Button className="bg-amber-600 px-6 py-2.5 text-white hover:bg-amber-700">
+            <Button className="border-none bg-primary px-6 py-3 font-label text-xs tracking-widest text-on-primary uppercase hover:opacity-90">
               View My Rentals
             </Button>
           </Link>
           <Link href="/products">
-            <Button variant="outline" className="px-6 py-2.5">
-              Continue Shopping
+            <Button
+              variant="outline"
+              className="border-outline-variant px-6 py-3 font-label text-xs tracking-widest uppercase"
+            >
+              Continue Browsing
             </Button>
           </Link>
         </div>
@@ -196,29 +261,32 @@ function RentalCheckoutContent() {
     "/placeholder-fashion.jpg";
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       {/* Back Link */}
       <Link
         href={`/products/${product?.slug || ""}`}
-        className="mb-6 inline-flex items-center gap-2 text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+        className="mb-8 inline-flex items-center gap-2 font-label text-xs tracking-widest text-on-surface-variant uppercase transition-colors hover:text-on-surface"
       >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Product
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Back to Garment
       </Link>
 
-      <h1 className="font-serif text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl dark:text-zinc-100">
-        Review &amp; Reserve Rental
-      </h1>
-      <p className="mt-1 text-xs text-zinc-500">
-        Complete your booking details and confirm dates for delivery or pickup.
-      </p>
+      <div className="border-b border-outline-variant/60 pb-6">
+        <h1 className="font-headline text-2xl font-normal tracking-tight text-on-surface sm:text-3xl">
+          Review &amp; Reserve Rental
+        </h1>
+        <p className="mt-1 font-sans text-xs text-on-surface-variant">
+          Finalize your booking details and confirm delivery or salon
+          collection.
+        </p>
+      </div>
 
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-12">
-        {/* Left Column: Booking details & fulfillment */}
+        {/* Left Column: Garment info & fulfillment */}
         <div className="space-y-6 lg:col-span-7">
           {/* Item details card */}
-          <div className="flex gap-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="relative h-28 w-24 shrink-0 overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
+          <div className="flex gap-4 border border-outline-variant bg-surface-container-lowest p-5">
+            <div className="relative h-28 w-24 shrink-0 overflow-hidden bg-surface-container-low">
               <Image
                 src={mainImage}
                 alt={product?.name || "Product"}
@@ -228,13 +296,13 @@ function RentalCheckoutContent() {
             </div>
             <div className="flex flex-1 flex-col justify-between">
               <div>
-                <span className="text-[11px] font-semibold tracking-wider text-amber-600 uppercase dark:text-amber-500">
-                  {product?.brand?.name || "The Curator Rental"}
+                <span className="font-label text-[10px] tracking-widest text-on-surface-variant uppercase">
+                  {product?.brand?.name || "The Curator Atelier"}
                 </span>
-                <h3 className="font-serif text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                <h3 className="font-headline text-base font-normal text-on-surface">
                   {product?.name}
                 </h3>
-                <div className="mt-1 flex flex-wrap gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                <div className="mt-1 flex flex-wrap gap-2 text-xs text-on-surface-variant">
                   {selectedVariant && (
                     <>
                       <span>Size: {selectedVariant.size}</span>
@@ -245,8 +313,8 @@ function RentalCheckoutContent() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                <Clock className="h-4 w-4 text-amber-600" />
+              <div className="flex items-center gap-2 text-xs font-medium text-on-surface">
+                <Clock className="h-4 w-4 text-on-surface-variant" />
                 <span>
                   {durationDays} Days (
                   {new Date(startDate).toLocaleDateString()} &mdash;{" "}
@@ -257,38 +325,155 @@ function RentalCheckoutContent() {
           </div>
 
           {/* Fulfillment details */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-            <h3 className="flex items-center gap-2 font-serif text-base font-semibold text-zinc-900 dark:text-zinc-100">
-              {fulfillment === "DELIVERY" ? (
-                <>
-                  <Truck className="h-5 w-5 text-amber-600" />
-                  Delivery Destination
-                </>
-              ) : (
-                <>
-                  <MapPin className="h-5 w-5 text-amber-600" />
-                  Store / Salon Pickup
-                </>
+          <div className="border border-outline-variant bg-surface-container-lowest p-5">
+            <div className="flex items-center justify-between border-b border-outline-variant/60 pb-3">
+              <h3 className="flex items-center gap-2 font-headline text-base font-normal text-on-surface">
+                {fulfillment === "DELIVERY" ? (
+                  <>
+                    <Truck className="h-4 w-4 text-primary" />
+                    Delivery Destination
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="h-4 w-4 text-primary" />
+                    Boutique Salon Pickup
+                  </>
+                )}
+              </h3>
+
+              {fulfillment === "DELIVERY" && !showAddressForm && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddressForm(true)}
+                  className="flex items-center gap-1 font-label text-xs tracking-wider text-primary uppercase underline hover:opacity-80"
+                >
+                  <Plus className="h-3 w-3" /> Add Address
+                </button>
               )}
-            </h3>
+            </div>
 
             {fulfillment === "DELIVERY" ? (
-              <div className="mt-4 space-y-3">
-                {addresses.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-zinc-300 p-4 text-center dark:border-zinc-700">
-                    <p className="text-xs text-zinc-500">
-                      No saved addresses found. Please add an address in your
-                      account settings before continuing.
-                    </p>
-                    <Link
-                      href="/account/addresses"
-                      className="mt-2 inline-block text-xs font-semibold text-amber-600 underline"
-                    >
-                      Manage Addresses
-                    </Link>
-                  </div>
+              <div className="mt-4 space-y-4">
+                {/* Inline Address Creation Form */}
+                {showAddressForm ? (
+                  <form
+                    onSubmit={handleCreateAddress}
+                    className="space-y-3 border border-outline-variant bg-surface p-4"
+                  >
+                    <div className="flex items-center justify-between border-b border-outline-variant/60 pb-2">
+                      <span className="font-label text-xs font-semibold tracking-wider text-on-surface uppercase">
+                        Enter Delivery Address
+                      </span>
+                      {addresses.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAddressForm(false)}
+                          className="text-on-surface-variant hover:text-on-surface"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <Input
+                        label="First Name"
+                        placeholder="e.g. Layla"
+                        value={addressForm.firstName}
+                        onChange={(e) =>
+                          setAddressForm((p) => ({
+                            ...p,
+                            firstName: e.target.value,
+                          }))
+                        }
+                        required
+                      />
+                      <Input
+                        label="Last Name"
+                        placeholder="e.g. Mansour"
+                        value={addressForm.lastName}
+                        onChange={(e) =>
+                          setAddressForm((p) => ({
+                            ...p,
+                            lastName: e.target.value,
+                          }))
+                        }
+                        required
+                      />
+                    </div>
+
+                    <Input
+                      label="Street Address / Building"
+                      placeholder="e.g. 24 Gezira St, Apt 4B"
+                      value={addressForm.street}
+                      onChange={(e) =>
+                        setAddressForm((p) => ({
+                          ...p,
+                          street: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <Input
+                        label="City"
+                        placeholder="e.g. Cairo"
+                        value={addressForm.city}
+                        onChange={(e) =>
+                          setAddressForm((p) => ({
+                            ...p,
+                            city: e.target.value,
+                          }))
+                        }
+                        required
+                      />
+                      <Input
+                        label="District / State"
+                        placeholder="e.g. Zamalek"
+                        value={addressForm.state}
+                        onChange={(e) =>
+                          setAddressForm((p) => ({
+                            ...p,
+                            state: e.target.value,
+                          }))
+                        }
+                      />
+                      <Input
+                        label="Phone Number"
+                        placeholder="e.g. +2010..."
+                        value={addressForm.phone}
+                        onChange={(e) =>
+                          setAddressForm((p) => ({
+                            ...p,
+                            phone: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2">
+                      {addresses.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowAddressForm(false)}
+                          className="font-label text-xs uppercase"
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                      <Button
+                        type="submit"
+                        disabled={isSavingAddress}
+                        className="border-none bg-primary font-label text-xs tracking-wider text-on-primary uppercase"
+                      >
+                        {isSavingAddress ? "Saving..." : "Save & Use Address"}
+                      </Button>
+                    </div>
+                  </form>
                 ) : (
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                     {addresses.map((addr) => {
                       const isSelected = selectedAddressId === addr.id;
                       return (
@@ -296,21 +481,32 @@ function RentalCheckoutContent() {
                           key={addr.id}
                           type="button"
                           onClick={() => setSelectedAddressId(addr.id)}
-                          className={`rounded-lg border p-3 text-left transition-all ${
+                          className={cn(
+                            "cursor-pointer border p-3.5 text-left transition-all",
                             isSelected
-                              ? "border-amber-600 bg-amber-50/40 dark:border-amber-500 dark:bg-amber-950/20"
-                              : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-800"
-                          }`}
+                              ? "border-primary bg-surface-container shadow-xs"
+                              : "border-outline-variant bg-surface hover:border-primary/60"
+                          )}
                         >
-                          <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                            {addr.firstName} {addr.lastName}
+                          <div className="flex items-center justify-between">
+                            <span className="font-label text-xs font-semibold text-on-surface uppercase">
+                              {addr.firstName} {addr.lastName}
+                            </span>
+                            {isSelected && (
+                              <span className="h-2 w-2 rounded-full bg-primary" />
+                            )}
                           </div>
-                          <div className="mt-1 text-xs text-zinc-500">
-                            {addr.street}, {addr.city}
+                          <div className="mt-1 font-sans text-xs text-on-surface-variant">
+                            {addr.street}
                           </div>
-                          <div className="text-xs text-zinc-400">
-                            {addr.country} {addr.zip}
+                          <div className="text-[11px] text-on-surface-variant/80">
+                            {addr.city}, {addr.state || addr.country}
                           </div>
+                          {addr.phone && (
+                            <div className="mt-1 text-[10px] text-on-surface-variant">
+                              Tel: {addr.phone}
+                            </div>
+                          )}
                         </button>
                       );
                     })}
@@ -318,83 +514,93 @@ function RentalCheckoutContent() {
                 )}
               </div>
             ) : (
-              <div className="mt-4 rounded-lg bg-zinc-50 p-4 text-xs text-zinc-600 dark:bg-zinc-800/60 dark:text-zinc-300">
-                <p className="font-semibold text-zinc-900 dark:text-zinc-100">
-                  {pickupLocation}
-                </p>
-                <p className="mt-1">
+              <div className="mt-4 border border-outline-variant bg-surface p-4 text-xs text-on-surface-variant">
+                <div className="flex items-center gap-2 font-medium text-on-surface">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <span>{pickupLocation}</span>
+                </div>
+                <p className="mt-1 text-[11px]">
                   Operating Hours: Daily 11:00 AM &ndash; 10:00 PM
                 </p>
-                <p className="mt-2 text-zinc-500">
-                  Bring your booking confirmation email and national ID when
-                  picking up and returning.
+                <p className="mt-2 text-[11px] leading-relaxed">
+                  Please bring your booking reservation email and official photo
+                  ID upon pickup and return.
                 </p>
               </div>
             )}
           </div>
 
           {/* Notes textarea */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-            <label className="block font-serif text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              Special Instructions or Requests (Optional)
+          <div className="border border-outline-variant bg-surface-container-lowest p-5">
+            <label className="block font-label text-xs tracking-widest text-on-surface uppercase">
+              Special Handling Instructions (Optional)
             </label>
             <textarea
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Please leave package with doorman, or specific tailoring notes..."
-              className="mt-2 w-full rounded-md border border-zinc-300 p-2.5 text-xs text-zinc-900 placeholder:text-zinc-400 focus:border-amber-600 focus:ring-1 focus:ring-amber-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              placeholder="e.g. Leave with building reception, or specific delivery timing..."
+              className="mt-2 w-full border border-outline-variant bg-surface p-3 text-xs text-on-surface transition-colors outline-none focus:border-primary"
             />
           </div>
         </div>
 
         {/* Right Column: Cost summary & confirmation */}
         <div className="lg:col-span-5">
-          <div className="sticky top-28 space-y-5 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <h3 className="font-serif text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-              Pricing Summary
+          <div className="sticky top-28 space-y-5 border border-outline-variant bg-surface-container-lowest p-6 shadow-xs">
+            <h3 className="border-b border-outline-variant/60 pb-3 font-headline text-lg font-normal text-on-surface">
+              Reservation Summary
             </h3>
 
-            <div className="space-y-3 border-b border-zinc-200 pb-4 text-xs dark:border-zinc-800">
-              <div className="flex justify-between text-zinc-600 dark:text-zinc-400">
-                <span>Rental Cost ({durationDays} Days)</span>
-                <span className="font-medium text-zinc-900 dark:text-zinc-100">
+            <div className="space-y-3 border-b border-outline-variant/60 pb-4 text-xs">
+              <div className="flex justify-between text-on-surface-variant">
+                <span>Rental Duration</span>
+                <span className="font-medium text-on-surface">
+                  {durationDays} {durationDays === 1 ? "Day" : "Days"}
+                </span>
+              </div>
+
+              <div className="flex justify-between text-on-surface-variant">
+                <span>Rental Fee</span>
+                <span className="font-medium text-on-surface">
                   {formatCurrency(rentalFee)}
                 </span>
               </div>
 
               {securityDeposit > 0 && (
-                <div className="flex justify-between text-zinc-600 dark:text-zinc-400">
+                <div className="flex justify-between text-on-surface-variant">
                   <span className="flex items-center gap-1">
                     <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
                     Refundable Deposit
                   </span>
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                  <span className="font-medium text-on-surface">
                     {formatCurrency(securityDeposit)}
                   </span>
                 </div>
               )}
 
-              <div className="flex justify-between text-zinc-600 dark:text-zinc-400">
-                <span>Fulfillment Fee</span>
-                <span className="font-medium text-emerald-600">
-                  {fulfillment === "DELIVERY" ? "Complimentary" : "Free Pickup"}
+              <div className="flex justify-between text-on-surface-variant">
+                <span>Fulfillment Dispatch</span>
+                <span className="font-medium text-emerald-700 dark:text-emerald-400">
+                  {fulfillment === "DELIVERY"
+                    ? "Complimentary Courier"
+                    : "Boutique Pickup"}
                 </span>
               </div>
             </div>
 
-            <div className="flex justify-between font-serif text-base font-bold text-zinc-900 dark:text-zinc-100">
+            <div className="flex justify-between font-headline text-lg font-normal text-on-surface">
               <span>Total Payment Today</span>
               <span>{formatCurrency(totalCost)}</span>
             </div>
 
-            <div className="rounded-lg bg-amber-50/60 p-3 text-[11px] text-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+            <div className="border border-outline-variant/60 bg-surface-container-low p-3.5 text-[11px] leading-relaxed text-on-surface-variant">
               <div className="flex items-start gap-2">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-on-surface" />
                 <p>
-                  The deposit amount ({formatCurrency(securityDeposit)}) is held
-                  safely and automatically refunded upon successful return of
-                  the piece in pristine condition.
+                  Security deposit ({formatCurrency(securityDeposit)}) is held
+                  securely and refunded directly to your card upon prompt return
+                  in inspected condition.
                 </p>
               </div>
             </div>
@@ -405,7 +611,7 @@ function RentalCheckoutContent() {
                 isSubmitting ||
                 (fulfillment === "DELIVERY" && !selectedAddressId)
               }
-              className="w-full bg-amber-600 py-3.5 text-sm font-semibold text-white shadow-md hover:bg-amber-700 disabled:opacity-60 dark:bg-amber-600 dark:hover:bg-amber-700"
+              className="w-full border-none bg-primary py-4 font-label text-xs tracking-widest text-on-primary uppercase hover:opacity-90 disabled:opacity-50"
             >
               {isSubmitting
                 ? "Processing Reservation..."
@@ -424,7 +630,7 @@ export default function RentalCheckoutPage() {
       <Suspense
         fallback={
           <div className="flex min-h-[60vh] items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-600 border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         }
       >

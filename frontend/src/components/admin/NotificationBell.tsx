@@ -137,7 +137,7 @@ export const NotificationBell: React.FC = () => {
         <div className="absolute right-0 z-50 mt-2 w-80 rounded-xl border border-zinc-200 bg-white shadow-xl sm:w-96 dark:border-zinc-800 dark:bg-zinc-900">
           <div className="flex items-center justify-between border-b border-zinc-100 p-3.5 dark:border-zinc-800">
             <div className="flex items-center gap-2">
-              <span className="font-serif text-sm font-bold text-zinc-900 dark:text-zinc-100">
+              <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                 Alerts &amp; Notifications
               </span>
               {unreadCount > 0 && (

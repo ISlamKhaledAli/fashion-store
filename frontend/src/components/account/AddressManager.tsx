@@ -20,6 +20,10 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Checkbox } from "@/components/ui/Checkbox";
+import {
+  LocationPicker,
+  type LocationData,
+} from "@/components/ui/LocationPicker";
 
 interface AddressFormData {
   label: string;
@@ -103,6 +107,17 @@ export const AddressManager = () => {
       isDefault: !!addr.isDefault,
     });
     setIsModalOpen(true);
+  };
+
+  const handleLocationSelect = (loc: LocationData) => {
+    setFormData((prev) => ({
+      ...prev,
+      street: loc.street || prev.street,
+      city: loc.city || prev.city,
+      state: loc.state || prev.state,
+      zip: loc.zip || prev.zip,
+      country: loc.country || prev.country,
+    }));
   };
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -329,141 +344,161 @@ export const AddressManager = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingAddress ? "Edit Address" : "Add New Address"}
-        description="Fill in your delivery details for seamless order dispatches."
-        maxWidth="lg"
+        description="Fill in your delivery details or auto-detect your location for seamless order dispatches."
+        maxWidth="2xl"
       >
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
-                Address Tag
-              </label>
-              <Input
-                name="label"
-                value={formData.label}
-                onChange={handleFormChange}
-                placeholder="e.g. Home, Studio, Office"
-                required
-              />
+        <form onSubmit={handleSubmit} className="space-y-4 pt-1">
+          {/* Geolocation Auto-fill System */}
+          <LocationPicker
+            onLocationSelect={handleLocationSelect}
+            className="mb-3"
+          />
+
+          {/* Section: Recipient & Tag */}
+          <div className="space-y-3 rounded-xl border border-outline-variant/20 bg-surface-container-lowest/60 p-4">
+            <h4 className="text-[11px] font-bold tracking-wider text-on-surface-variant uppercase">
+              Recipient & Tag
+            </h4>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-[11px] font-semibold tracking-wider text-on-surface-variant uppercase">
+                  Address Tag
+                </label>
+                <Input
+                  name="label"
+                  value={formData.label}
+                  onChange={handleFormChange}
+                  placeholder="e.g. Home, Studio, Office"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-semibold tracking-wider text-on-surface-variant uppercase">
+                  Phone Number (Optional)
+                </label>
+                <Input
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleFormChange}
+                  placeholder="+1 (555) 000-0000"
+                />
+              </div>
             </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-[11px] font-semibold tracking-wider text-on-surface-variant uppercase">
+                  First Name *
+                </label>
+                <Input
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleFormChange}
+                  placeholder="First name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-semibold tracking-wider text-on-surface-variant uppercase">
+                  Last Name *
+                </label>
+                <Input
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleFormChange}
+                  placeholder="Last name"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Delivery Details */}
+          <div className="space-y-3 rounded-xl border border-outline-variant/20 bg-surface-container-lowest/60 p-4">
+            <h4 className="text-[11px] font-bold tracking-wider text-on-surface-variant uppercase">
+              Delivery Details
+            </h4>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-[11px] font-semibold tracking-wider text-on-surface-variant uppercase">
+                  Street Address *
+                </label>
+                <Input
+                  name="street"
+                  value={formData.street}
+                  onChange={handleFormChange}
+                  placeholder="House number and street name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-semibold tracking-wider text-on-surface-variant uppercase">
+                  Apt / Suite / Unit
+                </label>
+                <Input
+                  name="apartment"
+                  value={formData.apartment}
+                  onChange={handleFormChange}
+                  placeholder="Apt, floor, etc."
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div>
+                <label className="mb-1 block text-[11px] font-semibold tracking-wider text-on-surface-variant uppercase">
+                  City *
+                </label>
+                <Input
+                  name="city"
+                  value={formData.city}
+                  onChange={handleFormChange}
+                  placeholder="City"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-semibold tracking-wider text-on-surface-variant uppercase">
+                  State / Region *
+                </label>
+                <Input
+                  name="state"
+                  value={formData.state}
+                  onChange={handleFormChange}
+                  placeholder="State / Province"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-semibold tracking-wider text-on-surface-variant uppercase">
+                  Postal Code *
+                </label>
+                <Input
+                  name="zip"
+                  value={formData.zip}
+                  onChange={handleFormChange}
+                  placeholder="ZIP / Postal code"
+                  required
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
-                Phone Number (Optional)
+              <label className="mb-1 block text-[11px] font-semibold tracking-wider text-on-surface-variant uppercase">
+                Country *
               </label>
               <Input
-                name="phone"
-                value={formData.phone}
+                name="country"
+                value={formData.country}
                 onChange={handleFormChange}
-                placeholder="+1 (555) 000-0000"
+                placeholder="Country"
+                required
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
-                First Name *
-              </label>
-              <Input
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleFormChange}
-                placeholder="First name"
-                required
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
-                Last Name *
-              </label>
-              <Input
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleFormChange}
-                placeholder="Last name"
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
-              Street Address *
-            </label>
-            <Input
-              name="street"
-              value={formData.street}
-              onChange={handleFormChange}
-              placeholder="House number and street name"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
-              Apartment, Suite, Unit (Optional)
-            </label>
-            <Input
-              name="apartment"
-              value={formData.apartment}
-              onChange={handleFormChange}
-              placeholder="Apartment, suite, unit, building, floor, etc."
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div>
-              <label className="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
-                City *
-              </label>
-              <Input
-                name="city"
-                value={formData.city}
-                onChange={handleFormChange}
-                placeholder="City"
-                required
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
-                State / Region *
-              </label>
-              <Input
-                name="state"
-                value={formData.state}
-                onChange={handleFormChange}
-                placeholder="State / Province"
-                required
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
-                Postal Code *
-              </label>
-              <Input
-                name="zip"
-                value={formData.zip}
-                onChange={handleFormChange}
-                placeholder="ZIP / Postal code"
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
-              Country *
-            </label>
-            <Input
-              name="country"
-              value={formData.country}
-              onChange={handleFormChange}
-              placeholder="Country"
-              required
-            />
-          </div>
-
-          <div className="pt-2">
+          <div className="pt-1">
             <Checkbox
               id="isDefault"
               label="Set as default shipping address"
@@ -477,7 +512,7 @@ export const AddressManager = () => {
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 border-t border-outline-variant/10 pt-6">
+          <div className="flex items-center justify-end gap-3 border-t border-outline-variant/10 pt-4">
             <Button
               type="button"
               variant="outline"
@@ -490,7 +525,7 @@ export const AddressManager = () => {
               type="submit"
               variant="primary"
               disabled={isSubmitting}
-              className="min-w-[120px]"
+              className="min-w-[130px]"
             >
               {isSubmitting
                 ? "Saving..."

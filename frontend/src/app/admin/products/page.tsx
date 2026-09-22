@@ -7,6 +7,7 @@ import { adminApi } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { toast } from "sonner";
@@ -78,11 +79,9 @@ const ProductRow = React.memo(
             onToggleSelect(product.id);
           }}
         >
-          <input
-            type="checkbox"
+          <Checkbox
             checked={isSelected}
-            onChange={() => onToggleSelect(product.id)}
-            className="h-4 w-4 cursor-pointer rounded border-zinc-300 text-zinc-950 focus:ring-zinc-950"
+            onCheckedChange={() => onToggleSelect(product.id)}
           />
         </td>
         <td className="px-8 py-8">
@@ -523,14 +522,12 @@ export default function AdminProductsPage() {
             <thead className="border-b border-zinc-100 bg-zinc-50/50 text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase">
               <tr>
                 <th className="w-12 px-6 py-5">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={
                       paginatedProducts.length > 0 &&
                       paginatedProducts.every((p) => selectedIds.includes(p.id))
                     }
-                    onChange={handleToggleSelectAll}
-                    className="h-4 w-4 cursor-pointer rounded border-zinc-300 text-zinc-950 focus:ring-zinc-950"
+                    onCheckedChange={handleToggleSelectAll}
                   />
                 </th>
                 <th className="px-8 py-5">Piece Specification</th>

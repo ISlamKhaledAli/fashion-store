@@ -77,6 +77,19 @@ export const addToCart = async (
     const userId = req.user?.id;
     const { variantId, quantity } = addToCartSchema.parse(req.body);
 
+    const variant = await prisma.variant.findUnique({
+      where: { id: variantId },
+      include: { product: true },
+    });
+    if (!variant) {
+      throw new NotFoundError("Variant not found");
+    }
+    if (variant.product.isSaleable === false) {
+      throw new ValidationError(
+        "This archival piece is exclusively available for rental"
+      );
+    }
+
     let cart = await prisma.cart.findUnique({ where: { userId } });
     if (!cart) {
       cart = await prisma.cart.create({ data: { userId: userId as string } });

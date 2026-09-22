@@ -7,6 +7,7 @@ import type { Rental, RentalStatus } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 import { Search, MapPin, Truck } from "lucide-react";
 import { toast } from "sonner";
+import { Select } from "@/components/ui/Select";
 
 interface RentalAnalytics {
   totalRentals: number;
@@ -126,7 +127,7 @@ export default function AdminRentalsPage() {
     <div className="space-y-8 p-6 lg:p-10">
       {/* Header */}
       <div>
-        <h1 className="font-serif text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl dark:text-zinc-100">
+        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl dark:text-zinc-100">
           Rental &amp; Reservation Management
         </h1>
         <p className="mt-1 text-xs text-zinc-500">
@@ -348,26 +349,29 @@ export default function AdminRentalsPage() {
 
                       {/* Status */}
                       <td className="px-4 py-3.5">
-                        <select
-                          value={r.status}
+                        <Select
+                          variant="filter"
                           disabled={isUpdating}
-                          onChange={(e) =>
-                            handleUpdateStatus(
-                              r.id,
-                              e.target.value as RentalStatus
-                            )
+                          value={r.status}
+                          onChange={(val) =>
+                            handleUpdateStatus(r.id, val as RentalStatus)
                           }
-                          className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-[11px] font-semibold text-zinc-800 shadow-2xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
-                        >
-                          <option value="RESERVED">Reserved</option>
-                          <option value="ACTIVE">
-                            Active (Picked Up/Delivered)
-                          </option>
-                          <option value="RETURN_PENDING">Return Pending</option>
-                          <option value="RETURNED">Returned (Complete)</option>
-                          <option value="OVERDUE">Overdue</option>
-                          <option value="CANCELLED">Cancelled</option>
-                        </select>
+                          options={[
+                            { value: "RESERVED", label: "Reserved" },
+                            {
+                              value: "ACTIVE",
+                              label: "Active (Picked Up/Delivered)",
+                            },
+                            {
+                              value: "RETURN_PENDING",
+                              label: "Return Pending",
+                            },
+                            { value: "RETURNED", label: "Returned (Complete)" },
+                            { value: "OVERDUE", label: "Overdue" },
+                            { value: "CANCELLED", label: "Cancelled" },
+                          ]}
+                          className="min-w-[140px]"
+                        />
                       </td>
 
                       {/* Actions */}
@@ -410,7 +414,7 @@ export default function AdminRentalsPage() {
       {lateFeeModalRental && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
           <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
-            <h3 className="font-serif text-base font-bold text-zinc-900 dark:text-zinc-100">
+            <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
               Apply Late Fee
             </h3>
             <p className="mt-1 text-xs text-zinc-500">
